@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="skillnet.client/skillnet.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="SkillNet.Server/SkillNet.Server.csproj" />
+</Solution>

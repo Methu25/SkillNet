@@ -1,0 +1,6 @@
+@SkillNet.Server_HostAddress = http://localhost:5090
+
+GET {{SkillNet.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
