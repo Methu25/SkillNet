@@ -1,51 +1,99 @@
-import { useEffect, useState } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Import Pages
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import AdminDashboard from './pages/AdminDashboard';
+import RecruiterDashboard from './pages/RecruiterDashboard';
+import HiringDashboard from './pages/HiringDashboard';
+import CandidateDashboard from './pages/CandidateDashboard';
+import AccessDenied from './pages/AccessDenied';
+import NotFound from './pages/NotFound';
+
 import './App.css';
 
-function App() {
-    const [forecasts, setForecasts] = useState();
+const HomeRedirect = () => {
+    const { user, loading } = useAuth();
 
-    useEffect(() => {
-        populateWeatherData();
-    }, []);
-
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tableLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
-
-    return (
-        <div>
-            <h1 id="tableLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
-        </div>
-    );
-    
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
-        if (response.ok) {
-            const data = await response.json();
-            setForecasts(data);
-        }
+    if (loading) {
+        return <div style={{ textAlign: 'center', marginTop: '100px' }}>Loading...</div>;
     }
+
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
+
+    const roles = user.roles || [];
+    if (roles.includes('Admin')) return <Navigate to="/admin-dashboard" replace />;
+    if (roles.includes('Recruiter')) return <Navigate to="/recruiter-dashboard" replace />;
+    if (roles.includes('HiringManager')) return <Navigate to="/hiring-dashboard" replace />;
+    if (roles.includes('Candidate')) return <Navigate to="/candidate-dashboard" replace />;
+
+    return <Navigate to="/access-denied" replace />;
+};
+
+function App() {
+    return (
+        <AuthProvider>
+            <Router>
+                <Routes>
+                    {/* Home Route Redirect */}
+                    <Route path="/" element={<HomeRedirect />} />
+
+                    {/* Public Auth Routes */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+
+                    {/* Protected Dashboard Routes */}
+                    <Route 
+                        path="/admin-dashboard" 
+                        element={
+                            <ProtectedRoute allowedRoles={['Admin']}>
+                                <AdminDashboard />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    <Route 
+                        path="/recruiter-dashboard" 
+                        element={
+                            <ProtectedRoute allowedRoles={['Recruiter']}>
+                                <RecruiterDashboard />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    <Route 
+                        path="/hiring-dashboard" 
+                        element={
+                            <ProtectedRoute allowedRoles={['HiringManager']}>
+                                <HiringDashboard />
+                            </ProtectedRoute>
+                        } 
+                    />
+                    <Route 
+                        path="/candidate-dashboard" 
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateDashboard />
+                            </ProtectedRoute>
+                        } 
+                    />
+
+                    {/* Error Routes */}
+                    <Route path="/access-denied" element={<AccessDenied />} />
+                    <Route path="/unauthorized" element={<AccessDenied />} />
+                    <Route path="/404" element={<NotFound />} />
+                    <Route path="*" element={<Navigate to="/404" replace />} />
+                </Routes>
+            </Router>
+        </AuthProvider>
+    );
 }
 
 export default App;
