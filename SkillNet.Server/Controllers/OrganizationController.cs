@@ -73,5 +73,50 @@ namespace SkillNet.Server.Controllers
             }
             return Ok(new { message = "Organization created successfully" });
         }
+        // PUT: api/organization/{id}
+        [HttpPut("{id}")]
+        public IActionResult UpdateOrganization(int id, [FromBody] Organization org)
+        {
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string query = @"UPDATE Organization 
+                                 SET OrganizationName = @Name, Industry = @Industry, Website = @Website, Logo = @Logo, Address = @Address
+                                 WHERE OrganizationId = @Id";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    cmd.Parameters.AddWithValue("@Name", org.OrganizationName);
+                    cmd.Parameters.AddWithValue("@Industry", (object?)org.Industry ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Website", (object?)org.Website ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Logo", (object?)org.Logo ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Address", (object?)org.Address ?? DBNull.Value);
+
+                    con.Open();
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    if (rowsAffected == 0) return NotFound(new { message = "Organization not found" });
+                }
+            }
+            return Ok(new { message = "Organization updated successfully" });
+        }
+
+        // DELETE: api/organization/{id}
+        [HttpDelete("{id}")]
+        public IActionResult DeleteOrganization(int id)
+        {
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string query = "DELETE FROM Organization WHERE OrganizationId = @Id";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    con.Open();
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    if (rowsAffected == 0) return NotFound(new { message = "Organization not found" });
+                }
+            }
+            return Ok(new { message = "Organization deleted successfully" });
+        }
     }
 }

@@ -68,5 +68,48 @@ namespace SkillNet.Server.Controllers
             }
             return Ok(new { message = "Department created successfully" });
         }
+        // PUT: api/department/{id}
+        [HttpPut("{id}")]
+        public IActionResult UpdateDepartment(int id, [FromBody] Department dept)
+        {
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string query = @"UPDATE Department 
+                                 SET OrganizationId = @OrgId, DepartmentName = @Name, Description = @Desc
+                                 WHERE DepartmentId = @Id";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    cmd.Parameters.AddWithValue("@OrgId", dept.OrganizationId);
+                    cmd.Parameters.AddWithValue("@Name", dept.DepartmentName);
+                    cmd.Parameters.AddWithValue("@Desc", (object?)dept.Description ?? DBNull.Value);
+
+                    con.Open();
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    if (rowsAffected == 0) return NotFound(new { message = "Department not found" });
+                }
+            }
+            return Ok(new { message = "Department updated successfully" });
+        }
+
+        // DELETE: api/department/{id}
+        [HttpDelete("{id}")]
+        public IActionResult DeleteDepartment(int id)
+        {
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string query = "DELETE FROM Department WHERE DepartmentId = @Id";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    con.Open();
+                    int rowsAffected = cmd.ExecuteNonQuery();
+                    if (rowsAffected == 0) return NotFound(new { message = "Department not found" });
+                }
+            }
+            return Ok(new { message = "Department deleted successfully" });
+        }
     }
 }
