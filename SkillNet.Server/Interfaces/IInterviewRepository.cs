@@ -1,4 +1,5 @@
 using SkillNet.Server.Models;
+using SkillNet.Server.DTOs;
 
 namespace SkillNet.Server.Interfaces
 {
@@ -9,5 +10,8 @@ namespace SkillNet.Server.Interfaces
         Task<Interview> CreateAsync(Interview interview);
         Task<Interview?> UpdateAsync(Interview interview);
         Task<bool> DeleteAsync(int id);
+        Task<bool> ScheduleInterviewAsync(
+            int interviewId,
+            ScheduleInterviewDto dto);
     }
 }
