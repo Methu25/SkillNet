@@ -10,7 +10,6 @@ namespace SkillNet.Server.Controllers
     {
         private readonly string _connectionString;
 
-        // This grabs the connection string you set up earlier in appsettings.json
         public DepartmentController(IConfiguration configuration)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
@@ -45,8 +44,29 @@ namespace SkillNet.Server.Controllers
                     }
                 }
             }
-
             return Ok(departments);
+        }
+
+        // POST: api/department
+        [HttpPost]
+        public IActionResult CreateDepartment([FromBody] Department dept)
+        {
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string query = @"INSERT INTO Department (OrganizationId, DepartmentName, Description) 
+                                 VALUES (@OrgId, @Name, @Desc)";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@OrgId", dept.OrganizationId);
+                    cmd.Parameters.AddWithValue("@Name", dept.DepartmentName);
+                    cmd.Parameters.AddWithValue("@Desc", (object?)dept.Description ?? DBNull.Value);
+
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            return Ok(new { message = "Department created successfully" });
         }
     }
 }
