@@ -1,27 +1,16 @@
-﻿namespace SkillNet.Server.Models
+﻿namespace SkillNet.Server.DTOs
 {
-    public class InterviewEvaluation
+    public class InterviewResponse
     {
-        public int EvaluationId { get; set; }
-
         public int InterviewId { get; set; }
-
-        public int InterviewerId { get; set; }
-
-        public int TechnicalScore { get; set; }
-
-        public int CommunicationScore { get; set; }
-
-        public int ProblemSolvingScore { get; set; }
-
-        public int CultureFitScore { get; set; }
-
-        public int OverallScore { get; set; }
-
-        public string Recommendation { get; set; } = string.Empty;
-
-        public string Comments { get; set; } = string.Empty;
-
-        public DateTime SubmittedAt { get; set; }
+        public int ApplicationId { get; set; }
+        public string? InterviewType { get; set; }
+        public int InterviewRound { get; set; }
+        public DateTime ScheduledDate { get; set; }
+        public int Duration { get; set; }
+        public string? Location { get; set; }
+        public string? MeetingLink { get; set; }
+        public string? Status { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

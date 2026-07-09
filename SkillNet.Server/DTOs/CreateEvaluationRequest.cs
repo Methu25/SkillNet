@@ -2,6 +2,7 @@
 
 public class CreateEvaluationRequest
 {
+    public int InterviewerId { get; set; }
     public int TechnicalScore { get; set; }
 
     public int CommunicationScore { get; set; }

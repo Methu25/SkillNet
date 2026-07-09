@@ -2,6 +2,11 @@
 
 public class EvaluationResponse
 {
+    public int InterviewerId { get; set; }
+
+    public int OverallScore { get; set; }
+
+    public DateTime SubmittedAt { get; set; }
     public int EvaluationId { get; set; }
 
     public int InterviewId { get; set; }
