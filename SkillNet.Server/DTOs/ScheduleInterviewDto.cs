@@ -1,6 +1,6 @@
 ﻿namespace SkillNet.Server.DTOs
 {
-    public class ScheduleInterviewDto
+    public class ScheduleInterviewRequest
     {
         public DateTime ScheduledDate { get; set; }
 
