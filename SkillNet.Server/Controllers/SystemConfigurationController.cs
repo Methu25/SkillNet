@@ -15,16 +15,15 @@ namespace SkillNet.Server.Controllers
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
         }
 
-        // GET: api/systemconfiguration
         [HttpGet]
-        public IActionResult GetConfigurations()
+        public IActionResult GetConfigs()
         {
             List<SystemConfiguration> configs = new List<SystemConfiguration>();
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = "SELECT ConfigKey, ConfigValue, Description, UpdatedAt FROM SystemConfiguration";
-
+                // Using brackets [ ] because Key and Value are reserved SQL words
+                string query = "SELECT [Key], [Value], Description FROM SystemConfiguration";
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     con.Open();
@@ -34,10 +33,9 @@ namespace SkillNet.Server.Controllers
                         {
                             configs.Add(new SystemConfiguration
                             {
-                                ConfigKey = reader["ConfigKey"].ToString() ?? "",
-                                ConfigValue = reader["ConfigValue"].ToString() ?? "",
-                                Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
-                                UpdatedAt = Convert.ToDateTime(reader["UpdatedAt"])
+                                Key = reader["Key"].ToString() ?? "",
+                                Value = reader["Value"].ToString() ?? "",
+                                Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null
                             });
                         }
                     }

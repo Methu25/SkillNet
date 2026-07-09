@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function SystemSettings() {
     const [configs, setConfigs] = useState([]);
@@ -45,13 +45,13 @@ export default function SystemSettings() {
                 ) : (
                     <form>
                         {configs.map((config) => (
-                            <div key={config.configKey || config.ConfigKey} style={{ marginBottom: '20px' }}>
+                            <div key={config.key || config.Key} style={{ marginBottom: '20px' }}>
                                 <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
-                                    {config.configKey || config.ConfigKey}
+                                    {config.key || config.Key}
                                 </label>
                                 <input
                                     type="text"
-                                    defaultValue={config.configValue || config.ConfigValue}
+                                    defaultValue={config.value || config.Value}
                                     style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '14px' }}
                                 />
                                 <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
