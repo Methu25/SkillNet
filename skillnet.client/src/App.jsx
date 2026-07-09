@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from './components/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
+import OrganizationManagement from './pages/OrganizationManagement';
 import './App.css';
 
 function App() {
@@ -22,6 +23,8 @@ function App() {
                 return <div><h2>Audit Logs</h2><p>Screen coming soon...</p></div>;
             default:
                 return <Dashboard />;
+            case 'organizations':
+                return <OrganizationManagement />;
         }
     };
 
