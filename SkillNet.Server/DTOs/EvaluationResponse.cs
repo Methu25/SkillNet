@@ -1,7 +1,11 @@
 ﻿namespace SkillNet.Server.DTOs;
 
-public class CreateEvaluationRequest
+public class EvaluationResponse
 {
+    public int EvaluationId { get; set; }
+
+    public int InterviewId { get; set; }
+
     public int TechnicalScore { get; set; }
 
     public int CommunicationScore { get; set; }

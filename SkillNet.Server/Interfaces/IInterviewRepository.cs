@@ -13,5 +13,8 @@ namespace SkillNet.Server.Interfaces
         Task<bool> ScheduleInterviewAsync(
             int interviewId,
             ScheduleInterviewDto dto);
+        Task<InterviewEvaluation> CreateEvaluationAsync(int interviewId, CreateEvaluationRequest request);
+        Task<InterviewEvaluation?> GetEvaluationAsync(int interviewId);
+        Task<InterviewEvaluation?> UpdateEvaluationAsync(int interviewId, CreateEvaluationRequest request);
     }
 }

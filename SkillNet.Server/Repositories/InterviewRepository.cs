@@ -1,54 +1,25 @@
-using SkillNet.Server.Interfaces;
-using SkillNet.Server.Models;
-using SkillNet.Server.DTOs;
-
-namespace SkillNet.Server.Repositories
+namespace SkillNet.Server.DTOs
 {
-    public class InterviewRepository : IInterviewRepository
+    public class InterviewResponse
     {
-        public Task<IEnumerable<Interview>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
+        public int InterviewId { get; set; }
 
-        public Task<Interview?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
+        public int ApplicationId { get; set; }
 
-        public Task<Interview> CreateAsync(Interview interview)
-        {
-            throw new NotImplementedException();
-        }
+        public string InterviewType { get; set; } = string.Empty;
 
-        public Task<Interview?> UpdateAsync(Interview interview)
-        {
-            throw new NotImplementedException();
-        }
+        public int InterviewRound { get; set; }
 
-        public Task<bool> DeleteAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
+        public DateTime ScheduledDate { get; set; }
 
-        public async Task<bool> ScheduleInterviewAsync(
-    int interviewId,
-    ScheduleInterviewDto dto)
-        {
-            var interview = await GetByIdAsync(interviewId);
+        public int Duration { get; set; }
 
-            if (interview == null)
-                return false;
+        public string Location { get; set; } = string.Empty;
 
-            interview.ScheduledDate = dto.ScheduledDate;
-            interview.Duration = dto.Duration;
-            interview.Location = dto.Location;
-            interview.MeetingLink = dto.MeetingLink;
-            interview.Status = "Scheduled";
+        public string? MeetingLink { get; set; }
 
-            await UpdateAsync(interview);
+        public string Status { get; set; } = string.Empty;
 
-            return true;
-        }
+        public DateTime CreatedAt { get; set; }
     }
 }
