@@ -1,51 +1,34 @@
-import { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import AdminLayout from './components/AdminLayout';
+import Dashboard from './pages/Dashboard';
 import './App.css';
 
 function App() {
-    const [forecasts, setForecasts] = useState();
+    const [currentTab, setCurrentTab] = useState('dashboard');
 
-    useEffect(() => {
-        populateWeatherData();
-    }, []);
-
-    const contents = forecasts === undefined
-        ? <p><em>Loading... Please refresh once the ASP.NET backend has started. See <a href="https://aka.ms/jspsintegrationreact">https://aka.ms/jspsintegrationreact</a> for more details.</em></p>
-        : <table className="table table-striped" aria-labelledby="tableLabel">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Temp. (C)</th>
-                    <th>Temp. (F)</th>
-                    <th>Summary</th>
-                </tr>
-            </thead>
-            <tbody>
-                {forecasts.map(forecast =>
-                    <tr key={forecast.date}>
-                        <td>{forecast.date}</td>
-                        <td>{forecast.temperatureC}</td>
-                        <td>{forecast.temperatureF}</td>
-                        <td>{forecast.summary}</td>
-                    </tr>
-                )}
-            </tbody>
-        </table>;
+    // This function switches the screen based on what you click in the sidebar
+    const renderContent = () => {
+        switch (currentTab) {
+            case 'dashboard':
+                return <Dashboard />;
+            case 'users':
+                return <div><h2>User Management</h2><p>Screen coming next...</p></div>;
+            case 'organizations':
+                return <div><h2>Organizations & Departments</h2><p>Screen coming soon...</p></div>;
+            case 'configs':
+                return <div><h2>System Settings</h2><p>Screen coming soon...</p></div>;
+            case 'logs':
+                return <div><h2>Audit Logs</h2><p>Screen coming soon...</p></div>;
+            default:
+                return <Dashboard />;
+        }
+    };
 
     return (
-        <div>
-            <h1 id="tableLabel">Weather forecast</h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            {contents}
-        </div>
+        <AdminLayout currentTab={currentTab} setCurrentTab={setCurrentTab}>
+            {renderContent()}
+        </AdminLayout>
     );
-    
-    async function populateWeatherData() {
-        const response = await fetch('weatherforecast');
-        if (response.ok) {
-            const data = await response.json();
-            setForecasts(data);
-        }
-    }
 }
 
 export default App;
