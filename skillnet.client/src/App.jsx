@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from './components/AdminLayout';
 import Dashboard from './pages/Dashboard';
+import UserManagement from './pages/UserManagement';
 import './App.css';
 
 function App() {
@@ -12,7 +13,7 @@ function App() {
             case 'dashboard':
                 return <Dashboard />;
             case 'users':
-                return <div><h2>User Management</h2><p>Screen coming next...</p></div>;
+                return <UserManagement />;
             case 'organizations':
                 return <div><h2>Organizations & Departments</h2><p>Screen coming soon...</p></div>;
             case 'configs':
