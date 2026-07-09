@@ -3,6 +3,7 @@ import AdminLayout from './components/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import OrganizationManagement from './pages/OrganizationManagement';
+import SystemSettings from './pages/SystemSettings';
 import './App.css';
 
 function App() {
@@ -25,6 +26,8 @@ function App() {
                 return <Dashboard />;
             case 'organizations':
                 return <OrganizationManagement />;
+            case 'configs':
+                return <SystemSettings />;
         }
     };
 
