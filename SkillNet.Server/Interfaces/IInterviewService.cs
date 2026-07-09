@@ -1,26 +1,33 @@
-﻿using SkillNet.Server.Models;
-using SkillNet.Server.DTOs;
+﻿using SkillNet.Server.DTOs;
 
 namespace SkillNet.Server.Interfaces
 {
     public interface IInterviewService
     {
-        Task<IEnumerable<Interview>> GetAllAsync();
+        Task<IEnumerable<InterviewResponse>> GetAllInterviewsAsync();
 
-        Task<Interview?> GetByIdAsync(int id);
+        Task<InterviewResponse?> GetInterviewByIdAsync(int id);
 
-        Task<Interview> CreateAsync(Interview interview);
+        Task<InterviewResponse> CreateInterviewAsync(CreateInterviewRequest request);
 
-        Task<Interview?> UpdateAsync(Interview interview);
+        Task<InterviewResponse?> UpdateInterviewAsync(int id, UpdateInterviewRequest request);
 
-        Task<bool> DeleteAsync(int id);
+        Task<bool> DeleteInterviewAsync(int id);
 
-        Task<bool> ScheduleInterviewAsync(
-            int interviewId,
-            ScheduleInterviewDto dto);
+        Task<InterviewResponse?> ScheduleInterviewAsync(int id, ScheduleInterviewRequest request);
 
-        Task<InterviewEvaluation> CreateEvaluationAsync(int interviewId, CreateEvaluationRequest request);
-        Task<InterviewEvaluation?> GetEvaluationAsync(int interviewId);
-        Task<InterviewEvaluation?> UpdateEvaluationAsync(int interviewId, CreateEvaluationRequest request);
+        Task<InterviewResponse?> RescheduleInterviewAsync(int id, ScheduleInterviewRequest request);
+
+        Task<InterviewResponse?> CancelInterviewAsync(int id);
+
+        Task<EvaluationResponse> CreateEvaluationAsync(int interviewId, CreateEvaluationRequest request);
+
+        Task<EvaluationResponse?> GetEvaluationByInterviewIdAsync(int interviewId);
+
+        Task<EvaluationResponse?> UpdateEvaluationAsync(int interviewId, CreateEvaluationRequest request);
+
+        Task<IEnumerable<InterviewResponse>> GetUpcomingInterviewsAsync();
+
+        Task<HiringDashboardResponse> GetHiringDashboardAsync();
     }
 }
