@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import UserManagement from './pages/UserManagement';
 import OrganizationManagement from './pages/OrganizationManagement';
 import SystemSettings from './pages/SystemSettings';
+import AuditLogs from './pages/AuditLogs';
 import './App.css';
 
 function App() {
@@ -28,6 +29,8 @@ function App() {
                 return <OrganizationManagement />;
             case 'configs':
                 return <SystemSettings />;
+            case 'logs':
+                return <AuditLogs />;
         }
     };
 
