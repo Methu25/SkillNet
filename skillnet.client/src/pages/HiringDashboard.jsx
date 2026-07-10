@@ -1,59 +1,200 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useEffect } from 'react';
+import DashboardStats from '../components/DashboardStats';
+import TodaysInterviews from '../components/TodaysInterviews';
+import PendingFeedback from '../components/PendingFeedback';
+import UpcomingInterviews from '../components/UpcomingInterviews';
+import CompletedInterviews from '../components/CompletedInterviews';
+import CandidateEvaluations from '../components/CandidateEvaluations';
 
-const HiringDashboard = () => {
-    const { user, logout } = useAuth();
-    const [testResponse, setTestResponse] = useState('');
+export default function HiringDashboard() {
+    const [interviews, setInterviews] = useState([]);
+    const [stats, setStats] = useState({});
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const testEndpoint = async (url) => {
-        setTestResponse('Calling API...');
+    // State to track which interview we are currently evaluating
+    const [selectedInterview, setSelectedInterview] = useState(null);
+
+    // State to track evaluation form inputs
+    const [evaluationForm, setEvaluationForm] = useState({
+        technicalScore: '',
+        communicationScore: '',
+        problemSolvingScore: '',
+        cultureFitScore: '',
+        recommendation: '',
+        comments: ''
+    });
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                // Fetch dashboard stats
+                const statsResponse = await fetch('/api/hiring/dashboard');
+                if (!statsResponse.ok) throw new Error(`Failed to fetch stats: ${statsResponse.status}`);
+                const statsData = await statsResponse.json();
+                console.log('Dashboard Stats:', statsData);
+                setStats(statsData);
+
+                // Fetch today's and completed interviews
+                const interviewsResponse = await fetch('/api/hiring/interviews');
+                if (!interviewsResponse.ok) throw new Error(`Failed to fetch interviews: ${interviewsResponse.status}`);
+                const interviewsData = await interviewsResponse.json();
+                console.log('Interviews Data:', interviewsData);
+
+                // Fetch upcoming interviews
+                const upcomingResponse = await fetch('/api/hiring/upcoming');
+                if (!upcomingResponse.ok) throw new Error(`Failed to fetch upcoming: ${upcomingResponse.status}`);
+                const upcomingData = await upcomingResponse.json();
+                console.log('Upcoming Interviews Data:', upcomingData);
+
+                // Combine all interviews from both endpoints
+                const allInterviews = [...(interviewsData || []), ...(upcomingData || [])];
+                setInterviews(allInterviews);
+
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                setError(error.message || 'Failed to load dashboard data');
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    // NEW: Function to handle form submission
+    const handleEvaluationSubmit = async (e) => {
+        e.preventDefault();
+
+        // Create the JSON payload
+        const payload = {
+            interviewId: selectedInterview.id,
+            candidateName: selectedInterview.candidateName,
+            evaluations: {
+                technicalScore: parseInt(evaluationForm.technicalScore),
+                communicationScore: parseInt(evaluationForm.communicationScore),
+                problemSolvingScore: parseInt(evaluationForm.problemSolvingScore),
+                cultureFitScore: parseInt(evaluationForm.cultureFitScore)
+            },
+            recommendation: evaluationForm.recommendation,
+            comments: evaluationForm.comments
+        };
+
+        // Log the JSON payload
+        console.log('Evaluation Submission Payload:', payload);
+
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(url, {
+            // POST request to backend API
+            const response = await fetch(`/api/interviews/${selectedInterview.id}/evaluation`, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
             });
-            const data = await response.json();
-            setTestResponse(`[Status: ${response.status}] ${JSON.stringify(data)}`);
-        } catch (err) {
-            setTestResponse(`Error: ${err.message}`);
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Backend Response:', result);
+                alert("Evaluation submitted successfully! Returning to dashboard.");
+                setSelectedInterview(null); // Go back to dashboard
+
+                // Reset form
+                setEvaluationForm({
+                    technicalScore: '',
+                    communicationScore: '',
+                    problemSolvingScore: '',
+                    cultureFitScore: '',
+                    recommendation: '',
+                    comments: ''
+                });
+            } else {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Error submitting evaluation:', error);
+            alert(`Error submitting evaluation: ${error.message}`);
         }
     };
 
+    // NEW: Function to handle form input changes
+    const handleEvaluationInputChange = (e) => {
+        const { name, value } = e.target;
+        setEvaluationForm(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    if (loading) return <div>Loading Dashboard...</div>;
+    if (error) {
+        return (
+            <div style={{ padding: '20px', color: 'red' }}>
+                <h2>Connection Error</h2>
+                <p>{error}</p>
+                <button onClick={() => window.location.reload()}>Retry</button>
+            </div>
+        );
+    }
+
+    // --- VIEW 1: THE EVALUATION SCREEN ---
+    // If an interview is selected, show the CandidateEvaluations component
+    if (selectedInterview) {
+        return (
+            <CandidateEvaluations
+                selectedInterview={selectedInterview}
+                evaluationForm={evaluationForm}
+                onInputChange={handleEvaluationInputChange}
+                onSubmit={handleEvaluationSubmit}
+                onBack={() => setSelectedInterview(null)}
+            />
+        );
+    }
+
+    // --- VIEW 2: THE MAIN DASHBOARD ---
     return (
-        <div style={{ maxWidth: '600px', margin: '40px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-            <h1 style={{ color: '#28a745' }}>Hiring Manager Dashboard 📋</h1>
-            <p>Welcome, Hiring Manager!</p>
-            
-            <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '4px', marginBottom: '20px' }}>
-                <h3>Profile Information</h3>
-                <p><strong>Email:</strong> {user?.email}</p>
-                <p><strong>Name:</strong> {user?.firstName} {user?.lastName}</p>
-                <p><strong>Phone:</strong> {user?.phone || 'N/A'}</p>
-                <p><strong>Roles:</strong> {user?.roles?.join(', ')}</p>
-                <p><strong>Status:</strong> {user?.status}</p>
-            </div>
+        <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+            <h1>Hiring Manager Dashboard</h1>
 
-            <div style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '4px', marginBottom: '20px' }}>
-                <h3>Backend RBAC Testing Console</h3>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                    <button onClick={() => testEndpoint('/api/TestSecure/all-users')} style={{ padding: '8px 12px' }}>Test All Users</button>
-                    <button onClick={() => testEndpoint('/api/TestSecure/admin-only')} style={{ padding: '8px 12px' }}>Test Admin Only</button>
-                    <button onClick={() => testEndpoint('/api/TestSecure/candidate-only')} style={{ padding: '8px 12px' }}>Test Candidate Only</button>
+            {/* Dashboard Stats */}
+            <DashboardStats stats={stats} />
+
+            {/* Two-Column Interview Lists */}
+            <div style={{ display: 'flex', gap: '20px' }}>
+                <div style={{ flex: 1 }}>
+                    <TodaysInterviews 
+                        interviews={interviews} 
+                        onSelectInterview={setSelectedInterview}
+                    />
                 </div>
-                {testResponse && (
-                    <pre style={{ backgroundColor: '#333', color: '#fff', padding: '10px', borderRadius: '4px', overflowX: 'auto', fontSize: '12px' }}>
-                        {testResponse}
-                    </pre>
-                )}
+
+                <div style={{ flex: 1 }}>
+                    <PendingFeedback 
+                        interviews={interviews} 
+                        onSelectInterview={setSelectedInterview}
+                    />
+                </div>
             </div>
 
-            <button onClick={logout} style={{ padding: '10px 15px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                Logout
-            </button>
+            {/* Additional Interview Lists */}
+            <div style={{ display: 'flex', gap: '20px', marginTop: '30px' }}>
+                <div style={{ flex: 1 }}>
+                    <UpcomingInterviews 
+                        interviews={interviews} 
+                        onSelectInterview={setSelectedInterview}
+                    />
+                </div>
+
+                <div style={{ flex: 1 }}>
+                    <CompletedInterviews 
+                        interviews={interviews} 
+                        onSelectInterview={setSelectedInterview}
+                    />
+                </div>
+            </div>
         </div>
     );
-};
-
-export default HiringDashboard;
+}

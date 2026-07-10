@@ -124,5 +124,16 @@ namespace SkillNet.Server.Controllers
 
             return Ok(evaluation);
         }
+
+        [HttpPost("{id}/assign")]
+        public async Task<IActionResult> AssignInterviewer(int id, AssignInterviewerRequest request)
+        {
+            var result = await _service.AssignInterviewerAsync(id, request);
+            
+            if (!result)
+                return NotFound();
+
+            return Ok(new { message = "Interviewer assigned successfully" });
+        }
     }
 }

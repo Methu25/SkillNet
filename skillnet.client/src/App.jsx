@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -93,6 +94,15 @@ function App() {
                 </Routes>
             </Router>
         </AuthProvider>
+=======
+import ScheduleInterview from './pages/ScheduleInterview';
+
+function App() {
+    return (
+        <div>
+            <ScheduleInterview />
+        </div>
+>>>>>>> Stashed changes
     );
 }
 
