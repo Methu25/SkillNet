@@ -48,6 +48,8 @@ builder.Services.AddAuthentication(options =>
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddScoped<SkillNet.Server.Interfaces.IInterviewRepository, SkillNet.Server.Repositories.InterviewRepository>();
+builder.Services.AddScoped<SkillNet.Server.Interfaces.IInterviewService, SkillNet.Server.Services.InterviewService>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
