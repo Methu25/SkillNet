@@ -1,10 +1,12 @@
-namespace SkillNet.Server.Models
+namespace SkillNet.Server.models
 {
     public class User
     {
-        public int UserID { get; set; }
-        public string Email { get; set; } = string.Empty;
-        public string PasswordHash { get; set; } = string.Empty;
-        public int RoleID { get; set; }
+        public int UserId { get; set; }
+        public string? Username { get; set; }
+        public string? Email { get; set; }
+        public string? PasswordHash { get; set; }
+        public int RoleId { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

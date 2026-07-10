@@ -53,26 +53,27 @@ namespace SkillNet.Server.Controllers
         [HttpPost]
         public IActionResult CreateOrganization([FromBody] Organization org)
         {
+            string query = @"INSERT INTO Organization (OrganizationName, Industry, Website, Logo, Address, CreatedAt) 
+                     VALUES (@Name, @Industry, @Website, @Logo, @Address, @CreatedAt)";
+
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                // Using parameters to prevent SQL injection!
-                string query = @"INSERT INTO Organization (OrganizationName, Industry, Website, Logo, Address) 
-                                 VALUES (@Name, @Industry, @Website, @Logo, @Address)";
-
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
-                    cmd.Parameters.AddWithValue("@Name", org.OrganizationName);
-                    cmd.Parameters.AddWithValue("@Industry", (object?)org.Industry ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Website", (object?)org.Website ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Logo", (object?)org.Logo ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Address", (object?)org.Address ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Name", org.OrganizationName ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Industry", org.Industry ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Website", org.Website ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Logo", org.Logo ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Address", org.Address ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
 
                     con.Open();
                     cmd.ExecuteNonQuery();
                 }
             }
-            return Ok(new { message = "Organization created successfully" });
+            return Ok(new { message = "Organization created successfully!" });
         }
+
         // PUT: api/organization/{id}
         [HttpPut("{id}")]
         public IActionResult UpdateOrganization(int id, [FromBody] Organization org)
@@ -104,19 +105,24 @@ namespace SkillNet.Server.Controllers
         [HttpDelete("{id}")]
         public IActionResult DeleteOrganization(int id)
         {
-            using (SqlConnection con = new SqlConnection(_connectionString))
+            try
             {
                 string query = "DELETE FROM Organization WHERE OrganizationId = @Id";
-
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                using (SqlConnection con = new SqlConnection(_connectionString))
                 {
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    con.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
-                    if (rowsAffected == 0) return NotFound(new { message = "Organization not found" });
+                    using (SqlCommand cmd = new SqlCommand(query, con))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", id);
+                        con.Open();
+                        cmd.ExecuteNonQuery();
+                    }
                 }
+                return Ok(new { message = "Organization deleted successfully!" });
             }
-            return Ok(new { message = "Organization deleted successfully" });
+            catch (SqlException ex) when (ex.Number == 547) // Catches Foreign Key conflicts
+            {
+                return BadRequest(new { message = "Cannot delete: Organization has linked departments or users." });
+            }
         }
     }
 }

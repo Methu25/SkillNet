@@ -29,7 +29,7 @@ namespace SkillNet.Server.Controllers
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
                 // Base query with 1=1 to easily append dynamic AND conditions
-                string query = "SELECT LogId, UserId, Action, Details, IpAddress, Timestamp FROM AuditLog WHERE 1=1";
+                string query = "SELECT AuditLogId, UserId, Action, Entity, EntityId, Timestamp, IpAddress FROM AuditLog WHERE 1=1";
 
                 if (userId.HasValue) query += " AND UserId = @UserId";
                 if (!string.IsNullOrEmpty(action)) query += " AND Action LIKE @Action";
@@ -52,10 +52,9 @@ namespace SkillNet.Server.Controllers
                         {
                             logs.Add(new AuditLog
                             {
-                                LogId = Convert.ToInt32(reader["LogId"]),
+                                LogId = Convert.ToInt32(reader["AuditLogId"]),
                                 UserId = reader["UserId"] != DBNull.Value ? Convert.ToInt32(reader["UserId"]) : null,
                                 Action = reader["Action"].ToString() ?? "",
-                                Details = reader["Details"] != DBNull.Value ? reader["Details"].ToString() : null,
                                 IpAddress = reader["IpAddress"] != DBNull.Value ? reader["IpAddress"].ToString() : null,
                                 Timestamp = Convert.ToDateTime(reader["Timestamp"])
                             });
