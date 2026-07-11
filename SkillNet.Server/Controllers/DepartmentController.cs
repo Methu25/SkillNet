@@ -1,29 +1,35 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SkillNet.Server.models;
+using SkillNet.Server.Services;
 
 namespace SkillNet.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // [Authorize(Roles = "Admin")] // Temporarily disabled for frontend testing
     public class DepartmentController : ControllerBase
     {
         private readonly string _connectionString;
+        private readonly IAuditLogService _auditLogService;
 
-        public DepartmentController(IConfiguration configuration)
+        public DepartmentController(IConfiguration configuration, IAuditLogService auditLogService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+            _auditLogService = auditLogService;
         }
 
         // GET: api/department
         [HttpGet]
         public IActionResult GetDepartments()
         {
-            List<Department> departments = new List<Department>();
+            List<Department> depts = new List<Department>();
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = "SELECT DepartmentId, OrganizationId, DepartmentName, Description, CreatedAt FROM Department";
+                // Updated to match your exact columns
+                string query = "SELECT DepartmentId, OrganizationId, DepartmentName FROM Department";
 
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
@@ -32,84 +38,87 @@ namespace SkillNet.Server.Controllers
                     {
                         while (reader.Read())
                         {
-                            departments.Add(new Department
+                            depts.Add(new Department
                             {
                                 DepartmentId = Convert.ToInt32(reader["DepartmentId"]),
                                 OrganizationId = Convert.ToInt32(reader["OrganizationId"]),
-                                DepartmentName = reader["DepartmentName"].ToString() ?? "",
-                                Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
-                                CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
+                                DepartmentName = reader["DepartmentName"].ToString() ?? ""
                             });
                         }
                     }
                 }
             }
-            return Ok(departments);
+            return Ok(depts);
         }
 
         // POST: api/department
         [HttpPost]
-        public IActionResult CreateDepartment([FromBody] Department dept)
+        public async Task<IActionResult> CreateDepartment([FromBody] Department dept)
         {
+            string query = @"INSERT INTO Department (OrganizationId, DepartmentName) 
+                             VALUES (@OrganizationId, @DepartmentName)";
+
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = @"INSERT INTO Department (OrganizationId, DepartmentName, Description) 
-                                 VALUES (@OrgId, @Name, @Desc)";
-
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
-                    cmd.Parameters.AddWithValue("@OrgId", dept.OrganizationId);
-                    cmd.Parameters.AddWithValue("@Name", dept.DepartmentName);
-                    cmd.Parameters.AddWithValue("@Desc", (object?)dept.Description ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@OrganizationId", dept.OrganizationId);
+                    cmd.Parameters.AddWithValue("@DepartmentName", dept.DepartmentName ?? (object)DBNull.Value);
 
                     con.Open();
                     cmd.ExecuteNonQuery();
                 }
             }
-            return Ok(new { message = "Department created successfully" });
+            
+            await _auditLogService.LogActionAsync("Create Department", "Department", null, null, dept.DepartmentName);
+            
+            return Ok(new { message = "Department created successfully!" });
         }
-        // PUT: api/department/{id}
         [HttpPut("{id}")]
-        public IActionResult UpdateDepartment(int id, [FromBody] Department dept)
+        public async Task<IActionResult> UpdateDepartment(int id, [FromBody] Department dept)
         {
+            string query = "UPDATE Department SET DepartmentName = @Name, OrganizationId = @OrgId WHERE DepartmentId = @Id";
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = @"UPDATE Department 
-                                 SET OrganizationId = @OrgId, DepartmentName = @Name, Description = @Desc
-                                 WHERE DepartmentId = @Id";
-
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.Parameters.AddWithValue("@Id", id);
+                    cmd.Parameters.AddWithValue("@Name", dept.DepartmentName ?? (object)DBNull.Value);
                     cmd.Parameters.AddWithValue("@OrgId", dept.OrganizationId);
-                    cmd.Parameters.AddWithValue("@Name", dept.DepartmentName);
-                    cmd.Parameters.AddWithValue("@Desc", (object?)dept.Description ?? DBNull.Value);
-
                     con.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
-                    if (rowsAffected == 0) return NotFound(new { message = "Department not found" });
+                    cmd.ExecuteNonQuery();
                 }
             }
-            return Ok(new { message = "Department updated successfully" });
+            
+            await _auditLogService.LogActionAsync("Update Department", "Department", id, null, dept.DepartmentName);
+            
+            return Ok(new { message = "Department updated successfully!" });
         }
 
-        // DELETE: api/department/{id}
         [HttpDelete("{id}")]
-        public IActionResult DeleteDepartment(int id)
+        public async Task<IActionResult> DeleteDepartment(int id)
         {
-            using (SqlConnection con = new SqlConnection(_connectionString))
+            try
             {
                 string query = "DELETE FROM Department WHERE DepartmentId = @Id";
-
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                using (SqlConnection con = new SqlConnection(_connectionString))
                 {
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    con.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
-                    if (rowsAffected == 0) return NotFound(new { message = "Department not found" });
+                    using (SqlCommand cmd = new SqlCommand(query, con))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", id);
+                        con.Open();
+                        cmd.ExecuteNonQuery();
+                    }
                 }
+                
+                await _auditLogService.LogActionAsync("Delete Department", "Department", id, null, null);
+                
+                return Ok(new { message = "Department deleted successfully!" });
             }
-            return Ok(new { message = "Department deleted successfully" });
+            catch (SqlException ex) when (ex.Number == 547)
+            {
+                return BadRequest(new { message = "Cannot delete: Department has linked employees." });
+            }
         }
     }
 }
