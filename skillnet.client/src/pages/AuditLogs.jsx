@@ -40,7 +40,7 @@ export default function AuditLogs() {
 
     return (
         <div>
-            <h2 style={{ margin: '0 0 20px 0' }}>System Audit Logs</h2>
+            <h2 style={{ margin: '0 0 20px 0', color: '#000' }}>System Audit Logs</h2>
 
             {/* Filter Bar */}
             <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
