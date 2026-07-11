@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SkillNet.Server.models;
@@ -6,6 +7,7 @@ namespace SkillNet.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // [Authorize(Roles = "Admin")] // Temporarily disabled for frontend testing
     public class AuditLogController : ControllerBase
     {
         private readonly string _connectionString;
@@ -29,7 +31,7 @@ namespace SkillNet.Server.Controllers
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
                 // Base query with 1=1 to easily append dynamic AND conditions
-                string query = "SELECT AuditLogId, UserId, Action, Entity, EntityId, Timestamp, IpAddress FROM AuditLog WHERE 1=1";
+                string query = "SELECT AuditLogId, UserId, Action, Entity, EntityId, OldValue, NewValue, Timestamp, IPAddress FROM AuditLog WHERE 1=1";
 
                 if (userId.HasValue) query += " AND UserId = @UserId";
                 if (!string.IsNullOrEmpty(action)) query += " AND Action LIKE @Action";
@@ -52,11 +54,15 @@ namespace SkillNet.Server.Controllers
                         {
                             logs.Add(new AuditLog
                             {
-                                LogId = Convert.ToInt32(reader["AuditLogId"]),
+                                AuditLogId = Convert.ToInt32(reader["AuditLogId"]),
                                 UserId = reader["UserId"] != DBNull.Value ? Convert.ToInt32(reader["UserId"]) : null,
                                 Action = reader["Action"].ToString() ?? "",
-                                IpAddress = reader["IpAddress"] != DBNull.Value ? reader["IpAddress"].ToString() : null,
-                                Timestamp = Convert.ToDateTime(reader["Timestamp"])
+                                Entity = reader["Entity"] != DBNull.Value ? reader["Entity"].ToString() : null,
+                                EntityId = reader["EntityId"] != DBNull.Value ? Convert.ToInt32(reader["EntityId"]) : null,
+                                OldValue = reader["OldValue"] != DBNull.Value ? reader["OldValue"].ToString() : null,
+                                NewValue = reader["NewValue"] != DBNull.Value ? reader["NewValue"].ToString() : null,
+                                Timestamp = Convert.ToDateTime(reader["Timestamp"]),
+                                IPAddress = reader["IPAddress"] != DBNull.Value ? reader["IPAddress"].ToString() : null
                             });
                         }
                     }

@@ -32,7 +32,7 @@ namespace SkillNet.Server.Controllers
                 conn.Open();
 
                 // Find Role ID based on name string
-                string roleQuery = "SELECT RoleID FROM Roles WHERE RoleName = @RoleName";
+                string roleQuery = "SELECT RoleId FROM UserRole WHERE RoleName = @RoleName";
                 int roleId = 0;
                 using (SqlCommand cmd = new SqlCommand(roleQuery, conn))
                 {
@@ -42,13 +42,15 @@ namespace SkillNet.Server.Controllers
                     roleId = (int)result;
                 }
 
-                // Insert new user record
-                string insertQuery = "INSERT INTO Users (Email, PasswordHash, RoleID) VALUES (@Email, @PasswordHash, @RoleID)";
+                // Insert new user record. Providing a default username from email.
+                string username = request.Email.Split('@')[0];
+                string insertQuery = "INSERT INTO Users (Username, Email, PasswordHash, RoleId) VALUES (@Username, @Email, @PasswordHash, @RoleId)";
                 using (SqlCommand cmd = new SqlCommand(insertQuery, conn))
                 {
+                    cmd.Parameters.AddWithValue("@Username", username);
                     cmd.Parameters.AddWithValue("@Email", request.Email);
                     cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
-                    cmd.Parameters.AddWithValue("@RoleID", roleId);
+                    cmd.Parameters.AddWithValue("@RoleId", roleId);
 
                     try { cmd.ExecuteNonQuery(); }
                     catch (SqlException) { return BadRequest("User already exists."); }
@@ -63,8 +65,8 @@ namespace SkillNet.Server.Controllers
             using (SqlConnection conn = new SqlConnection(_connectionString))
             {
                 conn.Open();
-                string query = @"SELECT u.UserID, u.Email, u.PasswordHash, r.RoleName 
-                                 FROM Users u JOIN Roles r ON u.RoleID = r.RoleID 
+                string query = @"SELECT u.UserId, u.Email, u.PasswordHash, r.RoleName 
+                                 FROM Users u JOIN UserRole r ON u.RoleId = r.RoleId 
                                  WHERE u.Email = @Email";
 
                 using (SqlCommand cmd = new SqlCommand(query, conn))
@@ -78,8 +80,9 @@ namespace SkillNet.Server.Controllers
                         if (!PasswordHasher.VerifyPassword(request.Password, dbHash))
                             return Unauthorized("Invalid email or password.");
 
+                        int userId = Convert.ToInt32(reader["UserId"]);
                         string roleName = reader["RoleName"].ToString()!;
-                        string token = GenerateJwtToken(request.Email, roleName);
+                        string token = GenerateJwtToken(userId, request.Email, roleName);
 
                         return Ok(new { Token = token, Role = roleName, Message = "Login successful" });
                     }
@@ -87,9 +90,10 @@ namespace SkillNet.Server.Controllers
             }
         }
 
-        private string GenerateJwtToken(string email, string role)
+        private string GenerateJwtToken(int userId, string email, string role)
         {
             var claims = new[] {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
                 new Claim(ClaimTypes.Name, email),
                 new Claim(ClaimTypes.Role, role)
             };

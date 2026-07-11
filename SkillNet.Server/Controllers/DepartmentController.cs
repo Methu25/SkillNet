@@ -1,18 +1,23 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SkillNet.Server.models;
+using SkillNet.Server.Services;
 
 namespace SkillNet.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // [Authorize(Roles = "Admin")] // Temporarily disabled for frontend testing
     public class DepartmentController : ControllerBase
     {
         private readonly string _connectionString;
+        private readonly IAuditLogService _auditLogService;
 
-        public DepartmentController(IConfiguration configuration)
+        public DepartmentController(IConfiguration configuration, IAuditLogService auditLogService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+            _auditLogService = auditLogService;
         }
 
         // GET: api/department
@@ -48,7 +53,7 @@ namespace SkillNet.Server.Controllers
 
         // POST: api/department
         [HttpPost]
-        public IActionResult CreateDepartment([FromBody] Department dept)
+        public async Task<IActionResult> CreateDepartment([FromBody] Department dept)
         {
             string query = @"INSERT INTO Department (OrganizationId, DepartmentName) 
                              VALUES (@OrganizationId, @DepartmentName)";
@@ -64,10 +69,13 @@ namespace SkillNet.Server.Controllers
                     cmd.ExecuteNonQuery();
                 }
             }
+            
+            await _auditLogService.LogActionAsync("Create Department", "Department", null, null, dept.DepartmentName);
+            
             return Ok(new { message = "Department created successfully!" });
         }
         [HttpPut("{id}")]
-        public IActionResult UpdateDepartment(int id, [FromBody] Department dept)
+        public async Task<IActionResult> UpdateDepartment(int id, [FromBody] Department dept)
         {
             string query = "UPDATE Department SET DepartmentName = @Name, OrganizationId = @OrgId WHERE DepartmentId = @Id";
             using (SqlConnection con = new SqlConnection(_connectionString))
@@ -81,11 +89,14 @@ namespace SkillNet.Server.Controllers
                     cmd.ExecuteNonQuery();
                 }
             }
+            
+            await _auditLogService.LogActionAsync("Update Department", "Department", id, null, dept.DepartmentName);
+            
             return Ok(new { message = "Department updated successfully!" });
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteDepartment(int id)
+        public async Task<IActionResult> DeleteDepartment(int id)
         {
             try
             {
@@ -99,6 +110,9 @@ namespace SkillNet.Server.Controllers
                         cmd.ExecuteNonQuery();
                     }
                 }
+                
+                await _auditLogService.LogActionAsync("Delete Department", "Department", id, null, null);
+                
                 return Ok(new { message = "Department deleted successfully!" });
             }
             catch (SqlException ex) when (ex.Number == 547)

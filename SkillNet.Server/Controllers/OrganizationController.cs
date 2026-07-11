@@ -1,18 +1,23 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SkillNet.Server.models;
+using SkillNet.Server.Services;
 
 namespace SkillNet.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // [Authorize(Roles = "Admin")] // Temporarily disabled for frontend testing
     public class OrganizationController : ControllerBase
     {
         private readonly string _connectionString;
+        private readonly IAuditLogService _auditLogService;
 
-        public OrganizationController(IConfiguration configuration)
+        public OrganizationController(IConfiguration configuration, IAuditLogService auditLogService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+            _auditLogService = auditLogService;
         }
 
         // GET: api/organization
@@ -51,7 +56,7 @@ namespace SkillNet.Server.Controllers
 
         // POST: api/organization
         [HttpPost]
-        public IActionResult CreateOrganization([FromBody] Organization org)
+        public async Task<IActionResult> CreateOrganization([FromBody] Organization org)
         {
             string query = @"INSERT INTO Organization (OrganizationName, Industry, Website, Logo, Address, CreatedAt) 
                      VALUES (@Name, @Industry, @Website, @Logo, @Address, @CreatedAt)";
@@ -68,15 +73,25 @@ namespace SkillNet.Server.Controllers
                     cmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
 
                     con.Open();
-                    cmd.ExecuteNonQuery();
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (SqlException ex) when (ex.Number == 2627)
+                    {
+                        return BadRequest(new { message = "An organization with this name already exists." });
+                    }
                 }
             }
+            
+            await _auditLogService.LogActionAsync("Create Organization", "Organization", null, null, org.OrganizationName);
+            
             return Ok(new { message = "Organization created successfully!" });
         }
 
         // PUT: api/organization/{id}
         [HttpPut("{id}")]
-        public IActionResult UpdateOrganization(int id, [FromBody] Organization org)
+        public async Task<IActionResult> UpdateOrganization(int id, [FromBody] Organization org)
         {
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -98,12 +113,15 @@ namespace SkillNet.Server.Controllers
                     if (rowsAffected == 0) return NotFound(new { message = "Organization not found" });
                 }
             }
+            
+            await _auditLogService.LogActionAsync("Update Organization", "Organization", id, null, org.OrganizationName);
+            
             return Ok(new { message = "Organization updated successfully" });
         }
 
         // DELETE: api/organization/{id}
         [HttpDelete("{id}")]
-        public IActionResult DeleteOrganization(int id)
+        public async Task<IActionResult> DeleteOrganization(int id)
         {
             try
             {
@@ -117,6 +135,9 @@ namespace SkillNet.Server.Controllers
                         cmd.ExecuteNonQuery();
                     }
                 }
+                
+                await _auditLogService.LogActionAsync("Delete Organization", "Organization", id, null, null);
+                
                 return Ok(new { message = "Organization deleted successfully!" });
             }
             catch (SqlException ex) when (ex.Number == 547) // Catches Foreign Key conflicts
