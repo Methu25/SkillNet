@@ -4,6 +4,8 @@ using Microsoft.OpenApi;
 using System.Text;
 
 using SkillNet.Server.Services;
+using SkillNet.Server.Interfaces;
+using SkillNet.Server.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,7 +57,8 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
-
+builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
+builder.Services.AddScoped<IInterviewService, InterviewService>();
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
 // ==========================================

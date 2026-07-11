@@ -93,7 +93,14 @@ namespace SkillNet.Server.Repositories
                 command.Parameters.AddWithValue("@Status", (object?)interview.Status ?? DBNull.Value);
                 command.Parameters.AddWithValue("@CreatedAt", interview.CreatedAt);
 
-                interview.InterviewId = (int)await command.ExecuteScalarAsync();
+                var result = await command.ExecuteScalarAsync();
+
+                if (result == null || result == DBNull.Value)
+                {
+                    throw new InvalidOperationException("Failed to create the interview.");
+                }
+
+                interview.InterviewId = Convert.ToInt32(result);
             }
             return interview;
         }
@@ -368,5 +375,53 @@ namespace SkillNet.Server.Repositories
             }
             return assignments;
         }
+        public async Task<IEnumerable<Interview>> GetTodayInterviewsAsync()
+        {
+            var interviews = new List<Interview>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                // Get interviews where the date is today
+                var command = new SqlCommand("SELECT * FROM Interview WHERE CONVERT(date, ScheduledDate) = CONVERT(date, GETDATE())", connection);
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var interview = MapInterview(reader);
+                        // Mock the missing data for the UI
+                        interview.CandidateName = "Dinuri";
+                        interview.Role = "Frontend Developer";
+                        interviews.Add(interview);
+                    }
+                }
+            }
+            return interviews;
+        }
+
+        public async Task<IEnumerable<Interview>> GetPendingFeedbackAsync()
+        {
+            var interviews = new List<Interview>();
+            using (var connection = new SqlConnection(_connectionString))
+            {
+                await connection.OpenAsync();
+                // Get interviews from the past that are still marked as 'Scheduled'
+                var command = new SqlCommand("SELECT * FROM Interview WHERE ScheduledDate < GETDATE() AND Status = 'Scheduled'", connection);
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        var interview = MapInterview(reader);
+                        // Mock the missing data for the UI
+                        interview.CandidateName = "Bob Jones";
+                        interview.Role = "DevOps Engineer";
+                        interviews.Add(interview);
+                    }
+                }
+            }
+            return interviews;
+        }
+
+        // We will replace your existing GetUpcomingInterviewsAsync with this one to add the mock names
+       
     }
 }

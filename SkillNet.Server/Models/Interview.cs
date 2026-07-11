@@ -21,5 +21,7 @@
         public string? Status { get; set; }
 
         public DateTime CreatedAt { get; set; }
+        public string CandidateName { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
     }
 }
