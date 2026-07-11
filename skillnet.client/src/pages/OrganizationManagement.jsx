@@ -81,7 +81,7 @@ export default function OrganizationManagement() {
 
     return (
         <div>
-            <h2>Organizations & Departments</h2>
+            <h2 style={{ color: '#000' }}>Organizations & Departments</h2>
 
             <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
                 <div style={{ flex: 1, background: '#fff', padding: '20px', borderRadius: '8px', color: '#333' }}>

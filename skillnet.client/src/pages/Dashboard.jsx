@@ -42,7 +42,7 @@ export default function Dashboard() {
 
     return (
         <div>
-            <h2 style={{ marginTop: 0 }}>System Overview</h2>
+            <h2 style={{ marginTop: 0, color: '#000' }}>System Overview</h2>
 
             {/* Statistics Cards */}
             <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px -10px', flexWrap: 'wrap', rowGap: '20px' }}>

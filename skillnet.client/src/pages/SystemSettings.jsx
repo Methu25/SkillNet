@@ -36,7 +36,7 @@ export default function SystemSettings() {
     return (
         <div style={{ maxWidth: '800px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0 }}>System Settings</h2>
+                <h2 style={{ margin: 0, color: '#000' }}>System Settings</h2>
                 <button onClick={handleSave} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
                     Save Changes
                 </button>

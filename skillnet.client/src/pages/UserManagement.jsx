@@ -117,7 +117,7 @@ export default function UserManagement() {
 
     return (
         <div style={{ maxWidth: '800px' }}>
-            <h2>User Management</h2>
+            <h2 style={{ color: '#000' }}>User Management</h2>
 
             <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', marginBottom: '20px', color: '#333' }}>
                 <h3>{editingId ? 'Edit User' : '+ Add New User'}</h3>
