@@ -1,20 +1,19 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using SkillNet.Server.Services;
+using Microsoft.OpenApi;
 using System.Text;
+
+using SkillNet.Server.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ==========================================
-// 1. ADD CORS POLICY
+// 1. CORS POLICY (React Frontend)
 // ==========================================
-// 1. ADD CORS POLICY
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        // 5173 is standard for Vite (the modern VS React template)
-        // 3000 is standard if using older Create React App
         policy.WithOrigins("https://localhost:5173", "http://localhost:5173", "http://localhost:3000")
               .AllowAnyHeader()
               .AllowAnyMethod();
@@ -47,34 +46,59 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Add services to the container.
 builder.Services.AddControllers();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddEndpointsApiExplorer();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// Register Module 1 Custom Services
+builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+
+// ==========================================
+// 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
+// ==========================================
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "SkillNet Recruitment API", Version = "v1" });
+
+    // This adds the "Authorize" padlock button to Swagger UI
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below. Example: 'Bearer 12345abcdef'",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 
 var app = builder.Build();
 
 app.UseDefaultFiles();
 app.MapStaticAssets();
 
-// Configure the HTTP request pipeline.
+// ==========================================
+// 4. ACTIVATE SWAGGER MIDDLEWARE
+// ==========================================
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SkillNet API v1"));
 }
 
 app.UseHttpsRedirection();
 
-// ==========================================
-// 3. ACTIVATE SECURITY MIDDLEWARE (ORDER MATTERS)
-// ==========================================
-app.UseCors("AllowAngularApp"); // CORS must come before Auth
-
-app.UseAuthentication(); // MUST come before Authorization (Verifies WHO you are)
-app.UseAuthorization();  // You already had this! (Verifies WHAT you can do)
+// Activate Security
+app.UseCors("AllowReactApp");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.MapFallbackToFile("/index.html");

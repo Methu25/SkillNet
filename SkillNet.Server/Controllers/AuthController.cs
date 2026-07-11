@@ -1,115 +1,182 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
+using System;
 using System.Security.Claims;
-using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SkillNet.Server.Models;
-using SkillNet.Server.Utilities;
+using SkillNet.Server.Services;
 
 namespace SkillNet.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController(
+        IAuthenticationService authService,
+        IUserService userService,
+        IJwtTokenService jwtTokenService,
+        IPasswordHashService passwordHashService) : ControllerBase
     {
-        private readonly IConfiguration _config;
-        private readonly string _connectionString;
-
-        public AuthController(IConfiguration config)
-        {
-            _config = config;
-            _connectionString = _config.GetConnectionString("DefaultConnection")!;
-        }
+        private readonly IAuthenticationService _authService = authService;
+        private readonly IUserService _userService = userService;
+        private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
+        private readonly IPasswordHashService _passwordHashService = passwordHashService;
 
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterRequest request)
         {
-            string hashedPassword = PasswordHasher.HashPassword(request.Password);
-
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            if (!_authService.Register(request, out string error))
             {
-                conn.Open();
-
-                // Find Role ID based on name string
-                string roleQuery = "SELECT RoleId FROM UserRole WHERE RoleName = @RoleName";
-                int roleId = 0;
-                using (SqlCommand cmd = new SqlCommand(roleQuery, conn))
-                {
-                    cmd.Parameters.AddWithValue("@RoleName", request.RoleName);
-                    var result = cmd.ExecuteScalar();
-                    if (result == null) return BadRequest("Invalid Role Specified.");
-                    roleId = (int)result;
-                }
-
-                // Insert new user record. Providing a default username from email.
-                string username = request.Email.Split('@')[0];
-                string insertQuery = "INSERT INTO Users (Username, Email, PasswordHash, RoleId) VALUES (@Username, @Email, @PasswordHash, @RoleId)";
-                using (SqlCommand cmd = new SqlCommand(insertQuery, conn))
-                {
-                    cmd.Parameters.AddWithValue("@Username", username);
-                    cmd.Parameters.AddWithValue("@Email", request.Email);
-                    cmd.Parameters.AddWithValue("@PasswordHash", hashedPassword);
-                    cmd.Parameters.AddWithValue("@RoleId", roleId);
-
-                    try { cmd.ExecuteNonQuery(); }
-                    catch (SqlException) { return BadRequest("User already exists."); }
-                }
+                return BadRequest(new { Message = error });
             }
-            return Ok(new { message = "Registration successful!" });
+
+            return Ok(new { Message = "Registration successful!" });
         }
 
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
-            using (SqlConnection conn = new SqlConnection(_connectionString))
+            var response = _authService.Login(request, out string error);
+            if (response == null)
             {
-                conn.Open();
-                string query = @"SELECT u.UserId, u.Email, u.PasswordHash, r.RoleName 
-                                 FROM Users u JOIN UserRole r ON u.RoleId = r.RoleId 
-                                 WHERE u.Email = @Email";
-
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@Email", request.Email);
-                    using (SqlDataReader reader = cmd.ExecuteReader())
-                    {
-                        if (!reader.Read()) return Unauthorized("Invalid email or password.");
-
-                        string dbHash = reader["PasswordHash"].ToString()!;
-                        if (!PasswordHasher.VerifyPassword(request.Password, dbHash))
-                            return Unauthorized("Invalid email or password.");
-
-                        int userId = Convert.ToInt32(reader["UserId"]);
-                        string roleName = reader["RoleName"].ToString()!;
-                        string token = GenerateJwtToken(userId, request.Email, roleName);
-
-                        return Ok(new { Token = token, Role = roleName, Message = "Login successful" });
-                    }
-                }
+                return Unauthorized(new { Message = error });
             }
+
+            return Ok(response);
         }
 
-        private string GenerateJwtToken(int userId, string email, string role)
+        [HttpPost("logout")]
+        public IActionResult Logout([FromBody] RefreshTokenRequest request)
         {
-            var claims = new[] {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim(ClaimTypes.Name, email),
-                new Claim(ClaimTypes.Role, role)
-            };
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            {
+                return BadRequest(new { Message = "Refresh token required." });
+            }
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            _jwtTokenService.RevokeRefreshToken(request.RefreshToken);
+            return Ok(new { Message = "Logged out successfully." });
+        }
 
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(3),
-                signingCredentials: creds
-            );
+        [HttpPost("refresh-token")]
+        public IActionResult RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.RefreshToken))
+            {
+                return BadRequest(new { Message = "Refresh token required." });
+            }
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            var userId = _jwtTokenService.ValidateRefreshToken(request.RefreshToken);
+            if (!userId.HasValue)
+            {
+                return Unauthorized(new { Message = "Invalid or expired refresh token." });
+            }
+
+            var user = _userService.GetUserById(userId.Value);
+            if (user == null || user.Status != "Active")
+            {
+                return Unauthorized(new { Message = "User inactive or not found." });
+            }
+
+            // Revoke the old refresh token
+            _jwtTokenService.RevokeRefreshToken(request.RefreshToken);
+
+            // Generate new pair
+            var roles = _userService.GetUserRoles(user.UserID);
+            string newAccessToken = _jwtTokenService.GenerateAccessToken(user.Email, roles);
+            string newRefreshToken = _jwtTokenService.GenerateRefreshToken(user.UserID);
+
+            return Ok(new AuthResponse
+            {
+                Token = newAccessToken,
+                RefreshToken = newRefreshToken,
+                Email = user.Email,
+                Roles = roles,
+                Message = "Token refreshed successfully"
+            });
+        }
+
+        [HttpPost("forgot-password")]
+        public IActionResult ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            var user = _userService.GetUserByEmail(request.Email);
+            if (user == null)
+            {
+                // Return generic success to prevent email enumeration
+                return Ok(new { Message = "If the email is registered, a password reset token has been sent." });
+            }
+
+            // Generate a secure reset token
+            string resetToken = Guid.NewGuid().ToString("N");
+            DateTime expiry = DateTime.UtcNow.AddMinutes(15); // 15-minute expiry
+            _userService.SetResetToken(user.Email, resetToken, expiry);
+
+            // Log/simulate sending email (print to debug output)
+            Console.WriteLine($"[EMAIL SIMULATION] To: {user.Email} | Subject: Password Reset Token | Token: {resetToken}");
+
+            // For phase 1 development & UI ease-of-use, we return the token in the response body 
+            // so frontend developers can test easily. In production, this would only be emailed.
+            return Ok(new
+            {
+                Message = "If the email is registered, a password reset token has been sent.",
+                DebugToken = resetToken
+            });
+        }
+
+        [HttpPost("reset-password")]
+        public IActionResult ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            var user = _userService.GetUserByEmail(request.Email);
+            if (user == null)
+            {
+                return BadRequest(new { Message = "Invalid email or token." });
+            }
+
+            if (user.ResetToken != request.Token || !user.ResetTokenExpiry.HasValue || user.ResetTokenExpiry.Value < DateTime.UtcNow)
+            {
+                return BadRequest(new { Message = "Invalid or expired token." });
+            }
+
+            // Validate new password policy
+            var policyError = _authService.ValidatePasswordPolicy(request.NewPassword);
+            if (policyError != null)
+            {
+                return BadRequest(new { Message = policyError });
+            }
+
+            // Reset password
+            string newHash = _passwordHashService.HashPassword(request.NewPassword);
+            _userService.ResetPassword(user.UserID, newHash);
+            _userService.ResetFailedAttempts(user.Email);
+
+            return Ok(new { Message = "Password has been reset successfully." });
+        }
+
+        [HttpGet("me")]
+        [Authorize]
+        public IActionResult Me()
+        {
+            var email = User.FindFirstValue(ClaimTypes.Name) ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized(new { Message = "No user identity found in claims." });
+            }
+
+            var user = _userService.GetUserByEmail(email);
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            var roles = _userService.GetUserRoles(user.UserID);
+
+            return Ok(new
+            {
+                user.UserID,
+                user.Email,
+                user.FirstName,
+                user.LastName,
+                user.Phone,
+                user.Status,
+                Roles = roles
+            });
         }
     }
 }
