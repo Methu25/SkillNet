@@ -50,6 +50,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
 
 // Register Module 1 Custom Services
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
@@ -57,19 +58,28 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+
+// Register Admin Module Services
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
+// Register Interview Module Services
 builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
+
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
 // ==========================================
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "SkillNet Recruitment API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "SkillNet Recruitment API",
+        Version = "v1"
+    });
 
-    // This adds the "Authorize" padlock button to Swagger UI
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token in the text input below. Example: 'Bearer 12345abcdef'",
+        Description = "JWT Authorization header using the Bearer scheme. Example: Bearer 12345abcdef",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -87,18 +97,15 @@ var app = builder.Build();
 app.UseDefaultFiles();
 app.MapStaticAssets();
 
-// ==========================================
-// 4. ACTIVATE SWAGGER MIDDLEWARE
-// ==========================================
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SkillNet API v1"));
+    app.UseSwaggerUI(c =>
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "SkillNet API v1"));
 }
 
 app.UseHttpsRedirection();
 
-// Activate Security
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();

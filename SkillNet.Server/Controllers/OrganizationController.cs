@@ -1,18 +1,23 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using SkillNet.Server.models;
+using SkillNet.Server.Services;
 
 namespace SkillNet.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    // [Authorize(Roles = "Admin")] // Temporarily disabled for frontend testing
     public class OrganizationController : ControllerBase
     {
         private readonly string _connectionString;
+        private readonly IAuditLogService _auditLogService;
 
-        public OrganizationController(IConfiguration configuration)
+        public OrganizationController(IConfiguration configuration, IAuditLogService auditLogService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+            _auditLogService = auditLogService;
         }
 
         // GET: api/organization
@@ -51,31 +56,42 @@ namespace SkillNet.Server.Controllers
 
         // POST: api/organization
         [HttpPost]
-        public IActionResult CreateOrganization([FromBody] Organization org)
+        public async Task<IActionResult> CreateOrganization([FromBody] Organization org)
         {
+            string query = @"INSERT INTO Organization (OrganizationName, Industry, Website, Logo, Address, CreatedAt) 
+                     VALUES (@Name, @Industry, @Website, @Logo, @Address, @CreatedAt)";
+
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                // Using parameters to prevent SQL injection!
-                string query = @"INSERT INTO Organization (OrganizationName, Industry, Website, Logo, Address) 
-                                 VALUES (@Name, @Industry, @Website, @Logo, @Address)";
-
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
-                    cmd.Parameters.AddWithValue("@Name", org.OrganizationName);
-                    cmd.Parameters.AddWithValue("@Industry", (object?)org.Industry ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Website", (object?)org.Website ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Logo", (object?)org.Logo ?? DBNull.Value);
-                    cmd.Parameters.AddWithValue("@Address", (object?)org.Address ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Name", org.OrganizationName ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Industry", org.Industry ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Website", org.Website ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Logo", org.Logo ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Address", org.Address ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CreatedAt", DateTime.Now);
 
                     con.Open();
-                    cmd.ExecuteNonQuery();
+                    try
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                    catch (SqlException ex) when (ex.Number == 2627)
+                    {
+                        return BadRequest(new { message = "An organization with this name already exists." });
+                    }
                 }
             }
-            return Ok(new { message = "Organization created successfully" });
+            
+            await _auditLogService.LogActionAsync("Create Organization", "Organization", null, null, org.OrganizationName);
+            
+            return Ok(new { message = "Organization created successfully!" });
         }
+
         // PUT: api/organization/{id}
         [HttpPut("{id}")]
-        public IActionResult UpdateOrganization(int id, [FromBody] Organization org)
+        public async Task<IActionResult> UpdateOrganization(int id, [FromBody] Organization org)
         {
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
@@ -97,26 +113,37 @@ namespace SkillNet.Server.Controllers
                     if (rowsAffected == 0) return NotFound(new { message = "Organization not found" });
                 }
             }
+            
+            await _auditLogService.LogActionAsync("Update Organization", "Organization", id, null, org.OrganizationName);
+            
             return Ok(new { message = "Organization updated successfully" });
         }
 
         // DELETE: api/organization/{id}
         [HttpDelete("{id}")]
-        public IActionResult DeleteOrganization(int id)
+        public async Task<IActionResult> DeleteOrganization(int id)
         {
-            using (SqlConnection con = new SqlConnection(_connectionString))
+            try
             {
                 string query = "DELETE FROM Organization WHERE OrganizationId = @Id";
-
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                using (SqlConnection con = new SqlConnection(_connectionString))
                 {
-                    cmd.Parameters.AddWithValue("@Id", id);
-                    con.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
-                    if (rowsAffected == 0) return NotFound(new { message = "Organization not found" });
+                    using (SqlCommand cmd = new SqlCommand(query, con))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", id);
+                        con.Open();
+                        cmd.ExecuteNonQuery();
+                    }
                 }
+                
+                await _auditLogService.LogActionAsync("Delete Organization", "Organization", id, null, null);
+                
+                return Ok(new { message = "Organization deleted successfully!" });
             }
-            return Ok(new { message = "Organization deleted successfully" });
+            catch (SqlException ex) when (ex.Number == 547) // Catches Foreign Key conflicts
+            {
+                return BadRequest(new { message = "Cannot delete: Organization has linked departments or users." });
+            }
         }
     }
 }
