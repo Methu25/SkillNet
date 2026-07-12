@@ -34,13 +34,27 @@ namespace SkillNet.Server.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
-            var response = _authService.Login(request, out string error);
-            if (response == null)
+            try
             {
-                return Unauthorized(new { Message = error });
-            }
+                if (request == null || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return BadRequest(new { Message = "Email and password are required." });
+                }
 
-            return Ok(response);
+                var response = _authService.Login(request, out string errorMessage);
+
+                if (response == null)
+                {
+                    return Unauthorized(new { Message = errorMessage ?? "Invalid email or password." });
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Login Exception: {ex.Message}");
+                return StatusCode(500, new { Message = "Internal server error. Please try again later." });
+            }
         }
 
         [HttpPost("logout")]

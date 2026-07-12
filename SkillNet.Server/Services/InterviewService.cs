@@ -206,6 +206,23 @@ namespace SkillNet.Server.Services
             return await _interviewRepository.GetHiringDashboardAsync();
         }
 
+        public async Task<bool> AssignInterviewerAsync(int interviewId, AssignInterviewerRequest request)
+        {
+            var interview = await _interviewRepository.GetInterviewByIdAsync(interviewId);
+            if (interview == null)
+                return false;
+
+            var assignment = new InterviewAssignment
+            {
+                InterviewId = interviewId,
+                InterviewerId = request.InterviewerId,
+                Role = request.Role
+            };
+
+            await _interviewRepository.AssignInterviewerAsync(assignment);
+            return true;
+        }
+
         private static InterviewResponse MapToInterviewResponse(Interview interview)
         {
             return new InterviewResponse

@@ -29,5 +29,7 @@ namespace SkillNet.Server.Interfaces
         Task<IEnumerable<InterviewResponse>> GetUpcomingInterviewsAsync();
 
         Task<HiringDashboardResponse> GetHiringDashboardAsync();
+
+        Task<bool> AssignInterviewerAsync(int interviewId, AssignInterviewerRequest request);
     }
 }

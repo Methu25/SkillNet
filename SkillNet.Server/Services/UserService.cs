@@ -28,8 +28,7 @@ namespace SkillNet.Server.Services
         {
             using var conn = new SqlConnection(_connectionString);
             conn.Open();
-            const string query = "SELECT * FROM Users WHERE Email = @Email";
-            using var cmd = new SqlCommand(query, conn);
+            const string query = "SELECT * FROM dbo.Users WHERE Email = @Email;"; using var cmd = new SqlCommand(query, conn);
             cmd.Parameters.AddWithValue("@Email", email);
             using var reader = cmd.ExecuteReader();
             if (reader.Read())
