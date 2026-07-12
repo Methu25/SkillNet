@@ -66,6 +66,12 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
 builder.Services.AddScoped<IInterviewService, InterviewService>();
 
+// Register Job & Recruiter Module Services
+// Note: JobCategoryService uses its own Singleton pattern internally (not registered here)
+builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<IRecruiterService, RecruiterService>();
+
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
 // ==========================================
