@@ -4,6 +4,8 @@ using Microsoft.OpenApi;
 using System.Text;
 
 using SkillNet.Server.Services;
+using SkillNet.Server.Interfaces;
+using SkillNet.Server.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +50,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
 
 // Register Module 1 Custom Services
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
@@ -55,6 +58,11 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
+
+// Register Admin & Interview Module Services
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IInterviewRepository, InterviewRepository>();
+builder.Services.AddScoped<IInterviewService, InterviewService>();
 
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)

@@ -9,10 +9,6 @@ export default defineConfig({
             '^/api': {
                 target: 'http://localhost:5090',
                 secure: false
-            },
-            '^/api': {
-                target,
-                secure: false
             }
         }
     }
