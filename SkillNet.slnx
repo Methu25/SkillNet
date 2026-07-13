@@ -6,5 +6,8 @@
     <Build />
     <Deploy />
   </Project>
-  <Project Path="SkillNet.Server/SkillNet.Server.csproj" />
+  <Project Path="SkillNet.Domain/SkillNet.Domain.csproj" />
+  <Project Path="SkillNet.Application/SkillNet.Application.csproj" />
+  <Project Path="SkillNet.Infrastructure/SkillNet.Infrastructure.csproj" />
+  <Project Path="SkillNet.WebApi/SkillNet.WebApi.csproj" />
 </Solution>

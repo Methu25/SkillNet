@@ -1,9 +1,0 @@
-namespace SkillNet.Server.Models
-{
-    public class JobCategory
-    {
-        public int CategoryId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string? Description { get; set; }
-    }
-}

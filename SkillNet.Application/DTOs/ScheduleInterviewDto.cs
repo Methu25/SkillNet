@@ -1,0 +1,10 @@
+namespace SkillNet.Application.DTOs
+{
+    public class ScheduleInterviewRequest
+    {
+        public DateTime ScheduledDate { get; set; }
+        public int Duration { get; set; }
+        public string Location { get; set; } = string.Empty;
+        public string? MeetingLink { get; set; }
+    }
+}
