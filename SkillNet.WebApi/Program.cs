@@ -8,6 +8,8 @@ using System.Text.RegularExpressions;
 using SkillNet.Application.Services;
 using SkillNet.Application.Interfaces;
 using SkillNet.Infrastructure.Repositories;
+using SkillNet.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +28,9 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("(local
 // ==========================================
 // 1. CORS POLICY (React Frontend)
 // ==========================================
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
