@@ -4,6 +4,14 @@
     {
         public int InterviewId { get; set; }
         public int ApplicationId { get; set; }
+
+        public string? CandidateName { get; set; }
+        public string? CandidateEmail { get; set; }
+        public string? JobTitle { get; set; }
+        public string? CandidateSummary { get; set; }
+        public string? CandidateSkills { get; set; }
+        public int? ExperienceYears { get; set; }
+
         public string? InterviewType { get; set; }
         public int InterviewRound { get; set; }
         public DateTime ScheduledDate { get; set; }

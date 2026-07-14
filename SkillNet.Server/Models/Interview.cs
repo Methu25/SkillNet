@@ -23,5 +23,10 @@
         public DateTime CreatedAt { get; set; }
         public string CandidateName { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
+        public string? CandidateEmail { get; set; }
+        public string? JobTitle { get; set; }
+        public string? CandidateSummary { get; set; }
+        public string? CandidateSkills { get; set; }
+        public int? ExperienceYears { get; set; }
     }
 }
