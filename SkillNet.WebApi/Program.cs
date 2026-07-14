@@ -91,6 +91,11 @@ builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IRecruiterService, RecruiterService>();
 
+// Register Candidate Module (Infrastructure repositories)
+builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
+builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
+builder.Services.AddScoped<ISkillRepository, SkillRepository>();
+
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
 // ==========================================
