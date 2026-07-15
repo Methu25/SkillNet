@@ -1,41 +1,42 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 
 const Login = () => {
-    const { login } = useAuth();
+    const { login, user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    // Helper: resolve dashboard path from roles array
+    const getDashboardPath = (roles = []) => {
+        if (roles.includes('Admin'))         return '/admin-dashboard';
+        if (roles.includes('Recruiter'))     return '/recruiter-dashboard';
+        if (roles.includes('HiringManager')) return '/hiring-dashboard';
+        if (roles.includes('Candidate'))     return '/candidate-dashboard';
+        return '/access-denied';
+    };
+
+    // If user is already authenticated, skip the form and go straight to their dashboard
+    if (!authLoading && user) {
+        return <Navigate to={getDashboardPath(user.roles)} replace />;
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setLoading(true);
+        setSubmitting(true);
 
         try {
             const userData = await login(email, password);
-            
-            // Redirect based on role
-            const roles = userData.roles || [];
-            if (roles.includes('Admin')) {
-                navigate('/admin-dashboard');
-            } else if (roles.includes('Recruiter')) {
-                navigate('/recruiter-dashboard');
-            } else if (roles.includes('HiringManager')) {
-                navigate('/hiring-dashboard');
-            } else if (roles.includes('Candidate')) {
-                navigate('/candidate-dashboard');
-            } else {
-                navigate('/access-denied');
-            }
+            navigate(getDashboardPath(userData.roles));
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
@@ -46,26 +47,26 @@ const Login = () => {
             <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', marginBottom: '5px' }}>Email Address</label>
-                    <input 
-                        type="email" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required 
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
                         style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
                 <div style={{ marginBottom: '15px' }}>
                     <label style={{ display: 'block', marginBottom: '5px' }}>Password</label>
-                    <input 
-                        type="password" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required 
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
                         style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                     />
                 </div>
-                <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                    {loading ? 'Logging in...' : 'Login'}
+                <button type="submit" disabled={submitting} style={{ width: '100%', padding: '10px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                    {submitting ? 'Logging in...' : 'Login'}
                 </button>
             </form>
             <div style={{ marginTop: '15px', textAlign: 'center' }}>
