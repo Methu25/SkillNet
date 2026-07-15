@@ -69,6 +69,9 @@ builder.Services.AddScoped<IInterviewService, InterviewService>();
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
 // ==========================================
+// ==========================================
+// 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
+// ==========================================
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
@@ -76,6 +79,8 @@ builder.Services.AddSwaggerGen(c =>
         Title = "SkillNet Recruitment API",
         Version = "v1"
     });
+
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
