@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { setUnauthorizedHandler } from '../api/apiClient';
 
 const AuthContext = createContext(null);
 
@@ -147,6 +148,18 @@ export const AuthProvider = ({ children }) => {
 
         return data;
     };
+
+    useEffect(() => {
+        const clearHandler = setUnauthorizedHandler(async () => {
+            const refreshed = await performTokenRefresh();
+            if (!refreshed) {
+                await logout();
+            }
+            return refreshed;
+        });
+
+        return clearHandler;
+    });
 
     return (
         <AuthContext.Provider value={{ user, loading, login, logout, register, performTokenRefresh }}>

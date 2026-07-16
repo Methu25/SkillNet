@@ -13,6 +13,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import HiringDashboard from './pages/HiringDashboard';
 import CandidateDashboard from './pages/CandidateDashboard';
+import CandidateModulePlaceholder from './pages/CandidateModulePlaceholder';
 
 // Admin sub-pages (protected, Admin only)
 import UserManagement from './pages/UserManagement';
@@ -128,6 +129,46 @@ function App() {
                         element={
                             <ProtectedRoute allowedRoles={['Candidate']}>
                                 <CandidateDashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/dashboard"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateDashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/profile"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateModulePlaceholder title="Candidate Profile" />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/profile/create"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateModulePlaceholder title="Create Candidate Profile" />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/resumes"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateModulePlaceholder title="Candidate Resumes" />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/skills"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateModulePlaceholder title="Candidate Skills" />
                             </ProtectedRoute>
                         }
                     />
