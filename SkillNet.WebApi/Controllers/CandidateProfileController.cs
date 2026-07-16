@@ -4,12 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
 using SkillNet.Application.Services;
+using SkillNet.WebApi.Models;
 
 namespace SkillNet.WebApi.Controllers
 {
     [ApiController]
     [Route("api/candidate/profile")]
     [Authorize(Roles = "Candidate")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public class CandidateProfileController : ControllerBase
     {
         private readonly ICandidateService _candidateService;
@@ -27,6 +31,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(CandidateProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProfile()
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -44,6 +50,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(CandidateProfileDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> CreateProfile([FromBody] CreateCandidateDto dto)
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -64,6 +72,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPut]
+        [ProducesResponseType(typeof(CandidateProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateCandidateDto dto)
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -81,6 +91,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpDelete]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteProfile()
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -98,6 +110,7 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet("exists")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ProfileExists()
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -110,6 +123,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet("completion")]
+        [ProducesResponseType(typeof(ProfileCompletionResultDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProfileCompletion()
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -128,13 +143,17 @@ namespace SkillNet.WebApi.Controllers
 
         [HttpPost("image")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile image)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+        [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
+        public async Task<IActionResult> UploadProfileImage([FromForm] FileUploadRequest request)
         {
             if (!TryGetCurrentUserId(out var userId))
             {
                 return Unauthorized();
             }
 
+            var image = request.File;
             var validationResult = ValidateProfileImage(image);
             if (validationResult != null)
             {
@@ -153,6 +172,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpDelete("image")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteProfileImage()
         {
             if (!TryGetCurrentUserId(out var userId))

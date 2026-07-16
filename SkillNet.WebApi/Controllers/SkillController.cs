@@ -10,6 +10,9 @@ namespace SkillNet.WebApi.Controllers
     [ApiController]
     [Route("api/candidate/skills")]
     [Authorize(Roles = "Candidate")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public class SkillController : ControllerBase
     {
         private readonly ISkillService _skillService;
@@ -22,6 +25,7 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<CandidateSkillDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetCandidateSkills()
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -34,6 +38,7 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet("available")]
+        [ProducesResponseType(typeof(IEnumerable<SkillDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAvailableSkills()
         {
             if (!TryGetCurrentUserId(out _))
@@ -46,6 +51,7 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(typeof(CandidateSkillDto), StatusCodes.Status201Created)]
         public async Task<IActionResult> AddSkill([FromBody] AddCandidateSkillDto dto)
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -58,6 +64,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpDelete("{skillId:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> RemoveSkill(int skillId)
         {
             if (!TryGetCurrentUserId(out var userId))

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
 using SkillNet.Application.Services;
 
@@ -9,6 +10,8 @@ namespace SkillNet.WebApi.Controllers
     [ApiController]
     [Route("api/candidate/dashboard")]
     [Authorize(Roles = "Candidate")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public class CandidateDashboardController : ControllerBase
     {
         private readonly ICandidateDashboardService _dashboardService;
@@ -23,6 +26,7 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(CandidateDashboardDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetDashboard()
         {
             if (!TryGetCurrentUserId(out var userId))

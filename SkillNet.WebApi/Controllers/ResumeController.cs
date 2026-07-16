@@ -4,12 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
 using SkillNet.Application.Services;
+using SkillNet.WebApi.Models;
 
 namespace SkillNet.WebApi.Controllers
 {
     [ApiController]
     [Route("api/candidate/resumes")]
     [Authorize(Roles = "Candidate")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public class ResumeController : ControllerBase
     {
         private readonly IResumeService _resumeService;
@@ -34,6 +38,7 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<ResumeDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllResumes()
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -46,6 +51,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet("active")]
+        [ProducesResponseType(typeof(ResumeDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetActiveResume()
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -64,13 +71,17 @@ namespace SkillNet.WebApi.Controllers
 
         [HttpPost]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadResume([FromForm] IFormFile file)
+        [ProducesResponseType(typeof(ResumeDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+        [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
+        public async Task<IActionResult> UploadResume([FromForm] FileUploadRequest request)
         {
             if (!TryGetCurrentUserId(out var userId))
             {
                 return Unauthorized();
             }
 
+            var file = request.File;
             var validationResult = ValidatePdf(file);
             if (validationResult != null)
             {
@@ -91,13 +102,20 @@ namespace SkillNet.WebApi.Controllers
 
         [HttpPut("{resumeId:int}/replace")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> ReplaceResume(int resumeId, [FromForm] IFormFile file)
+        [ProducesResponseType(typeof(ResumeDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status413PayloadTooLarge)]
+        [ProducesResponseType(StatusCodes.Status415UnsupportedMediaType)]
+        public async Task<IActionResult> ReplaceResume(
+            int resumeId,
+            [FromForm] FileUploadRequest request)
         {
             if (!TryGetCurrentUserId(out var userId))
             {
                 return Unauthorized();
             }
 
+            var file = request.File;
             var validationResult = ValidatePdf(file);
             if (validationResult != null)
             {
@@ -122,6 +140,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPut("{resumeId:int}/set-active")]
+        [ProducesResponseType(typeof(ResumeDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SetActiveResume(int resumeId)
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -139,6 +159,8 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpDelete("{resumeId:int}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteResume(int resumeId)
         {
             if (!TryGetCurrentUserId(out var userId))
@@ -156,6 +178,9 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpGet("{resumeId:int}/download")]
+        [Produces("application/pdf")]
+        [ProducesResponseType(typeof(FileStreamResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DownloadResume(int resumeId)
         {
             if (!TryGetCurrentUserId(out var userId))
