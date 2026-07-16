@@ -12,6 +12,7 @@ namespace SkillNet.Application.Services
         private readonly ICandidateProfileBuilder _candidateProfileBuilder;
         private readonly IResumeStorageService _resumeStorageService;
         private readonly IProfileImageStorageService _profileImageStorageService;
+        private readonly IUserService _userService;
         private readonly IEmailService _emailService;
         private readonly ILogger<CandidateService> _logger;
 
@@ -21,6 +22,7 @@ namespace SkillNet.Application.Services
             ICandidateProfileBuilder candidateProfileBuilder,
             IResumeStorageService resumeStorageService,
             IProfileImageStorageService profileImageStorageService,
+            IUserService userService,
             IEmailService emailService,
             ILogger<CandidateService> logger)
         {
@@ -29,6 +31,7 @@ namespace SkillNet.Application.Services
             _candidateProfileBuilder = candidateProfileBuilder;
             _resumeStorageService = resumeStorageService;
             _profileImageStorageService = profileImageStorageService;
+            _userService = userService;
             _emailService = emailService;
             _logger = logger;
         }
@@ -59,9 +62,10 @@ namespace SkillNet.Application.Services
                 createdCandidate;
 
             await TrySendEmailAsync(
-                savedCandidate.User?.Email,
+                GetCandidateEmail(userId),
                 "Welcome to SkillNet",
-                "Your professional profile has been successfully created.",
+                $"Your professional profile has been successfully created.\n\n" +
+                $"Your profile is currently {profile.ProfileCompletion.CompletionPercentage}% complete.",
                 userId,
                 "Profile Created");
 
@@ -117,7 +121,7 @@ namespace SkillNet.Application.Services
 
             await _candidateRepository.UpdateCandidateAsync(candidate);
             await SendProgressNotificationAsync(
-                candidate.User?.Email,
+                GetCandidateEmail(userId),
                 userId,
                 previousCompletion.CompletionPercentage,
                 profile.ProfileCompletion.CompletionPercentage);
@@ -308,7 +312,16 @@ namespace SkillNet.Application.Services
 
             try
             {
-                await _emailService.SendAsync(recipientEmail, subject, body);
+                var result = await _emailService.SendAsync(
+                    recipientEmail, subject, body, eventName);
+                if (!result.Succeeded)
+                {
+                    _logger.LogWarning(
+                        "Candidate email event {EventName} was not delivered for user {UserId}: {Reason}",
+                        eventName,
+                        userId,
+                        result.ErrorMessage);
+                }
             }
             catch (Exception ex)
             {
@@ -318,6 +331,11 @@ namespace SkillNet.Application.Services
                     eventName,
                     userId);
             }
+        }
+
+        private string? GetCandidateEmail(int userId)
+        {
+            return _userService.GetUserById(userId)?.Email;
         }
     }
 }

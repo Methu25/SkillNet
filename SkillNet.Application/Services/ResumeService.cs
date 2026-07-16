@@ -10,6 +10,8 @@ namespace SkillNet.Application.Services
         private readonly ICandidateRepository _candidateRepository;
         private readonly IResumeRepository _resumeRepository;
         private readonly IResumeStorageService _storageService;
+        private readonly ICandidateService _candidateService;
+        private readonly ICandidateNotificationService _notificationService;
         private readonly long _maximumFileSize;
         private readonly string _allowedContentType;
 
@@ -17,11 +19,15 @@ namespace SkillNet.Application.Services
             ICandidateRepository candidateRepository,
             IResumeRepository resumeRepository,
             IResumeStorageService storageService,
+            ICandidateService candidateService,
+            ICandidateNotificationService notificationService,
             IConfiguration configuration)
         {
             _candidateRepository = candidateRepository;
             _resumeRepository = resumeRepository;
             _storageService = storageService;
+            _candidateService = candidateService;
+            _notificationService = notificationService;
             _maximumFileSize = long.TryParse(
                 configuration["ResumeStorage:MaximumFileSizeBytes"],
                 out var configuredMaximum)
@@ -50,6 +56,7 @@ namespace SkillNet.Application.Services
             ArgumentNullException.ThrowIfNull(dto);
             await EnsureCandidateExistsAsync(candidateId);
             ValidateFile(dto.FileName, dto.ContentType, dto.FileSize, dto.Content);
+            var previousCompletion = await GetCompletionAsync(candidateId);
 
             var existingResumes = (await _resumeRepository
                 .GetAllResumesByCandidateIdAsync(candidateId)).ToList();
@@ -70,13 +77,28 @@ namespace SkillNet.Application.Services
             try
             {
                 var createdResume = await _resumeRepository.AddResumeAsync(resume);
-                return await MapToResumeDtoAsync(createdResume);
+                var result = await MapToResumeDtoAsync(createdResume);
+                await NotifyCompletionChangeAsync(candidateId, previousCompletion);
+                return result;
             }
             catch
             {
                 await _storageService.DeleteAsync(fileReference);
                 throw;
             }
+        }
+
+        private async Task<int> GetCompletionAsync(int userId)
+        {
+            return (await _candidateService.GetCandidateProfileAsync(userId))?
+                .ProfileCompletion.CompletionPercentage ?? 0;
+        }
+
+        private async Task NotifyCompletionChangeAsync(int userId, int previousPercentage)
+        {
+            var currentPercentage = await GetCompletionAsync(userId);
+            await _notificationService.NotifyProfileProgressAsync(
+                userId, previousPercentage, currentPercentage);
         }
 
         public async Task<ResumeDto?> ReplaceResumeAsync(

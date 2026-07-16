@@ -8,13 +8,19 @@ namespace SkillNet.Application.Services
     {
         private readonly ICandidateRepository _candidateRepository;
         private readonly ISkillRepository _skillRepository;
+        private readonly ICandidateService _candidateService;
+        private readonly ICandidateNotificationService _notificationService;
 
         public SkillService(
             ICandidateRepository candidateRepository,
-            ISkillRepository skillRepository)
+            ISkillRepository skillRepository,
+            ICandidateService candidateService,
+            ICandidateNotificationService notificationService)
         {
             _candidateRepository = candidateRepository;
             _skillRepository = skillRepository;
+            _candidateService = candidateService;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<SkillDto>> GetAllSkillsAsync()
@@ -36,6 +42,7 @@ namespace SkillNet.Application.Services
         {
             ArgumentNullException.ThrowIfNull(dto);
             await EnsureCandidateExistsAsync(candidateId);
+            var previousCompletion = await GetCompletionAsync(candidateId);
 
             var skill = await _skillRepository.GetSkillByIdAsync(dto.SkillId);
             if (skill == null)
@@ -57,7 +64,21 @@ namespace SkillNet.Application.Services
             };
 
             await _skillRepository.AssignSkillToCandidateAsync(candidateSkill);
+            await NotifyCompletionChangeAsync(candidateId, previousCompletion);
             return MapToCandidateSkillDto(candidateId, skill);
+        }
+
+        private async Task<int> GetCompletionAsync(int userId)
+        {
+            return (await _candidateService.GetCandidateProfileAsync(userId))?
+                .ProfileCompletion.CompletionPercentage ?? 0;
+        }
+
+        private async Task NotifyCompletionChangeAsync(int userId, int previousPercentage)
+        {
+            var currentPercentage = await GetCompletionAsync(userId);
+            await _notificationService.NotifyProfileProgressAsync(
+                userId, previousPercentage, currentPercentage);
         }
 
         public async Task<bool> RemoveCandidateSkillAsync(int candidateId, int skillId)

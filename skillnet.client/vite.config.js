@@ -9,6 +9,10 @@ export default defineConfig({
             '^/api': {
                 target: 'https://localhost:7295',
                 secure: false
+            },
+            '^/uploads': {
+                target: 'https://localhost:7295',
+                secure: false
             }
         }
     }

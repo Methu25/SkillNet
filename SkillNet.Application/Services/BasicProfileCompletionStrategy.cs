@@ -12,7 +12,8 @@ namespace SkillNet.Application.Services
             var sections = new (string Name, int Weight, bool IsComplete)[]
             {
                 ("Basic information", 20,
-                    HasValue(profile.FirstName) && HasValue(profile.LastName)),
+                    HasValue(profile.FirstName) && HasValue(profile.LastName) &&
+                    HasValue(profile.PhoneNumber) && HasValue(profile.Location)),
                 ("Professional information", 15,
                     HasValue(profile.ProfessionalTitle) && HasValue(profile.ProfessionalSummary)),
                 ("Education", 15,

@@ -18,10 +18,10 @@ namespace SkillNet.Infrastructure.Repositories
         public async Task<Candidate?> GetCandidateByUserIdAsync(int userId)
         {
             return await _context.Candidates
-                .Include(c => c.User)
                 .Include(c => c.Resumes)
                 .Include(c => c.CandidateSkills)
                     .ThenInclude(cs => cs.Skill)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.UserId == userId);
         }
 

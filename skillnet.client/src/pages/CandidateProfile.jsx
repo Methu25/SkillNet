@@ -5,21 +5,14 @@ import DashboardCard from '../components/candidate/DashboardCard';
 import ProfileCompletionCard from '../components/candidate/ProfileCompletionCard';
 import ProfileFormSection from '../components/candidate/ProfileFormSection';
 import ProfileImageManager from '../components/candidate/profile-image/ProfileImageManager';
+import CandidateNavigation from '../components/candidate/CandidateNavigation';
 import './CandidateDashboard.css';
 import './CandidateProfile.css';
 
 const emptyForm = {
     firstName: '', lastName: '', phoneNumber: '', location: '', professionalTitle: '',
     professionalSummary: '', degree: '', university: '', education: '',
-    experienceYears: '', experienceSummary: ''
-};
-
-const splitSummary = (summary = '') => {
-    const marker = '\n\nExperience: ';
-    const index = summary.lastIndexOf(marker);
-    return index < 0
-        ? { professionalSummary: summary, experienceSummary: '' }
-        : { professionalSummary: summary.slice(0, index), experienceSummary: summary.slice(index + marker.length) };
+    experienceYears: ''
 };
 
 const toForm = (profile) => ({
@@ -29,7 +22,7 @@ const toForm = (profile) => ({
     phoneNumber: profile.phoneNumber || '',
     location: profile.location || '',
     professionalTitle: profile.professionalTitle || '',
-    ...splitSummary(profile.professionalSummary || ''),
+    professionalSummary: profile.professionalSummary || '',
     degree: profile.degree || '',
     university: profile.university || '',
     education: profile.education || '',
@@ -97,7 +90,6 @@ const CandidateProfile = () => {
         if (form.experienceYears !== '' && (!Number.isInteger(years) || years < 0 || years > 60)) {
             next.experienceYears = 'Enter a whole number from 0 to 60.';
         }
-        if (form.experienceSummary.length > 2000) next.experienceSummary = 'Use 2,000 characters or fewer.';
         setErrors(next);
         return Object.keys(next).length === 0;
     };
@@ -107,16 +99,12 @@ const CandidateProfile = () => {
         if (!validate()) return;
         setSaving(true);
         setSuccess('');
-        const combinedSummary = [
-            form.professionalSummary.trim(),
-            form.experienceSummary.trim() && `Experience: ${form.experienceSummary.trim()}`
-        ].filter(Boolean).join('\n\n');
         try {
             await candidateApi.updateProfile({
                 firstName: form.firstName.trim(), lastName: form.lastName.trim(),
                 phoneNumber: form.phoneNumber.trim(), location: form.location.trim(),
                 professionalTitle: form.professionalTitle.trim() || null,
-                professionalSummary: combinedSummary || null,
+                professionalSummary: form.professionalSummary.trim() || null,
                 degree: form.degree.trim() || null, university: form.university.trim() || null,
                 education: form.education.trim() || null,
                 experienceYears: form.experienceYears === '' ? null : Number(form.experienceYears),
@@ -166,7 +154,7 @@ const CandidateProfile = () => {
                         <ProfileFormSection title="Basic information" description="Your essential identity and contact details.">{field('firstName', 'First name', { required: true, maxLength: 100 })}{field('lastName', 'Last name', { required: true, maxLength: 100 })}{field('phoneNumber', 'Phone number', { required: true, maxLength: 30 })}{field('location', 'Location', { required: true, maxLength: 150 })}</ProfileFormSection>
                         <ProfileFormSection title="Professional information" description="Tell recruiters about your professional direction.">{field('professionalTitle', 'Professional title', { full: true, maxLength: 150 })}{field('professionalSummary', 'Professional summary', { full: true, textarea: true, maxLength: 2000 })}</ProfileFormSection>
                         <ProfileFormSection title="Education" description="Summarize your academic background.">{field('degree', 'Degree', { maxLength: 150 })}{field('university', 'University', { maxLength: 200 })}{field('education', 'Education summary', { full: true, textarea: true, maxLength: 2000 })}</ProfileFormSection>
-                        <ProfileFormSection title="Experience" description="Share your overall professional experience.">{field('experienceYears', 'Years of experience', { type: 'number', min: 0, max: 60 })}{field('experienceSummary', 'Experience summary', { full: true, textarea: true, maxLength: 2000 })}</ProfileFormSection>
+                        <ProfileFormSection title="Experience" description="Share your overall professional experience.">{field('experienceYears', 'Years of experience', { type: 'number', min: 0, max: 60 })}</ProfileFormSection>
                         <div className="profile-form-actions"><button type="button" className="candidate-button candidate-button--ghost" onClick={() => { setForm(savedForm); setErrors({}); setSuccess(''); }} disabled={saving}>Cancel</button><button className="candidate-button candidate-button--primary" disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button></div>
                     </form>
                 </DashboardCard>
@@ -175,6 +163,6 @@ const CandidateProfile = () => {
     );
 };
 
-const ProfileState = ({ children, centered = false }) => <div className="candidate-dashboard-shell"><header className="candidate-topbar"><button className="candidate-brand" onClick={() => window.location.assign('/candidate/dashboard')}>Skill<span>Net</span></button></header><main className={`candidate-dashboard candidate-profile-page${centered ? ' candidate-dashboard--centered' : ''}`}>{children}</main></div>;
+const ProfileState = ({ children, centered = false }) => <div className="candidate-dashboard-shell"><CandidateNavigation /><main className={`candidate-dashboard candidate-profile-page${centered ? ' candidate-dashboard--centered' : ''}`}>{children}</main></div>;
 
 export default CandidateProfile;

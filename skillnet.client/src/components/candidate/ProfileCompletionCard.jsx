@@ -15,6 +15,11 @@ const ProfileCompletionCard = ({ completion, showAction = true }) => {
     const completedSections = completion?.completedSections || [];
     const missingSections = completion?.missingSections || [];
     const tone = getCompletionTone(percentage);
+    const sectionRoute = (section) => section === 'Resume'
+        ? '/candidate/resumes'
+        : section === 'Skills'
+            ? '/candidate/skills'
+            : '/candidate/profile';
 
     return (
         <DashboardCard className={`completion-card completion-card--${tone}`}>
@@ -55,7 +60,7 @@ const ProfileCompletionCard = ({ completion, showAction = true }) => {
                     <div className="section-chips">
                         {missingSections.length > 0
                             ? missingSections.map(section => (
-                                <span className="section-chip" key={section}>{section}</span>
+                                <button className="section-chip section-chip--action" key={section} onClick={() => navigate(sectionRoute(section))}>{section}</button>
                             ))
                             : <span className="muted-copy">Everything is ready.</span>}
                     </div>

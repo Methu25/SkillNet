@@ -1,7 +1,16 @@
 namespace SkillNet.Application.Interfaces
 {
+    public record EmailDeliveryResult(
+        bool Attempted,
+        bool Succeeded,
+        string? ErrorMessage = null);
+
     public interface IEmailService
     {
-        Task SendAsync(string recipientEmail, string subject, string body);
+        Task<EmailDeliveryResult> SendAsync(
+            string recipientEmail,
+            string subject,
+            string body,
+            string eventType);
     }
 }

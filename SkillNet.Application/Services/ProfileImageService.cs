@@ -16,13 +16,19 @@ namespace SkillNet.Application.Services
 
         private readonly ICandidateRepository _candidateRepository;
         private readonly IProfileImageStorageService _storageService;
+        private readonly ICandidateService _candidateService;
+        private readonly ICandidateNotificationService _notificationService;
 
         public ProfileImageService(
             ICandidateRepository candidateRepository,
-            IProfileImageStorageService storageService)
+            IProfileImageStorageService storageService,
+            ICandidateService candidateService,
+            ICandidateNotificationService notificationService)
         {
             _candidateRepository = candidateRepository;
             _storageService = storageService;
+            _candidateService = candidateService;
+            _notificationService = notificationService;
         }
 
         public async Task<string> UploadAsync(
@@ -37,6 +43,7 @@ namespace SkillNet.Application.Services
             {
                 throw new KeyNotFoundException($"Candidate profile {userId} was not found.");
             }
+            var previousCompletion = await GetCompletionAsync(userId);
 
             var extension = ValidateImage(content, fileName, contentType, fileSize);
             var previousImageUrl = candidate.ProfileImagePath;
@@ -59,7 +66,22 @@ namespace SkillNet.Application.Services
                 await _storageService.DeleteAsync(previousImageUrl);
             }
 
+            await NotifyCompletionChangeAsync(userId, previousCompletion);
+
             return newImageUrl;
+        }
+
+        private async Task<int> GetCompletionAsync(int userId)
+        {
+            return (await _candidateService.GetCandidateProfileAsync(userId))?
+                .ProfileCompletion.CompletionPercentage ?? 0;
+        }
+
+        private async Task NotifyCompletionChangeAsync(int userId, int previousPercentage)
+        {
+            var currentPercentage = await GetCompletionAsync(userId);
+            await _notificationService.NotifyProfileProgressAsync(
+                userId, previousPercentage, currentPercentage);
         }
 
         public async Task<bool> DeleteAsync(int userId)

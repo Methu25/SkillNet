@@ -14,7 +14,7 @@ const initialForm = {
     firstName: '', lastName: '', phoneNumber: '', location: '',
     professionalTitle: '', professionalSummary: '',
     degree: '', university: '', education: '',
-    experienceYears: '', experienceSummary: ''
+    experienceYears: ''
 };
 
 const CandidateProfileCreate = () => {
@@ -69,7 +69,6 @@ const CandidateProfileCreate = () => {
             if (form.experienceYears !== '' && (!Number.isInteger(years) || years < 0 || years > 60)) {
                 nextErrors.experienceYears = 'Years of experience must be a whole number from 0 to 60.';
             }
-            if (form.experienceSummary.length > 2000) nextErrors.experienceSummary = 'Experience summary must be 2,000 characters or fewer.';
         }
         setErrors(nextErrors);
         return Object.keys(nextErrors).length === 0;
@@ -82,8 +81,6 @@ const CandidateProfileCreate = () => {
     const finish = async () => {
         setSubmitting(true);
         setSubmitError('');
-        const combinedSummary = [form.professionalSummary.trim(), form.experienceSummary.trim() && `Experience: ${form.experienceSummary.trim()}`]
-            .filter(Boolean).join('\n\n');
         try {
             const profile = await candidateApi.createProfile({
                 firstName: form.firstName.trim(),
@@ -91,7 +88,7 @@ const CandidateProfileCreate = () => {
                 phoneNumber: form.phoneNumber.trim(),
                 location: form.location.trim(),
                 professionalTitle: form.professionalTitle.trim() || null,
-                professionalSummary: combinedSummary || null,
+                professionalSummary: form.professionalSummary.trim() || null,
                 degree: form.degree.trim() || null,
                 university: form.university.trim() || null,
                 education: form.education.trim() || null,
@@ -153,7 +150,6 @@ const CandidateProfileCreate = () => {
                 {currentStep === 3 && <StepCard title="Experience" description="A brief overview helps recruiters understand your current career level.">
                     <div className="wizard-fields">
                         {field('experienceYears', 'Years of experience', { type: 'number', min: 0, max: 60, placeholder: '0' })}
-                        {field('experienceSummary', 'Experience summary', { full: true, textarea: true, maxLength: 2000, placeholder: 'Summarize roles, internships, projects, or transferable experience.' })}
                     </div>
                 </StepCard>}
 
@@ -162,7 +158,7 @@ const CandidateProfileCreate = () => {
                         <ReviewSection title="Basic information" values={[form.firstName, form.lastName, form.phoneNumber, form.location]} />
                         <ReviewSection title="Professional" values={[form.professionalTitle, form.professionalSummary]} />
                         <ReviewSection title="Education" values={[form.degree, form.university, form.education]} />
-                        <ReviewSection title="Experience" values={[form.experienceYears !== '' ? `${form.experienceYears} years` : '', form.experienceSummary]} />
+                        <ReviewSection title="Experience" values={[form.experienceYears !== '' ? `${form.experienceYears} years` : '']} />
                     </div>
                     {submitError && <div className="wizard-submit-error" role="alert">{submitError}</div>}
                 </StepCard>}

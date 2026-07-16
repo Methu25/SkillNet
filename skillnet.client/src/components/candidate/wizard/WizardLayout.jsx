@@ -1,9 +1,8 @@
+import CandidateNavigation from '../CandidateNavigation';
+
 const WizardLayout = ({ children }) => (
     <div className="profile-wizard-shell">
-        <header className="wizard-brandbar">
-            <span className="candidate-brand">Skill<span>Net</span></span>
-            <span>Candidate onboarding</span>
-        </header>
+        <CandidateNavigation />
         <main className="profile-wizard">
             <div className="wizard-welcome">
                 <span className="candidate-eyebrow">Welcome to SkillNet</span>
@@ -16,4 +15,3 @@ const WizardLayout = ({ children }) => (
 );
 
 export default WizardLayout;
-

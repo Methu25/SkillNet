@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { resumeApi } from '../api/resumeApi';
 import DashboardCard from '../components/candidate/DashboardCard';
 import DeleteConfirmationDialog from '../components/candidate/resume/DeleteConfirmationDialog';
 import ResumeCard from '../components/candidate/resume/ResumeCard';
 import ResumeFileDialog from '../components/candidate/resume/ResumeFileDialog';
+import CandidateNavigation from '../components/candidate/CandidateNavigation';
 import './CandidateDashboard.css';
 import './CandidateResumes.css';
 
 const CandidateResumes = () => {
-    const navigate = useNavigate();
     const [resumes, setResumes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState('');
@@ -99,7 +98,7 @@ const CandidateResumes = () => {
 
     return (
         <div className="candidate-dashboard-shell">
-            <header className="candidate-topbar"><button className="candidate-brand" onClick={() => navigate('/candidate/dashboard')}>Skill<span>Net</span></button><button className="candidate-button candidate-button--ghost" onClick={() => navigate('/candidate/dashboard')}>Dashboard</button></header>
+            <CandidateNavigation />
             <main className="candidate-dashboard candidate-resumes-page">
                 <header className="resume-page-heading"><div><span className="candidate-eyebrow">Resume library</span><h1>Manage your resumes</h1><p>Keep multiple PDF resumes and choose the one used as your active version.</p></div><button className="candidate-button candidate-button--primary candidate-button--large" onClick={() => setDialog({ mode: 'upload' })}>Upload Resume</button></header>
                 {notice && <div className={`resume-notice resume-notice--${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}>{notice.message}<button aria-label="Dismiss message" onClick={() => setNotice(null)}>×</button></div>}

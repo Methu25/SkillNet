@@ -1,7 +1,7 @@
 .profile-wizard-shell {
     min-height: 100vh;
     color: #20242c;
-    background: radial-gradient(circle at 85% 5%, rgba(218, 139, 82, 0.17), transparent 34rem), #f8f8f9;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FFF5EF 55%, #FFE3D4 100%);
 }
 
 .wizard-brandbar {
@@ -24,14 +24,14 @@
 .wizard-progress { margin-bottom: 20px; padding: 22px 24px; background: #fff; border: 1px solid #eee8e3; border-radius: 18px; }
 .wizard-progress__meta { display: none; justify-content: space-between; margin-bottom: 10px; font-size: 0.8rem; }
 .wizard-progress__track { display: none; height: 7px; overflow: hidden; background: #f3ebe5; border-radius: 99px; }
-.wizard-progress__track span { display: block; height: 100%; background: #bd6834; border-radius: inherit; transition: width 250ms ease; }
+.wizard-progress__track span { display: block; height: 100%; background: #FF681F; border-radius: inherit; transition: width 250ms ease; }
 .wizard-progress ol { display: flex; justify-content: space-between; margin: 0; padding: 0; list-style: none; }
 .wizard-progress li { position: relative; display: grid; flex: 1; justify-items: center; gap: 7px; color: #9a9da3; font-size: 0.75rem; text-align: center; }
 .wizard-progress li:not(:last-child)::after { position: absolute; top: 17px; left: calc(50% + 24px); width: calc(100% - 48px); height: 2px; background: #ebe4de; content: ''; }
 .wizard-progress li.is-complete:not(:last-child)::after { background: #ca7a47; }
 .wizard-progress li > span { z-index: 1; display: grid; width: 35px; height: 35px; place-items: center; background: #f5f2ef; border: 2px solid #ebe4de; border-radius: 50%; font-weight: 800; }
 .wizard-progress li.is-active, .wizard-progress li.is-complete { color: #8f4924; }
-.wizard-progress li.is-active > span, .wizard-progress li.is-complete > span { color: #fff; background: linear-gradient(135deg, #d3834d, #a95529); border-color: transparent; }
+.wizard-progress li.is-active > span, .wizard-progress li.is-complete > span { color: #fff; background: linear-gradient(135deg, #FF681F, #FF8A4C); border-color: transparent; }
 
 .wizard-panel { overflow: hidden; background: #fff; border: 1px solid #eee8e3; border-radius: 22px; box-shadow: 0 18px 50px rgba(52, 40, 31, 0.07); }
 .wizard-step-card { min-height: 390px; padding: 34px; }

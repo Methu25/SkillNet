@@ -1,7 +1,5 @@
 const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-const apiBaseUrl = configuredBaseUrl.replace(/\/$/, '');
-
-let unauthorizedHandler = null;
+const apiBaseUrl = configuredBaseUrl.replace(/\/+$/, '');
 
 export class ApiError extends Error {
     constructor(message, status, details = null) {
@@ -12,21 +10,15 @@ export class ApiError extends Error {
     }
 }
 
-export const setUnauthorizedHandler = (handler) => {
-    unauthorizedHandler = handler;
-    return () => {
-        if (unauthorizedHandler === handler) {
-            unauthorizedHandler = null;
-        }
-    };
-};
+const normalizePath = (path) => `/${String(path).replace(/^\/+/, '')}`;
+const buildUrl = (path) => `${apiBaseUrl}${normalizePath(path)}`;
 
-const buildUrl = (path) => `${apiBaseUrl}${path}`;
-
-export const resolveApiUrl = (path) => {
+export const buildAssetUrl = (path) => {
     if (!path || /^https?:\/\//i.test(path)) return path;
-    return buildUrl(path.startsWith('/') ? path : `/${path}`);
+    return buildUrl(path);
 };
+
+export const resolveApiUrl = buildAssetUrl;
 
 const parseResponse = async (response, responseType) => {
     if (response.status === 204) return null;
@@ -51,7 +43,7 @@ const getErrorMessage = (payload, status) => {
         `Request failed with status ${status}.`;
 };
 
-export const apiRequest = async (path, options = {}, allowRetry = true) => {
+export const apiRequest = async (path, options = {}) => {
     const token = localStorage.getItem('token');
     const headers = new Headers(options.headers || {});
     const isFormData = options.body instanceof FormData;
@@ -64,13 +56,6 @@ export const apiRequest = async (path, options = {}, allowRetry = true) => {
     }
 
     const response = await fetch(buildUrl(path), { ...options, headers });
-
-    if (response.status === 401 && allowRetry && unauthorizedHandler) {
-        const refreshed = await unauthorizedHandler();
-        if (refreshed) {
-            return apiRequest(path, options, false);
-        }
-    }
 
     const payload = await parseResponse(response, options.responseType);
     if (!response.ok) {

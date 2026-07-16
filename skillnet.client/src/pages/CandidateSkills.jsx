@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { skillApi } from '../api/skillApi';
 import DashboardCard from '../components/candidate/DashboardCard';
 import AvailableSkillList from '../components/candidate/skills/AvailableSkillList';
 import RemoveSkillDialog from '../components/candidate/skills/RemoveSkillDialog';
 import SkillChip from '../components/candidate/skills/SkillChip';
 import SkillSearch from '../components/candidate/skills/SkillSearch';
+import CandidateNavigation from '../components/candidate/CandidateNavigation';
 import './CandidateDashboard.css';
 import './CandidateSkills.css';
 
 const CandidateSkills = () => {
-    const navigate = useNavigate();
     const [candidateSkills, setCandidateSkills] = useState([]);
     const [availableSkills, setAvailableSkills] = useState([]);
     const [search, setSearch] = useState('');
@@ -84,10 +83,7 @@ const CandidateSkills = () => {
 
     return (
         <div className="candidate-dashboard-shell">
-            <header className="candidate-topbar">
-                <button className="candidate-brand" onClick={() => navigate('/candidate/dashboard')}>Skill<span>Net</span></button>
-                <button className="candidate-button candidate-button--ghost" onClick={() => navigate('/candidate/dashboard')}>Dashboard</button>
-            </header>
+            <CandidateNavigation />
             <main className="candidate-dashboard candidate-skills-page">
                 <header className="skills-page-heading">
                     <div><span className="candidate-eyebrow">Professional skills</span><h1>Manage your skills</h1><p>Add relevant skills to strengthen your profile and help recruiters understand your capabilities.</p></div>

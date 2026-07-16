@@ -12,6 +12,7 @@ using SkillNet.Infrastructure.Data;
 using SkillNet.Infrastructure.Storage;
 using SkillNet.Infrastructure.Email;
 using SkillNet.WebApi.Middleware;
+using SkillNet.WebApi.Filters;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +34,7 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("(local
 // ==========================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<SkillCatalogSeeder>();
 
 builder.Services.AddCors(options =>
 {
@@ -70,7 +72,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+builder.Services.AddScoped<RegistrationEmailFilter>();
+builder.Services.AddControllers(options =>
+    options.Filters.AddService<RegistrationEmailFilter>());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
@@ -108,6 +112,7 @@ builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<IResumeStorageService, LocalResumeStorageService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
 builder.Services.AddScoped<ICandidateDashboardService, CandidateDashboardService>();
+builder.Services.AddScoped<ICandidateNotificationService, CandidateNotificationService>();
 builder.Services.AddScoped<IProfileCompletionStrategy, BasicProfileCompletionStrategy>();
 builder.Services.AddTransient<ICandidateProfileBuilder, CandidateProfileBuilder>();
 
@@ -139,6 +144,11 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    await scope.ServiceProvider.GetRequiredService<SkillCatalogSeeder>().SeedAsync();
+}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();

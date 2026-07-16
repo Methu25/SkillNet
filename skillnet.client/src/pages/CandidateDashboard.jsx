@@ -6,6 +6,7 @@ import CandidateDashboardSkeleton from '../components/candidate/CandidateDashboa
 import DashboardCard from '../components/candidate/DashboardCard';
 import ProfileCompletionCard from '../components/candidate/ProfileCompletionCard';
 import ProfileAvatar from '../components/candidate/profile-image/ProfileAvatar';
+import CandidateNavigation from '../components/candidate/CandidateNavigation';
 import './CandidateDashboard.css';
 
 const formatDate = (value) => value
@@ -13,7 +14,7 @@ const formatDate = (value) => value
     : 'Not available';
 
 const CandidateDashboard = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [dashboard, setDashboard] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -25,6 +26,13 @@ const CandidateDashboard = () => {
         try {
             setDashboard(await candidateApi.getDashboard());
         } catch (requestError) {
+            if (import.meta.env.DEV) {
+                console.error('Candidate dashboard request failed.', {
+                    status: requestError.status,
+                    message: requestError.message,
+                    details: requestError.details
+                });
+            }
             setError(requestError.message || 'We could not load your dashboard.');
         } finally {
             setLoading(false);
@@ -58,14 +66,7 @@ const CandidateDashboard = () => {
 
     return (
         <div className="candidate-dashboard-shell">
-            <header className="candidate-topbar">
-                <button className="candidate-brand" onClick={() => navigate('/candidate/dashboard')}>Skill<span>Net</span></button>
-                <nav className="candidate-topbar__actions" aria-label="Account actions">
-                    <button className="icon-button" aria-label="Notifications" title="Notifications coming soon">♡</button>
-                    <button className="icon-button" aria-label="Settings" title="Settings coming soon">⚙</button>
-                    <button className="candidate-button candidate-button--ghost" onClick={logout}>Logout</button>
-                </nav>
-            </header>
+            <CandidateNavigation />
 
             <main className="candidate-dashboard">
                 <section className="candidate-hero">
