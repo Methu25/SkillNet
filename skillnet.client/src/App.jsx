@@ -1,8 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-// Auth pages (public)
+import HiringDashboard from './pages/HiringDashboard';
+import InterviewDetails from './pages/InterviewDetails';
+
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -31,8 +31,6 @@ import ScheduleInterview from './pages/ScheduleInterview';
 // Utility pages
 import AccessDenied from './pages/AccessDenied';
 import NotFound from './pages/NotFound';
-
-import './App.css';
 
 function App() {
     return (

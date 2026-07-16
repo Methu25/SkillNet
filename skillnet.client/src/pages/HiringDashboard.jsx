@@ -1,88 +1,137 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './HiringDashboard.css';
 
 function HiringDashboard() {
     const [activeTab, setActiveTab] = useState('All Interviews');
     const [searchTerm, setSearchTerm] = useState('');
-    const [showCreateModal, setShowCreateModal] = useState(false);
 
-    const interviews = [
-        {
-            interviewId: 1,
-            applicationId: 1001,
-            candidateName: 'Nimal Perera',
-            jobTitle: 'Software Engineer Intern',
+    const [interviews, setInterviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    const [showModal, setShowModal] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editingInterviewId, setEditingInterviewId] = useState(null);
+
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const [formData, setFormData] = useState({
+        applicationId: '',
+        interviewType: 'Technical',
+        interviewRound: '',
+        scheduledDate: '',
+        duration: '',
+        location: '',
+        meetingLink: '',
+        status: 'Scheduled'
+    });
+
+    useEffect(() => {
+        const loadInterviews = async () => {
+            try {
+                setLoading(true);
+                setError('');
+
+                const response = await fetch('/api/interviews');
+
+                if (!response.ok) {
+                    throw new Error('Failed to load interviews from database.');
+                }
+
+                const data = await response.json();
+                setInterviews(data);
+            } catch (err) {
+                setError(err.message || 'Something went wrong while loading interviews.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadInterviews();
+    }, [refreshKey]);
+
+    const resetForm = () => {
+        setFormData({
+            applicationId: '',
             interviewType: 'Technical',
-            interviewRound: 1,
-            scheduledDate: 'Jul 12, 2026, 10:00 AM',
-            duration: 60,
+            interviewRound: '',
+            scheduledDate: '',
+            duration: '',
+            location: '',
+            meetingLink: '',
             status: 'Scheduled'
-        },
-        {
-            interviewId: 2,
-            applicationId: 1002,
-            candidateName: 'Kavindi Silva',
-            jobTitle: 'Frontend Developer Intern',
-            interviewType: 'HR',
-            interviewRound: 1,
-            scheduledDate: 'Jul 12, 2026, 2:00 PM',
-            duration: 45,
-            status: 'Confirmed'
-        },
-        {
-            interviewId: 3,
-            applicationId: 1003,
-            candidateName: 'Avishka Fernando',
-            jobTitle: 'Backend Developer Intern',
-            interviewType: 'Technical',
-            interviewRound: 2,
-            scheduledDate: 'Jul 13, 2026, 9:30 AM',
-            duration: 60,
-            status: 'Scheduled'
-        },
-        {
-            interviewId: 4,
-            applicationId: 1004,
-            candidateName: 'Dineth Jayawardena',
-            jobTitle: 'QA Intern',
-            interviewType: 'Technical',
-            interviewRound: 2,
-            scheduledDate: 'Jul 10, 2026, 11:00 AM',
-            duration: 60,
-            status: 'Completed'
-        },
-        {
-            interviewId: 5,
-            applicationId: 1005,
-            candidateName: 'Sandali Perera',
-            jobTitle: 'UI/UX Intern',
-            interviewType: 'Managerial',
-            interviewRound: 3,
-            scheduledDate: 'Jul 9, 2026, 3:00 PM',
-            duration: 60,
-            status: 'Evaluation Submitted'
-        },
-        {
-            interviewId: 6,
-            applicationId: 1006,
-            candidateName: 'Ravindu Silva',
-            jobTitle: 'Full Stack Intern',
-            interviewType: 'HR',
-            interviewRound: 1,
-            scheduledDate: 'Jul 14, 2026, 1:30 PM',
-            duration: 45,
-            status: 'Pending Feedback'
+        });
+
+        setIsEditMode(false);
+        setEditingInterviewId(null);
+    };
+
+    const openCreateModal = () => {
+        resetForm();
+        setShowModal(true);
+    };
+
+    const formatDateTime = (dateValue) => {
+        if (!dateValue) return 'Not scheduled';
+
+        const date = new Date(dateValue);
+
+        if (Number.isNaN(date.getTime())) {
+            return dateValue;
         }
-    ];
+
+        return date.toLocaleString();
+    };
+
+    const toDateTimeLocal = (dateValue) => {
+        if (!dateValue) return '';
+
+        const date = new Date(dateValue);
+
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+
+        const offset = date.getTimezoneOffset();
+        const localDate = new Date(date.getTime() - offset * 60000);
+
+        return localDate.toISOString().slice(0, 16);
+    };
+
+    const isToday = (dateValue) => {
+        if (!dateValue) return false;
+
+        const date = new Date(dateValue);
+        const today = new Date();
+
+        return (
+            date.getFullYear() === today.getFullYear() &&
+            date.getMonth() === today.getMonth() &&
+            date.getDate() === today.getDate()
+        );
+    };
+
+    const isUpcoming = (interview) => {
+        if (!interview.scheduledDate) return false;
+
+        const scheduledDate = new Date(interview.scheduledDate);
+        const now = new Date();
+
+        return (
+            scheduledDate >= now &&
+            interview.status !== 'Completed' &&
+            interview.status !== 'Cancelled'
+        );
+    };
 
     const dashboard = {
         todaysInterviews: interviews.filter((interview) =>
-            interview.scheduledDate.includes('Jul 12')
+            isToday(interview.scheduledDate)
         ).length,
 
         upcomingInterviews: interviews.filter((interview) =>
-            interview.status === 'Scheduled' || interview.status === 'Confirmed'
+            isUpcoming(interview)
         ).length,
 
         candidateEvaluations: interviews.filter((interview) =>
@@ -115,11 +164,11 @@ function HiringDashboard() {
         }
 
         if (activeTab === "Today's Interviews") {
-            return interview.scheduledDate.includes('Jul 12');
+            return isToday(interview.scheduledDate);
         }
 
         if (activeTab === 'Upcoming Interviews') {
-            return interview.status === 'Scheduled' || interview.status === 'Confirmed';
+            return isUpcoming(interview);
         }
 
         if (activeTab === 'Candidate Evaluations') {
@@ -141,17 +190,159 @@ function HiringDashboard() {
         const searchText = searchTerm.toLowerCase();
 
         return (
-            interview.interviewId.toString().includes(searchText) ||
-            interview.applicationId.toString().includes(searchText) ||
-            interview.candidateName.toLowerCase().includes(searchText) ||
-            interview.jobTitle.toLowerCase().includes(searchText) ||
-            interview.interviewType.toLowerCase().includes(searchText) ||
-            interview.status.toLowerCase().includes(searchText)
+            interview.interviewId?.toString().includes(searchText) ||
+            interview.applicationId?.toString().includes(searchText) ||
+            interview.interviewType?.toLowerCase().includes(searchText) ||
+            interview.status?.toLowerCase().includes(searchText) ||
+            interview.location?.toLowerCase().includes(searchText) ||
+            interview.meetingLink?.toLowerCase().includes(searchText)
         );
     });
 
     const filteredInterviews =
         searchTerm.trim() === '' ? tabFilteredInterviews : searchResults;
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+
+        setFormData({
+            ...formData,
+            [name]: value
+        });
+    };
+
+    const handleSubmitInterview = async () => {
+        try {
+            if (
+                !formData.applicationId ||
+                !formData.interviewRound ||
+                !formData.scheduledDate ||
+                !formData.duration
+            ) {
+                alert('Please fill Application ID, Interview Round, Date & Time, and Duration.');
+                return;
+            }
+
+            const requestBody = {
+                applicationId: Number(formData.applicationId),
+                interviewType: formData.interviewType,
+                interviewRound: Number(formData.interviewRound),
+                scheduledDate: new Date(formData.scheduledDate).toISOString(),
+                duration: Number(formData.duration),
+                location: formData.location,
+                meetingLink: formData.meetingLink
+            };
+
+            const url = isEditMode
+                ? `/api/interviews/${editingInterviewId}`
+                : '/api/interviews';
+
+            const method = isEditMode ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('API Error:', errorText);
+                alert(errorText || 'Failed to save interview.');
+                return;
+            }
+
+            const savedInterview = await response.json();
+
+            if (isEditMode) {
+                setInterviews((previousInterviews) =>
+                    previousInterviews.map((interview) =>
+                        interview.interviewId === editingInterviewId
+                            ? savedInterview
+                            : interview
+                    )
+                );
+            } else {
+                setInterviews((previousInterviews) => [
+                    ...previousInterviews,
+                    savedInterview
+                ]);
+            }
+
+            setShowModal(false);
+            resetForm();
+        } catch (err) {
+            console.log('Frontend Error:', err);
+            alert(err.message || 'Something went wrong.');
+        }
+    };
+
+    const handleEditInterview = (interview) => {
+        setIsEditMode(true);
+        setEditingInterviewId(interview.interviewId);
+
+        setFormData({
+            applicationId: interview.applicationId || '',
+            interviewType: interview.interviewType || 'Technical',
+            interviewRound: interview.interviewRound || '',
+            scheduledDate: toDateTimeLocal(interview.scheduledDate),
+            duration: interview.duration || '',
+            location: interview.location || '',
+            meetingLink: interview.meetingLink || '',
+            status: interview.status || 'Scheduled'
+        });
+
+        setShowModal(true);
+    };
+
+    const handleDeleteInterview = async (interviewId) => {
+        try {
+            const confirmDelete = window.confirm('Are you sure you want to delete this interview?');
+
+            if (!confirmDelete) {
+                return;
+            }
+
+            const response = await fetch(`/api/interviews/${interviewId}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete interview.');
+            }
+
+            setRefreshKey((previousValue) => previousValue + 1);
+        } catch (err) {
+            alert(err.message || 'Something went wrong while deleting.');
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="hiring-dashboard">
+                <h2>Loading interviews from database...</h2>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="hiring-dashboard">
+                <h2>Database/API Error</h2>
+                <p>{error}</p>
+
+                <button
+                    className="create-interview-button"
+                    type="button"
+                    onClick={() => setRefreshKey((previousValue) => previousValue + 1)}
+                >
+                    Retry
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="hiring-dashboard">
@@ -167,7 +358,7 @@ function HiringDashboard() {
                 <button
                     className="create-interview-button"
                     type="button"
-                    onClick={() => setShowCreateModal(true)}
+                    onClick={openCreateModal}
                 >
                     + Create Interview
                 </button>
@@ -217,7 +408,7 @@ function HiringDashboard() {
                         <input
                             className="search-box"
                             type="text"
-                            placeholder="Search ID, type, status or candidate"
+                            placeholder="Search ID, type, status or location"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -233,10 +424,8 @@ function HiringDashboard() {
                                             className="search-result-item"
                                             key={interview.interviewId}
                                         >
-                                            <strong>
-                                                #{interview.interviewId} - {interview.candidateName}
-                                            </strong>
-                                            <span>{interview.jobTitle}</span>
+                                            <strong>Interview #{interview.interviewId}</strong>
+                                            <span>Application #{interview.applicationId}</span>
                                             <small>
                                                 {interview.interviewType} • {interview.status}
                                             </small>
@@ -269,10 +458,10 @@ function HiringDashboard() {
                     <thead>
                         <tr>
                             <th>Interview</th>
-                            <th>Candidate</th>
                             <th>Application</th>
                             <th>Round & Type</th>
                             <th>Schedule</th>
+                            <th>Location</th>
                             <th>Status</th>
                             <th>Action</th>
                         </tr>
@@ -283,11 +472,6 @@ function HiringDashboard() {
                             <tr key={interview.interviewId}>
                                 <td>#{interview.interviewId}</td>
 
-                                <td>
-                                    <strong>{interview.candidateName}</strong>
-                                    <span>{interview.jobTitle}</span>
-                                </td>
-
                                 <td>Application #{interview.applicationId}</td>
 
                                 <td>
@@ -296,23 +480,43 @@ function HiringDashboard() {
                                 </td>
 
                                 <td>
-                                    <strong>{interview.scheduledDate}</strong>
+                                    <strong>{formatDateTime(interview.scheduledDate)}</strong>
                                     <span>{interview.duration} minutes</span>
                                 </td>
 
+                                <td>{interview.location || 'N/A'}</td>
+
                                 <td>
                                     <span className="workspace-status">
-                                        {interview.status}
+                                        {interview.status || 'Pending'}
                                     </span>
                                 </td>
 
                                 <td>
-                                    <Link
-                                        className="open-link"
-                                        to={`/interviews/${interview.interviewId}`}
-                                    >
-                                        Open interview →
-                                    </Link>
+                                    <div className="action-buttons">
+                                        <Link
+                                            className="open-link"
+                                            to={`/interviews/${interview.interviewId}`}
+                                        >
+                                            Open
+                                        </Link>
+
+                                        <button
+                                            className="edit-button"
+                                            type="button"
+                                            onClick={() => handleEditInterview(interview)}
+                                        >
+                                            Edit
+                                        </button>
+
+                                        <button
+                                            className="delete-button"
+                                            type="button"
+                                            onClick={() => handleDeleteInterview(interview.interviewId)}
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -328,49 +532,103 @@ function HiringDashboard() {
                 </table>
             </section>
 
-            {showCreateModal && (
+            {showModal && (
                 <div className="modal-overlay">
                     <div className="create-modal">
                         <div className="modal-header">
-                            <h2>Create Interview</h2>
+                            <h2>{isEditMode ? 'Edit Interview' : 'Create Interview'}</h2>
+
                             <button
                                 type="button"
                                 className="close-button"
-                                onClick={() => setShowCreateModal(false)}
+                                onClick={() => {
+                                    setShowModal(false);
+                                    resetForm();
+                                }}
                             >
                                 ×
                             </button>
                         </div>
 
                         <div className="modal-form">
-                            <label>Candidate Name</label>
-                            <input type="text" placeholder="Enter candidate name" />
-
                             <label>Application ID</label>
-                            <input type="number" placeholder="Enter application ID" />
+                            <input
+                                name="applicationId"
+                                type="number"
+                                placeholder="Enter application ID"
+                                value={formData.applicationId}
+                                onChange={handleInputChange}
+                            />
 
                             <label>Interview Type</label>
-                            <select>
+                            <select
+                                name="interviewType"
+                                value={formData.interviewType}
+                                onChange={handleInputChange}
+                            >
                                 <option>Technical</option>
                                 <option>HR</option>
                                 <option>Managerial</option>
+                                <option>System Design</option>
+                                <option>Culture Fit</option>
                             </select>
 
                             <label>Interview Round</label>
-                            <input type="number" placeholder="Enter round number" />
+                            <input
+                                name="interviewRound"
+                                type="number"
+                                placeholder="Enter round number"
+                                value={formData.interviewRound}
+                                onChange={handleInputChange}
+                            />
 
                             <label>Date & Time</label>
-                            <input type="datetime-local" />
+                            <input
+                                name="scheduledDate"
+                                type="datetime-local"
+                                value={formData.scheduledDate}
+                                onChange={handleInputChange}
+                            />
 
                             <label>Duration</label>
-                            <input type="number" placeholder="Duration in minutes" />
+                            <input
+                                name="duration"
+                                type="number"
+                                placeholder="Duration in minutes"
+                                value={formData.duration}
+                                onChange={handleInputChange}
+                            />
+
+                            <label>Location</label>
+                            <input
+                                name="location"
+                                type="text"
+                                placeholder="Enter location"
+                                value={formData.location}
+                                onChange={handleInputChange}
+                            />
+
+                            <label>Meeting Link</label>
+                            <input
+                                name="meetingLink"
+                                type="text"
+                                placeholder="Enter meeting link"
+                                value={formData.meetingLink}
+                                onChange={handleInputChange}
+                            />
 
                             <label>Status</label>
-                            <select>
+                            <select
+                                name="status"
+                                value={formData.status}
+                                onChange={handleInputChange}
+                            >
                                 <option>Scheduled</option>
                                 <option>Confirmed</option>
                                 <option>Completed</option>
                                 <option>Pending Feedback</option>
+                                <option>Cancelled</option>
+                                <option>Evaluation Submitted</option>
                             </select>
                         </div>
 
@@ -378,7 +636,10 @@ function HiringDashboard() {
                             <button
                                 type="button"
                                 className="cancel-button"
-                                onClick={() => setShowCreateModal(false)}
+                                onClick={() => {
+                                    setShowModal(false);
+                                    resetForm();
+                                }}
                             >
                                 Cancel
                             </button>
@@ -386,9 +647,9 @@ function HiringDashboard() {
                             <button
                                 type="button"
                                 className="save-button"
-                                onClick={() => setShowCreateModal(false)}
+                                onClick={handleSubmitInterview}
                             >
-                                Save Interview
+                                {isEditMode ? 'Update Interview' : 'Save Interview'}
                             </button>
                         </div>
                     </div>

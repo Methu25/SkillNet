@@ -2,6 +2,9 @@
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />
   </Folder>
+  <Folder Name="/Solution Items/Database/">
+    <File Path="InterviewModule_Queries.sql" />
+  </Folder>
   <Project Path="skillnet.client/skillnet.client.esproj">
     <Build />
     <Deploy />
