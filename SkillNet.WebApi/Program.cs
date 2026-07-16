@@ -95,6 +95,12 @@ builder.Services.AddScoped<IRecruiterService, RecruiterService>();
 builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
 builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
 builder.Services.AddScoped<ISkillRepository, SkillRepository>();
+builder.Services.AddScoped<ICandidateService, CandidateService>();
+builder.Services.AddScoped<IResumeService, ResumeService>();
+builder.Services.AddScoped<ISkillService, SkillService>();
+builder.Services.AddScoped<ICandidateDashboardService, CandidateDashboardService>();
+builder.Services.AddScoped<IProfileCompletionStrategy, BasicProfileCompletionStrategy>();
+builder.Services.AddTransient<ICandidateProfileBuilder, CandidateProfileBuilder>();
 
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
