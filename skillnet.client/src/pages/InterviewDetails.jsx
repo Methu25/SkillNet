@@ -1,178 +1,163 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './InterviewDetails.css';
 
 function InterviewDetails() {
     const { id } = useParams();
+
+    const [interview, setInterview] = useState(null);
+    const [evaluation, setEvaluation] = useState({
+        interviewerId: '',
+        technicalScore: '',
+        communicationScore: '',
+        problemSolvingScore: '',
+        cultureFitScore: '',
+        recommendation: 'Hold',
+        comments: ''
+    });
+
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [isSubmitted, setIsSubmitted] = useState(false);
 
-    const interviewDetails = {
-        1: {
-            interviewId: 1,
-            candidateName: 'Nimal Perera',
-            email: 'nimal.perera@gmail.com',
-            phone: '+94 77 123 4567',
-            jobTitle: 'Software Engineer Intern',
-            interviewType: 'Technical',
-            interviewRound: 1,
-            scheduledDate: 'Jul 12, 2026, 10:00 AM',
-            duration: 60,
-            location: 'Online',
-            meetingLink: 'https://meet.google.com/skillnet-demo',
-            status: 'Scheduled',
-            resumeSummary: 'Computer Science undergraduate with React, C#, SQL Server, and REST API project experience.',
-            applicationSummary: 'Shortlisted for Software Engineer Intern role based on academic projects and full-stack development skills.'
-        },
-        2: {
-            interviewId: 2,
-            candidateName: 'Kavindi Silva',
-            email: 'kavindi.silva@gmail.com',
-            phone: '+94 76 456 7890',
-            jobTitle: 'Frontend Developer Intern',
-            interviewType: 'HR',
-            interviewRound: 1,
-            scheduledDate: 'Jul 12, 2026, 2:00 PM',
-            duration: 45,
-            location: 'Online',
-            meetingLink: 'https://meet.google.com/frontend-demo',
-            status: 'Confirmed',
-            resumeSummary: 'Frontend-focused candidate with React, JavaScript, HTML, CSS, and UI design experience.',
-            applicationSummary: 'Shortlisted for Frontend Developer Intern role due to strong UI project portfolio.'
-        },
-        3: {
-            interviewId: 3,
-            candidateName: 'Avishka Fernando',
-            email: 'avishka.fernando@gmail.com',
-            phone: '+94 71 234 5678',
-            jobTitle: 'Backend Developer Intern',
-            interviewType: 'Technical',
-            interviewRound: 2,
-            scheduledDate: 'Jul 13, 2026, 9:30 AM',
-            duration: 60,
-            location: 'Meeting Room 2',
-            meetingLink: 'N/A',
-            status: 'Scheduled',
-            resumeSummary: 'Backend-focused candidate with C#, ASP.NET Web API, SQL Server, and database design knowledge.',
-            applicationSummary: 'Selected for second technical round after showing good backend development understanding.'
-        },
-        4: {
-            interviewId: 4,
-            candidateName: 'Dineth Jayawardena',
-            email: 'dineth.jayawardena@gmail.com',
-            phone: '+94 75 987 6543',
-            jobTitle: 'QA Intern',
-            interviewType: 'Technical',
-            interviewRound: 2,
-            scheduledDate: 'Jul 10, 2026, 11:00 AM',
-            duration: 60,
-            location: 'Online',
-            meetingLink: 'https://meet.google.com/qa-demo',
-            status: 'Completed',
-            resumeSummary: 'Candidate has knowledge of manual testing, test cases, bug reporting, and basic automation testing.',
-            applicationSummary: 'Moved to technical interview after passing initial screening for QA internship.'
-        },
-        5: {
-            interviewId: 5,
-            candidateName: 'Sandali Perera',
-            email: 'sandali.perera@gmail.com',
-            phone: '+94 77 555 8899',
-            jobTitle: 'UI/UX Intern',
-            interviewType: 'Managerial',
-            interviewRound: 3,
-            scheduledDate: 'Jul 9, 2026, 3:00 PM',
-            duration: 60,
-            location: 'Meeting Room 1',
-            meetingLink: 'N/A',
-            status: 'Evaluation Submitted',
-            resumeSummary: 'UI/UX candidate with wireframing, Figma, user research, and interface design experience.',
-            applicationSummary: 'Reached managerial round after strong design portfolio review and technical discussion.'
-        },
-        6: {
-            interviewId: 6,
-            candidateName: 'Ravindu Silva',
-            email: 'ravindu.silva@gmail.com',
-            phone: '+94 70 321 4567',
-            jobTitle: 'Full Stack Intern',
-            interviewType: 'HR',
-            interviewRound: 1,
-            scheduledDate: 'Jul 14, 2026, 1:30 PM',
-            duration: 45,
-            location: 'Online',
-            meetingLink: 'https://meet.google.com/fullstack-demo',
-            status: 'Pending Feedback',
-            resumeSummary: 'Full-stack candidate with React, Node.js, ASP.NET, SQL Server, and API integration experience.',
-            applicationSummary: 'Shortlisted for Full Stack Intern role based on full-stack project experience.'
-        }
-    };
+    useEffect(() => {
+        const loadInterviewDetails = async () => {
+            try {
+                setLoading(true);
+                setError('');
 
-    const interview = interviewDetails[id] || interviewDetails[1];
+                const response = await fetch(`/api/interviews/${id}`);
 
-    const assignedInterviewers = [
-        {
-            interviewerId: 1,
-            name: 'Kasun Jayasinghe',
-            position: 'Senior Software Engineer',
-            role: 'Lead Interviewer'
-        },
-        {
-            interviewerId: 2,
-            name: 'Tharushi Fernando',
-            position: 'HR Executive',
-            role: 'Panel Member'
-        },
-        {
-            interviewerId: 3,
-            name: 'Ravindu Perera',
-            position: 'Technical Lead',
-            role: 'Observer'
-        }
-    ];
+                if (!response.ok) {
+                    throw new Error('Failed to load interview details from database.');
+                }
 
-    const interviewAgenda = [
-        'Candidate introduction',
-        'Project and experience discussion',
-        'Technical questions',
-        'Problem-solving scenario',
-        'Candidate questions',
-        'Final recommendation'
-    ];
-
-    const evaluation = {
-        technicalScore: 85,
-        communicationScore: 78,
-        problemSolvingScore: 82,
-        cultureFitScore: 80,
-        overallScore: 81,
-        recommendation: 'Hire',
-        comments: 'Candidate shows good technical understanding and clear communication. Suitable for internship role.'
-    };
-
-    const handleSubmitEvaluation = () => {
-        const submittedEvaluation = {
-            interviewId: interview.interviewId,
-            candidateName: interview.candidateName,
-            technicalScore: evaluation.technicalScore,
-            communicationScore: evaluation.communicationScore,
-            problemSolvingScore: evaluation.problemSolvingScore,
-            cultureFitScore: evaluation.cultureFitScore,
-            overallScore: evaluation.overallScore,
-            recommendation: evaluation.recommendation,
-            comments: evaluation.comments,
-            submittedAt: new Date().toLocaleString()
+                const data = await response.json();
+                setInterview(data);
+            } catch (err) {
+                setError(err.message || 'Something went wrong while loading interview details.');
+            } finally {
+                setLoading(false);
+            }
         };
 
-        const existingEvaluations =
-            JSON.parse(localStorage.getItem('submittedEvaluations')) || [];
+        loadInterviewDetails();
+    }, [id]);
 
-        existingEvaluations.push(submittedEvaluation);
+    const formatDateTime = (dateValue) => {
+        if (!dateValue) return 'Not scheduled';
 
-        localStorage.setItem(
-            'submittedEvaluations',
-            JSON.stringify(existingEvaluations)
-        );
+        const date = new Date(dateValue);
 
-        setIsSubmitted(true);
+        if (Number.isNaN(date.getTime())) {
+            return dateValue;
+        }
+
+        return date.toLocaleString();
     };
+
+    const calculateOverallScore = () => {
+        const technical = Number(evaluation.technicalScore) || 0;
+        const communication = Number(evaluation.communicationScore) || 0;
+        const problemSolving = Number(evaluation.problemSolvingScore) || 0;
+        const cultureFit = Number(evaluation.cultureFitScore) || 0;
+
+        if (
+            technical === 0 &&
+            communication === 0 &&
+            problemSolving === 0 &&
+            cultureFit === 0
+        ) {
+            return 0;
+        }
+
+        return Math.round((technical + communication + problemSolving + cultureFit) / 4);
+    };
+
+    const handleEvaluationChange = (e) => {
+        const { name, value } = e.target;
+
+        setEvaluation({
+            ...evaluation,
+            [name]: value
+        });
+    };
+
+    const handleSubmitEvaluation = async () => {
+        try {
+            if (
+                !evaluation.interviewerId ||
+                !evaluation.technicalScore ||
+                !evaluation.communicationScore ||
+                !evaluation.problemSolvingScore ||
+                !evaluation.cultureFitScore
+            ) {
+                alert('Please fill Interviewer ID and all score fields.');
+                return;
+            }
+
+            const requestBody = {
+                interviewerId: Number(evaluation.interviewerId),
+                technicalScore: Number(evaluation.technicalScore),
+                communicationScore: Number(evaluation.communicationScore),
+                problemSolvingScore: Number(evaluation.problemSolvingScore),
+                cultureFitScore: Number(evaluation.cultureFitScore),
+                recommendation: evaluation.recommendation,
+                comments: evaluation.comments
+            };
+
+            const response = await fetch(`/api/interviews/${id}/evaluation`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to submit evaluation.');
+            }
+
+            setIsSubmitted(true);
+            alert('Evaluation submitted successfully.');
+        } catch (err) {
+            alert(err.message || 'Something went wrong while submitting evaluation.');
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="interview-details-page">
+                <h2>Loading interview details from database...</h2>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="interview-details-page">
+                <h2>Database/API Error</h2>
+                <p>{error}</p>
+
+                <Link className="back-button" to="/hiring-dashboard">
+                    Back to Dashboard
+                </Link>
+            </div>
+        );
+    }
+
+    if (!interview) {
+        return (
+            <div className="interview-details-page">
+                <h2>Interview not found.</h2>
+
+                <Link className="back-button" to="/hiring-dashboard">
+                    Back to Dashboard
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="interview-details-page">
@@ -190,56 +175,28 @@ function InterviewDetails() {
             <div className="details-grid">
                 <section className="details-card">
                     <h2>Candidate Information</h2>
-                    <p><strong>Name:</strong> {interview.candidateName}</p>
-                    <p><strong>Email:</strong> {interview.email}</p>
-                    <p><strong>Phone:</strong> {interview.phone}</p>
-                    <p><strong>Job Role:</strong> {interview.jobTitle}</p>
+                    <p><strong>Name:</strong> {interview.candidateName || 'Not available'}</p>
+                    <p><strong>Email:</strong> {interview.candidateEmail || 'Not available'}</p>
+                    <p><strong>Job Role:</strong> {interview.jobTitle || 'Not available'}</p>
+                    <p><strong>Experience:</strong> {interview.experienceYears ?? 'Not available'} years</p>
+                    <p><strong>Skills:</strong> {interview.candidateSkills || 'Not available'}</p>
                 </section>
 
                 <section className="details-card">
                     <h2>Interview Information</h2>
                     <p><strong>Type:</strong> {interview.interviewType}</p>
                     <p><strong>Round:</strong> {interview.interviewRound}</p>
-                    <p><strong>Date & Time:</strong> {interview.scheduledDate}</p>
+                    <p><strong>Date & Time:</strong> {formatDateTime(interview.scheduledDate)}</p>
                     <p><strong>Duration:</strong> {interview.duration} minutes</p>
-                    <p><strong>Status:</strong> {interview.status}</p>
-                    <p><strong>Location:</strong> {interview.location}</p>
-                    <p><strong>Meeting Link:</strong> {interview.meetingLink}</p>
+                    <p><strong>Status:</strong> {interview.status || 'Pending'}</p>
+                    <p><strong>Location:</strong> {interview.location || 'N/A'}</p>
+                    <p><strong>Meeting Link:</strong> {interview.meetingLink || 'N/A'}</p>
                 </section>
             </div>
 
             <section className="details-card full-width">
-                <h2>Resume Summary</h2>
-                <p>{interview.resumeSummary}</p>
-            </section>
-
-            <section className="details-card full-width">
-                <h2>Application Summary</h2>
-                <p>{interview.applicationSummary}</p>
-            </section>
-
-            <section className="details-card full-width">
-                <h2>Assigned Interviewers</h2>
-
-                <div className="interviewer-grid">
-                    {assignedInterviewers.map((interviewer) => (
-                        <div className="interviewer-card" key={interviewer.interviewerId}>
-                            <h3>{interviewer.name}</h3>
-                            <p>{interviewer.position}</p>
-                            <span>{interviewer.role}</span>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <section className="details-card full-width">
-                <h2>Interview Agenda</h2>
-
-                <ol className="agenda-list">
-                    {interviewAgenda.map((item, index) => (
-                        <li key={index}>{item}</li>
-                    ))}
-                </ol>
+                <h2>Candidate Summary</h2>
+                <p>{interview.candidateSummary || 'No candidate summary available.'}</p>
             </section>
 
             <section className="details-card full-width">
@@ -247,33 +204,76 @@ function InterviewDetails() {
 
                 <div className="score-grid">
                     <div>
+                        <label>Interviewer ID</label>
+                        <input
+                            name="interviewerId"
+                            type="number"
+                            value={evaluation.interviewerId}
+                            onChange={handleEvaluationChange}
+                            placeholder="Enter interviewer ID"
+                        />
+                    </div>
+
+                    <div>
                         <label>Technical Score</label>
-                        <input type="number" defaultValue={evaluation.technicalScore} />
+                        <input
+                            name="technicalScore"
+                            type="number"
+                            value={evaluation.technicalScore}
+                            onChange={handleEvaluationChange}
+                            placeholder="0 - 100"
+                        />
                     </div>
 
                     <div>
                         <label>Communication Score</label>
-                        <input type="number" defaultValue={evaluation.communicationScore} />
+                        <input
+                            name="communicationScore"
+                            type="number"
+                            value={evaluation.communicationScore}
+                            onChange={handleEvaluationChange}
+                            placeholder="0 - 100"
+                        />
                     </div>
 
                     <div>
                         <label>Problem Solving Score</label>
-                        <input type="number" defaultValue={evaluation.problemSolvingScore} />
+                        <input
+                            name="problemSolvingScore"
+                            type="number"
+                            value={evaluation.problemSolvingScore}
+                            onChange={handleEvaluationChange}
+                            placeholder="0 - 100"
+                        />
                     </div>
 
                     <div>
                         <label>Culture Fit Score</label>
-                        <input type="number" defaultValue={evaluation.cultureFitScore} />
+                        <input
+                            name="cultureFitScore"
+                            type="number"
+                            value={evaluation.cultureFitScore}
+                            onChange={handleEvaluationChange}
+                            placeholder="0 - 100"
+                        />
                     </div>
 
                     <div>
                         <label>Overall Score</label>
-                        <input type="number" defaultValue={evaluation.overallScore} readOnly />
+                        <input
+                            type="number"
+                            value={calculateOverallScore()}
+                            readOnly
+                        />
                     </div>
 
                     <div>
                         <label>Recommendation</label>
-                        <select defaultValue={evaluation.recommendation}>
+                        <select
+                            name="recommendation"
+                            value={evaluation.recommendation}
+                            onChange={handleEvaluationChange}
+                        >
                             <option>Strong Hire</option>
                             <option>Hire</option>
                             <option>Next Round</option>
@@ -284,7 +284,12 @@ function InterviewDetails() {
                 </div>
 
                 <label>Interview Notes / Final Comments</label>
-                <textarea defaultValue={evaluation.comments}></textarea>
+                <textarea
+                    name="comments"
+                    value={evaluation.comments}
+                    onChange={handleEvaluationChange}
+                    placeholder="Enter final comments"
+                ></textarea>
 
                 <button
                     className="submit-button"

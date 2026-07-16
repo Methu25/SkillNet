@@ -189,6 +189,14 @@ namespace SkillNet.Application.Services
             {
                 InterviewId = interview.InterviewId,
                 ApplicationId = interview.ApplicationId,
+
+                CandidateName = interview.CandidateName,
+                CandidateEmail = interview.CandidateEmail,
+                JobTitle = interview.JobTitle,
+                CandidateSummary = interview.CandidateSummary,
+                CandidateSkills = interview.CandidateSkills,
+                ExperienceYears = interview.ExperienceYears,
+
                 InterviewType = interview.InterviewType,
                 InterviewRound = interview.InterviewRound,
                 ScheduledDate = interview.ScheduledDate,

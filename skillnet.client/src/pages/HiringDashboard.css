@@ -515,3 +515,48 @@
     background: #4b5563;
     border-radius: 10px;
 }
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.edit-button,
+.delete-button {
+    border: none;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.edit-button {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+    .edit-button:hover {
+        background: #1d4ed8;
+    }
+
+.delete-button {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+    .delete-button:hover {
+        background: #b91c1c;
+    }
+.create-modal {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-actions {
+    position: sticky;
+    bottom: 0;
+    background: #1f2937;
+    padding-top: 15px;
+    padding-bottom: 5px;
+}
