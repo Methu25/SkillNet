@@ -11,6 +11,7 @@ using SkillNet.Infrastructure.Repositories;
 using SkillNet.Infrastructure.Data;
 using SkillNet.Infrastructure.Storage;
 using SkillNet.Infrastructure.Email;
+using SkillNet.WebApi.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -153,6 +154,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowReactApp");
+app.UseMiddleware<CandidateExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

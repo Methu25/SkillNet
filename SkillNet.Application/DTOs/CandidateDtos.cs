@@ -1,31 +1,53 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace SkillNet.Application.DTOs
 {
     public class CreateCandidateDto
     {
+        [Required, StringLength(100)]
         public string FirstName { get; set; } = string.Empty;
+        [Required, StringLength(100)]
         public string LastName { get; set; } = string.Empty;
+        [Required, StringLength(30)]
         public string? PhoneNumber { get; set; }
+        [Required, StringLength(150)]
         public string? Location { get; set; }
+        [StringLength(150)]
         public string? ProfessionalTitle { get; set; }
+        [StringLength(2000)]
         public string? ProfessionalSummary { get; set; }
+        [StringLength(2000)]
         public string? Education { get; set; }
+        [StringLength(150)]
         public string? Degree { get; set; }
+        [StringLength(200)]
         public string? University { get; set; }
+        [Range(0, 60)]
         public int? ExperienceYears { get; set; }
         public string? ProfileImagePath { get; set; }
     }
 
     public class UpdateCandidateDto
     {
+        [Required, StringLength(100)]
         public string FirstName { get; set; } = string.Empty;
+        [Required, StringLength(100)]
         public string LastName { get; set; } = string.Empty;
+        [Required, StringLength(30)]
         public string? PhoneNumber { get; set; }
+        [Required, StringLength(150)]
         public string? Location { get; set; }
+        [StringLength(150)]
         public string? ProfessionalTitle { get; set; }
+        [StringLength(2000)]
         public string? ProfessionalSummary { get; set; }
+        [StringLength(2000)]
         public string? Education { get; set; }
+        [StringLength(150)]
         public string? Degree { get; set; }
+        [StringLength(200)]
         public string? University { get; set; }
+        [Range(0, 60)]
         public int? ExperienceYears { get; set; }
         public string? ProfileImagePath { get; set; }
     }

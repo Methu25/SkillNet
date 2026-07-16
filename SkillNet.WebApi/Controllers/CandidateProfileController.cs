@@ -118,8 +118,8 @@ namespace SkillNet.WebApi.Controllers
                 return Unauthorized();
             }
 
-            var profile = await _candidateService.GetCandidateProfileAsync(userId);
-            return Ok(new { exists = profile != null });
+            var exists = await _candidateService.CandidateExistsAsync(userId);
+            return Ok(new { exists });
         }
 
         [HttpGet("completion")]

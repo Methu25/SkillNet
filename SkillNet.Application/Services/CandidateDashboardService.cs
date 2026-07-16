@@ -29,17 +29,16 @@ namespace SkillNet.Application.Services
                 return CreateFirstTimeDashboard();
             }
 
-            var resumesTask = _resumeService.GetCandidateResumesAsync(candidateId);
-            var jobsTask = _jobService.SearchJobsAsync(new JobSearchRequest
+            // These services share the request-scoped DbContext. Run their queries
+            // sequentially because EF Core does not support concurrent operations on it.
+            var resumes = (await _resumeService.GetCandidateResumesAsync(candidateId)).ToList();
+            var jobs = await _jobService.SearchJobsAsync(new JobSearchRequest
             {
                 SortBy = "newest",
                 Page = 1,
                 PageSize = JobSuggestionCount
             });
 
-            await Task.WhenAll(resumesTask, jobsTask);
-
-            var resumes = (await resumesTask).ToList();
             var skills = candidate.Skills.ToList();
             var activeResume = resumes.FirstOrDefault(resume => resume.IsActive);
 
@@ -57,7 +56,7 @@ namespace SkillNet.Application.Services
                     .FirstOrDefault(),
                 TotalSkills = skills.Count,
                 Skills = skills,
-                RecommendedJobs = (await jobsTask).ToList()
+                RecommendedJobs = jobs.ToList()
             };
         }
 

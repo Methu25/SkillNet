@@ -10,6 +10,8 @@ namespace SkillNet.Application.Services
         private readonly ICandidateRepository _candidateRepository;
         private readonly IProfileCompletionStrategy _profileCompletionStrategy;
         private readonly ICandidateProfileBuilder _candidateProfileBuilder;
+        private readonly IResumeStorageService _resumeStorageService;
+        private readonly IProfileImageStorageService _profileImageStorageService;
         private readonly IEmailService _emailService;
         private readonly ILogger<CandidateService> _logger;
 
@@ -17,12 +19,16 @@ namespace SkillNet.Application.Services
             ICandidateRepository candidateRepository,
             IProfileCompletionStrategy profileCompletionStrategy,
             ICandidateProfileBuilder candidateProfileBuilder,
+            IResumeStorageService resumeStorageService,
+            IProfileImageStorageService profileImageStorageService,
             IEmailService emailService,
             ILogger<CandidateService> logger)
         {
             _candidateRepository = candidateRepository;
             _profileCompletionStrategy = profileCompletionStrategy;
             _candidateProfileBuilder = candidateProfileBuilder;
+            _resumeStorageService = resumeStorageService;
+            _profileImageStorageService = profileImageStorageService;
             _emailService = emailService;
             _logger = logger;
         }
@@ -66,6 +72,11 @@ namespace SkillNet.Application.Services
         {
             var candidate = await _candidateRepository.GetCandidateByUserIdAsync(userId);
             return candidate == null ? null : await MapToCompletedProfileDtoAsync(candidate);
+        }
+
+        public Task<bool> CandidateExistsAsync(int userId)
+        {
+            return _candidateRepository.CandidateExistsAsync(userId);
         }
 
         public async Task<CandidateProfileSummaryDto?> GetCandidateProfileSummaryAsync(int userId)
@@ -115,13 +126,44 @@ namespace SkillNet.Application.Services
 
         public async Task<bool> DeleteCandidateAsync(int userId)
         {
-            if (!await _candidateRepository.CandidateExistsAsync(userId))
+            var candidate = await _candidateRepository.GetCandidateByUserIdAsync(userId);
+            if (candidate == null)
             {
                 return false;
             }
 
             await _candidateRepository.DeleteCandidateAsync(userId);
+            await DeleteCandidateFilesAsync(candidate, userId);
             return true;
+        }
+
+        private async Task DeleteCandidateFilesAsync(Candidate candidate, int userId)
+        {
+            foreach (var fileReference in candidate.Resumes
+                .Select(resume => resume.FilePath)
+                .Where(reference => !string.IsNullOrWhiteSpace(reference)))
+            {
+                try
+                {
+                    await _resumeStorageService.DeleteAsync(fileReference);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete a resume file after deleting candidate profile {UserId}.", userId);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(candidate.ProfileImagePath))
+            {
+                try
+                {
+                    await _profileImageStorageService.DeleteAsync(candidate.ProfileImagePath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to delete the profile image after deleting candidate profile {UserId}.", userId);
+                }
+            }
         }
 
         private async Task<CandidateProfileDto> MapToCompletedProfileDtoAsync(Candidate candidate)
@@ -184,7 +226,7 @@ namespace SkillNet.Application.Services
                 ResumeId = resume.ResumeId,
                 CandidateId = resume.CandidateId,
                 FileName = resume.FileName,
-                FilePath = resume.FilePath,
+                FilePath = $"/api/candidate/resumes/{resume.ResumeId}/download",
                 FileType = resume.FileType,
                 FileSize = resume.FileSize,
                 UploadedDate = resume.UploadedDate,

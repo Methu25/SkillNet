@@ -23,6 +23,11 @@ export const setUnauthorizedHandler = (handler) => {
 
 const buildUrl = (path) => `${apiBaseUrl}${path}`;
 
+export const resolveApiUrl = (path) => {
+    if (!path || /^https?:\/\//i.test(path)) return path;
+    return buildUrl(path.startsWith('/') ? path : `/${path}`);
+};
+
 const parseResponse = async (response, responseType) => {
     if (response.status === 204) return null;
     if (responseType === 'blob') return response.blob();
@@ -79,4 +84,3 @@ export const jsonRequest = (path, method = 'GET', body) => apiRequest(path, {
     method,
     body: body == null ? undefined : JSON.stringify(body)
 });
-
