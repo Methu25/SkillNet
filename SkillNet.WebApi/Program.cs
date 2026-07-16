@@ -9,6 +9,7 @@ using SkillNet.Application.Services;
 using SkillNet.Application.Interfaces;
 using SkillNet.Infrastructure.Repositories;
 using SkillNet.Infrastructure.Data;
+using SkillNet.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -96,6 +97,8 @@ builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
 builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
 builder.Services.AddScoped<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<ICandidateService, CandidateService>();
+builder.Services.AddScoped<IProfileImageService, ProfileImageService>();
+builder.Services.AddScoped<IProfileImageStorageService, LocalProfileImageStorageService>();
 builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
 builder.Services.AddScoped<ICandidateDashboardService, CandidateDashboardService>();
@@ -131,6 +134,7 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapStaticAssets();
 
 if (app.Environment.IsDevelopment())

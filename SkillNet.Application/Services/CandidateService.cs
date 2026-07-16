@@ -78,7 +78,6 @@ namespace SkillNet.Application.Services
             candidate.Degree = dto.Degree;
             candidate.University = dto.University;
             candidate.ExperienceYears = dto.ExperienceYears;
-            candidate.ProfileImagePath = dto.ProfileImagePath;
             candidate.UpdatedDate = DateTime.UtcNow;
 
             var profile = MapToProfileDto(candidate);

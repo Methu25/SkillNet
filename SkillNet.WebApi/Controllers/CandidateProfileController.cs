@@ -13,13 +13,16 @@ namespace SkillNet.WebApi.Controllers
     public class CandidateProfileController : ControllerBase
     {
         private readonly ICandidateService _candidateService;
+        private readonly IProfileImageService _profileImageService;
         private readonly IUserService _userService;
 
         public CandidateProfileController(
             ICandidateService candidateService,
+            IProfileImageService profileImageService,
             IUserService userService)
         {
             _candidateService = candidateService;
+            _profileImageService = profileImageService;
             _userService = userService;
         }
 
@@ -121,6 +124,80 @@ namespace SkillNet.WebApi.Controllers
             }
 
             return Ok(profile.ProfileCompletion);
+        }
+
+        [HttpPost("image")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile image)
+        {
+            if (!TryGetCurrentUserId(out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var validationResult = ValidateProfileImage(image);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            await using var content = image.OpenReadStream();
+            var imageUrl = await _profileImageService.UploadAsync(
+                userId,
+                content,
+                Path.GetFileName(image.FileName),
+                image.ContentType,
+                image.Length);
+
+            return Ok(new { profileImageUrl = imageUrl });
+        }
+
+        [HttpDelete("image")]
+        public async Task<IActionResult> DeleteProfileImage()
+        {
+            if (!TryGetCurrentUserId(out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var deleted = await _profileImageService.DeleteAsync(userId);
+            if (!deleted)
+            {
+                return NotFound(new { message = "Candidate profile image not found." });
+            }
+
+            return Ok(new { message = "Candidate profile image deleted successfully." });
+        }
+
+        private IActionResult? ValidateProfileImage(IFormFile? image)
+        {
+            const long maximumFileSize = 5 * 1024 * 1024;
+            var allowedContentTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+
+            if (image == null || image.Length == 0)
+            {
+                return BadRequest(new { message = "A non-empty profile image is required." });
+            }
+
+            if (image.Length > maximumFileSize)
+            {
+                return StatusCode(
+                    StatusCodes.Status413PayloadTooLarge,
+                    new { message = $"Profile image size cannot exceed {maximumFileSize} bytes." });
+            }
+
+            if (!allowedContentTypes.Contains(image.ContentType, StringComparer.OrdinalIgnoreCase) ||
+                !allowedExtensions.Contains(
+                    Path.GetExtension(image.FileName),
+                    StringComparer.OrdinalIgnoreCase))
+            {
+                return StatusCode(
+                    StatusCodes.Status415UnsupportedMediaType,
+                    new { message = "Only JPEG, PNG, and WEBP profile images are supported." });
+            }
+
+            return null;
         }
 
         private bool TryGetCurrentUserId(out int userId)
