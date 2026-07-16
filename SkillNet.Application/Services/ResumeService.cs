@@ -1,26 +1,34 @@
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
 using SkillNet.Domain.Entities;
+using Microsoft.Extensions.Configuration;
 
 namespace SkillNet.Application.Services
 {
     public class ResumeService : IResumeService
     {
-        private const long MaximumFileSize = 10 * 1024 * 1024;
-        private const string PdfContentType = "application/pdf";
-
         private readonly ICandidateRepository _candidateRepository;
         private readonly IResumeRepository _resumeRepository;
-        private readonly IFileStorageProvider _storageProvider;
+        private readonly IResumeStorageService _storageService;
+        private readonly long _maximumFileSize;
+        private readonly string _allowedContentType;
 
         public ResumeService(
             ICandidateRepository candidateRepository,
             IResumeRepository resumeRepository,
-            IFileStorageProvider storageProvider)
+            IResumeStorageService storageService,
+            IConfiguration configuration)
         {
             _candidateRepository = candidateRepository;
             _resumeRepository = resumeRepository;
-            _storageProvider = storageProvider;
+            _storageService = storageService;
+            _maximumFileSize = long.TryParse(
+                configuration["ResumeStorage:MaximumFileSizeBytes"],
+                out var configuredMaximum)
+                    ? configuredMaximum
+                    : 10 * 1024 * 1024;
+            _allowedContentType = configuration["ResumeStorage:AllowedMimeType"] ??
+                "application/pdf";
         }
 
         public async Task<IEnumerable<ResumeDto>> GetCandidateResumesAsync(int candidateId)
@@ -46,10 +54,7 @@ namespace SkillNet.Application.Services
             var existingResumes = (await _resumeRepository
                 .GetAllResumesByCandidateIdAsync(candidateId)).ToList();
             var safeFileName = Path.GetFileName(dto.FileName);
-            var fileReference = await _storageProvider.SaveAsync(
-                dto.Content,
-                safeFileName,
-                dto.ContentType);
+            var fileReference = await _storageService.SaveAsync(dto.Content);
 
             var resume = new Resume
             {
@@ -69,7 +74,7 @@ namespace SkillNet.Application.Services
             }
             catch
             {
-                await _storageProvider.DeleteAsync(fileReference);
+                await _storageService.DeleteAsync(fileReference);
                 throw;
             }
         }
@@ -90,19 +95,26 @@ namespace SkillNet.Application.Services
             }
 
             var safeFileName = Path.GetFileName(dto.FileName);
-            var newFileReference = await _storageProvider.ReplaceAsync(
-                resume.FilePath,
-                dto.Content,
-                safeFileName,
-                dto.ContentType);
+            var previousFileReference = resume.FilePath;
+            var newFileReference = await _storageService.SaveAsync(dto.Content);
 
-            resume.FileName = safeFileName;
-            resume.FilePath = newFileReference;
-            resume.FileType = dto.ContentType;
-            resume.FileSize = dto.FileSize;
-            resume.UploadedDate = DateTime.UtcNow;
+            try
+            {
+                resume.FileName = safeFileName;
+                resume.FilePath = newFileReference;
+                resume.FileType = dto.ContentType;
+                resume.FileSize = dto.FileSize;
+                resume.UploadedDate = DateTime.UtcNow;
 
-            await _resumeRepository.UpdateResumeAsync(resume);
+                await _resumeRepository.UpdateResumeAsync(resume);
+            }
+            catch
+            {
+                await _storageService.DeleteAsync(newFileReference);
+                throw;
+            }
+
+            await _storageService.DeleteAsync(previousFileReference);
             return await MapToResumeDtoAsync(resume);
         }
 
@@ -159,9 +171,33 @@ namespace SkillNet.Application.Services
                 }
             }
 
-            await _storageProvider.DeleteAsync(fileReference);
+            await _storageService.DeleteAsync(fileReference);
 
             return true;
+        }
+
+        public async Task<ResumeDownloadDto?> DownloadResumeAsync(int candidateId, int resumeId)
+        {
+            await EnsureCandidateExistsAsync(candidateId);
+
+            var resume = await GetOwnedResumeAsync(candidateId, resumeId);
+            if (resume == null)
+            {
+                return null;
+            }
+
+            var content = await _storageService.OpenReadAsync(resume.FilePath);
+            if (content == null)
+            {
+                return null;
+            }
+
+            return new ResumeDownloadDto
+            {
+                Content = content,
+                FileName = Path.GetFileName(resume.FileName),
+                ContentType = _allowedContentType
+            };
         }
 
         private async Task EnsureCandidateExistsAsync(int candidateId)
@@ -178,22 +214,22 @@ namespace SkillNet.Application.Services
             return resume?.CandidateId == candidateId ? resume : null;
         }
 
-        private async Task<ResumeDto> MapToResumeDtoAsync(Resume resume)
+        private static Task<ResumeDto> MapToResumeDtoAsync(Resume resume)
         {
-            return new ResumeDto
+            return Task.FromResult(new ResumeDto
             {
                 ResumeId = resume.ResumeId,
                 CandidateId = resume.CandidateId,
                 FileName = resume.FileName,
-                FilePath = await _storageProvider.GetDownloadReferenceAsync(resume.FilePath),
+                FilePath = $"/api/candidate/resumes/{resume.ResumeId}/download",
                 FileType = resume.FileType,
                 FileSize = resume.FileSize,
                 UploadedDate = resume.UploadedDate,
                 IsActive = resume.IsActive
-            };
+            });
         }
 
-        private static void ValidateFile(
+        private void ValidateFile(
             string fileName,
             string contentType,
             long fileSize,
@@ -204,13 +240,13 @@ namespace SkillNet.Application.Services
                 throw new ArgumentException("A non-empty resume file is required.");
             }
 
-            if (fileSize > MaximumFileSize)
+            if (fileSize > _maximumFileSize)
             {
-                throw new ArgumentException($"Resume file size cannot exceed {MaximumFileSize} bytes.");
+                throw new ArgumentException($"Resume file size cannot exceed {_maximumFileSize} bytes.");
             }
 
             if (!string.Equals(Path.GetExtension(fileName), ".pdf", StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(contentType, PdfContentType, StringComparison.OrdinalIgnoreCase))
+                !string.Equals(contentType, _allowedContentType, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException("Only PDF resume files are supported.");
             }
@@ -218,6 +254,19 @@ namespace SkillNet.Application.Services
             if (string.IsNullOrWhiteSpace(Path.GetFileName(fileName)))
             {
                 throw new ArgumentException("A valid resume file name is required.", nameof(fileName));
+            }
+
+            var originalPosition = content.CanSeek ? content.Position : 0;
+            Span<byte> signature = stackalloc byte[5];
+            var bytesRead = content.Read(signature);
+            if (content.CanSeek)
+            {
+                content.Position = originalPosition;
+            }
+
+            if (bytesRead < 5 || !signature.SequenceEqual("%PDF-"u8))
+            {
+                throw new ArgumentException("The uploaded file does not contain a valid PDF signature.");
             }
         }
     }

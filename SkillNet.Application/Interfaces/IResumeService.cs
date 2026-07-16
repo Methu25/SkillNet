@@ -9,6 +9,7 @@ namespace SkillNet.Application.Interfaces
         Task<ResumeDto> UploadResumeAsync(int candidateId, UploadResumeDto dto);
         Task<ResumeDto?> ReplaceResumeAsync(int candidateId, int resumeId, ReplaceResumeDto dto);
         Task<ResumeDto?> SetActiveResumeAsync(int candidateId, int resumeId);
+        Task<ResumeDownloadDto?> DownloadResumeAsync(int candidateId, int resumeId);
         Task<bool> DeleteResumeAsync(int candidateId, int resumeId);
     }
 }

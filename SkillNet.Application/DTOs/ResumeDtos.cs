@@ -29,4 +29,11 @@ namespace SkillNet.Application.DTOs
         public DateTime UploadedDate { get; set; }
         public bool IsActive { get; set; }
     }
+
+    public class ResumeDownloadDto
+    {
+        public Stream Content { get; set; } = Stream.Null;
+        public string FileName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = "application/pdf";
+    }
 }

@@ -100,6 +100,7 @@ builder.Services.AddScoped<ICandidateService, CandidateService>();
 builder.Services.AddScoped<IProfileImageService, ProfileImageService>();
 builder.Services.AddScoped<IProfileImageStorageService, LocalProfileImageStorageService>();
 builder.Services.AddScoped<IResumeService, ResumeService>();
+builder.Services.AddScoped<IResumeStorageService, LocalResumeStorageService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
 builder.Services.AddScoped<ICandidateDashboardService, CandidateDashboardService>();
 builder.Services.AddScoped<IProfileCompletionStrategy, BasicProfileCompletionStrategy>();

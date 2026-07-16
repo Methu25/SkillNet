@@ -12,16 +12,25 @@ namespace SkillNet.WebApi.Controllers
     [Authorize(Roles = "Candidate")]
     public class ResumeController : ControllerBase
     {
-        private const long MaximumFileSize = 10 * 1024 * 1024;
-        private const string PdfContentType = "application/pdf";
-
         private readonly IResumeService _resumeService;
         private readonly IUserService _userService;
+        private readonly long _maximumFileSize;
+        private readonly string _pdfContentType;
 
-        public ResumeController(IResumeService resumeService, IUserService userService)
+        public ResumeController(
+            IResumeService resumeService,
+            IUserService userService,
+            IConfiguration configuration)
         {
             _resumeService = resumeService;
             _userService = userService;
+            _maximumFileSize = long.TryParse(
+                configuration["ResumeStorage:MaximumFileSizeBytes"],
+                out var configuredMaximum)
+                    ? configuredMaximum
+                    : 10 * 1024 * 1024;
+            _pdfContentType = configuration["ResumeStorage:AllowedMimeType"] ??
+                "application/pdf";
         }
 
         [HttpGet]
@@ -146,6 +155,27 @@ namespace SkillNet.WebApi.Controllers
             return Ok(new { message = "Resume deleted successfully." });
         }
 
+        [HttpGet("{resumeId:int}/download")]
+        public async Task<IActionResult> DownloadResume(int resumeId)
+        {
+            if (!TryGetCurrentUserId(out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var download = await _resumeService.DownloadResumeAsync(userId, resumeId);
+            if (download == null)
+            {
+                return NotFound(new { message = "Resume file not found or access denied." });
+            }
+
+            return File(
+                download.Content,
+                download.ContentType,
+                download.FileName,
+                enableRangeProcessing: true);
+        }
+
         private IActionResult? ValidatePdf(IFormFile? file)
         {
             if (file == null || file.Length == 0)
@@ -153,15 +183,15 @@ namespace SkillNet.WebApi.Controllers
                 return BadRequest(new { message = "A non-empty resume file is required." });
             }
 
-            if (file.Length > MaximumFileSize)
+            if (file.Length > _maximumFileSize)
             {
                 return StatusCode(
                     StatusCodes.Status413PayloadTooLarge,
-                    new { message = $"Resume file size cannot exceed {MaximumFileSize} bytes." });
+                    new { message = $"Resume file size cannot exceed {_maximumFileSize} bytes." });
             }
 
             if (!string.Equals(Path.GetExtension(file.FileName), ".pdf", StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(file.ContentType, PdfContentType, StringComparison.OrdinalIgnoreCase))
+                !string.Equals(file.ContentType, _pdfContentType, StringComparison.OrdinalIgnoreCase))
             {
                 return StatusCode(
                     StatusCodes.Status415UnsupportedMediaType,
