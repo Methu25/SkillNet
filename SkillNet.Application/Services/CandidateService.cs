@@ -1,6 +1,7 @@
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
 using SkillNet.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace SkillNet.Application.Services
 {
@@ -9,15 +10,21 @@ namespace SkillNet.Application.Services
         private readonly ICandidateRepository _candidateRepository;
         private readonly IProfileCompletionStrategy _profileCompletionStrategy;
         private readonly ICandidateProfileBuilder _candidateProfileBuilder;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<CandidateService> _logger;
 
         public CandidateService(
             ICandidateRepository candidateRepository,
             IProfileCompletionStrategy profileCompletionStrategy,
-            ICandidateProfileBuilder candidateProfileBuilder)
+            ICandidateProfileBuilder candidateProfileBuilder,
+            IEmailService emailService,
+            ILogger<CandidateService> logger)
         {
             _candidateRepository = candidateRepository;
             _profileCompletionStrategy = profileCompletionStrategy;
             _candidateProfileBuilder = candidateProfileBuilder;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         public async Task<CandidateProfileDto> CreateCandidateAsync(int userId, CreateCandidateDto dto)
@@ -42,7 +49,17 @@ namespace SkillNet.Application.Services
             candidate.IsProfileCompleted = profile.ProfileCompletion.IsComplete;
 
             var createdCandidate = await _candidateRepository.AddCandidateAsync(candidate);
-            return await MapToCompletedProfileDtoAsync(createdCandidate);
+            var savedCandidate = await _candidateRepository.GetCandidateByUserIdAsync(userId) ??
+                createdCandidate;
+
+            await TrySendEmailAsync(
+                savedCandidate.User?.Email,
+                "Welcome to SkillNet",
+                "Your professional profile has been successfully created.",
+                userId,
+                "Profile Created");
+
+            return await MapToCompletedProfileDtoAsync(savedCandidate);
         }
 
         public async Task<CandidateProfileDto?> GetCandidateProfileAsync(int userId)
@@ -68,6 +85,9 @@ namespace SkillNet.Application.Services
                 return null;
             }
 
+            var previousProfile = MapToProfileDto(candidate);
+            var previousCompletion = await _profileCompletionStrategy.CalculateAsync(previousProfile);
+
             candidate.FirstName = dto.FirstName.Trim();
             candidate.LastName = dto.LastName.Trim();
             candidate.PhoneNumber = dto.PhoneNumber;
@@ -85,6 +105,11 @@ namespace SkillNet.Application.Services
             candidate.IsProfileCompleted = profile.ProfileCompletion.IsComplete;
 
             await _candidateRepository.UpdateCandidateAsync(candidate);
+            await SendProgressNotificationAsync(
+                candidate.User?.Email,
+                userId,
+                previousCompletion.CompletionPercentage,
+                profile.ProfileCompletion.CompletionPercentage);
             return await MapToCompletedProfileDtoAsync(candidate);
         }
 
@@ -187,6 +212,69 @@ namespace SkillNet.Application.Services
             if (string.IsNullOrWhiteSpace(lastName))
             {
                 throw new ArgumentException("Last name is required.", nameof(lastName));
+            }
+        }
+
+        private async Task SendProgressNotificationAsync(
+            string? recipientEmail,
+            int userId,
+            int previousPercentage,
+            int currentPercentage)
+        {
+            if (previousPercentage < 100 && currentPercentage == 100)
+            {
+                await TrySendEmailAsync(
+                    recipientEmail,
+                    "Your SkillNet profile is complete",
+                    "Congratulations!\n\nYour profile is now fully completed and ready to be discovered by recruiters.",
+                    userId,
+                    "Profile Completed");
+                return;
+            }
+
+            var milestone = new[] { 75, 50, 25 }
+                .FirstOrDefault(value => previousPercentage < value && currentPercentage >= value);
+            if (milestone == 0)
+            {
+                return;
+            }
+
+            await TrySendEmailAsync(
+                recipientEmail,
+                "Great progress!",
+                $"Great progress!\n\nYour SkillNet profile is now {milestone}% complete.\n\n" +
+                "Complete your profile to increase your visibility to recruiters.",
+                userId,
+                $"Profile Progress {milestone}%");
+        }
+
+        private async Task TrySendEmailAsync(
+            string? recipientEmail,
+            string subject,
+            string body,
+            int userId,
+            string eventName)
+        {
+            if (string.IsNullOrWhiteSpace(recipientEmail))
+            {
+                _logger.LogWarning(
+                    "Candidate email notification {EventName} was skipped because user {UserId} has no email address.",
+                    eventName,
+                    userId);
+                return;
+            }
+
+            try
+            {
+                await _emailService.SendAsync(recipientEmail, subject, body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Candidate email notification {EventName} failed for user {UserId}.",
+                    eventName,
+                    userId);
             }
         }
     }

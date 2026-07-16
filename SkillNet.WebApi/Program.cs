@@ -10,6 +10,7 @@ using SkillNet.Application.Interfaces;
 using SkillNet.Infrastructure.Repositories;
 using SkillNet.Infrastructure.Data;
 using SkillNet.Infrastructure.Storage;
+using SkillNet.Infrastructure.Email;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -99,6 +100,9 @@ builder.Services.AddScoped<ISkillRepository, SkillRepository>();
 builder.Services.AddScoped<ICandidateService, CandidateService>();
 builder.Services.AddScoped<IProfileImageService, ProfileImageService>();
 builder.Services.AddScoped<IProfileImageStorageService, LocalProfileImageStorageService>();
+builder.Services.Configure<SmtpOptions>(
+    builder.Configuration.GetSection(SmtpOptions.SectionName));
+builder.Services.AddTransient<IEmailService, SmtpEmailService>();
 builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<IResumeStorageService, LocalResumeStorageService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
