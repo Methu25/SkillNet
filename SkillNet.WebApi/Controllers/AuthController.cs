@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillNet.Application.Services;
 using SkillNet.Application.DTOs;
+using SkillNet.Application.Interfaces;
 
 namespace SkillNet.WebApi.Controllers
 {
@@ -12,12 +13,16 @@ namespace SkillNet.WebApi.Controllers
         IAuthenticationService authService,
         IUserService userService,
         IJwtTokenService jwtTokenService,
-        IPasswordHashService passwordHashService) : ControllerBase
+        IPasswordHashService passwordHashService,
+        IEmailService emailService,
+        ILogger<AuthController> logger) : ControllerBase
     {
         private readonly IAuthenticationService _authService = authService;
         private readonly IUserService _userService = userService;
         private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
         private readonly IPasswordHashService _passwordHashService = passwordHashService;
+        private readonly IEmailService _emailService = emailService;
+        private readonly ILogger<AuthController> _logger = logger;
 
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterRequest request)
@@ -91,23 +96,36 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public IActionResult ForgotPassword([FromBody] ForgotPasswordRequest request)
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
         {
+            const string responseMessage = "If the email is registered, a password reset token has been sent.";
+
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(new { Message = "Email is required." });
+
             var user = _userService.GetUserByEmail(request.Email);
             if (user == null)
-                return Ok(new { Message = "If the email is registered, a password reset token has been sent." });
+                return Ok(new { Message = responseMessage });
 
             string resetToken = Guid.NewGuid().ToString("N");
             DateTime expiry = DateTime.UtcNow.AddMinutes(15);
             _userService.SetResetToken(user.Email, resetToken, expiry);
 
-            Console.WriteLine($"[EMAIL SIMULATION] To: {user.Email} | Subject: Password Reset Token | Token: {resetToken}");
+            var delivery = await _emailService.SendAsync(
+                user.Email,
+                "Reset your SkillNet password",
+                $"Your SkillNet password reset token is:\n\n{resetToken}\n\nThis token expires in 15 minutes. If you did not request a password reset, you can ignore this email.",
+                "Password Reset");
 
-            return Ok(new
+            if (!delivery.Succeeded)
             {
-                Message = "If the email is registered, a password reset token has been sent.",
-                DebugToken = resetToken
-            });
+                _logger.LogWarning(
+                    "Password reset email was not delivered for user {UserId}: {Reason}",
+                    user.UserID,
+                    delivery.ErrorMessage);
+            }
+
+            return Ok(new { Message = responseMessage });
         }
 
         [HttpPost("reset-password")]
