@@ -14,6 +14,7 @@ using SkillNet.Infrastructure.Email;
 using SkillNet.WebApi.Middleware;
 using SkillNet.WebApi.Filters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,8 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("(local
 // 1. CORS POLICY (React Frontend)
 // ==========================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
 builder.Services.AddScoped<SkillCatalogSeeder>();
 
 builder.Services.AddCors(options =>
@@ -147,6 +149,10 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await EnsureUsersTableAsync(dbContext);
+    await dbContext.Database.MigrateAsync();
+
     await scope.ServiceProvider.GetRequiredService<SkillCatalogSeeder>().SeedAsync();
 }
 
@@ -172,6 +178,38 @@ app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
+
+static async Task EnsureUsersTableAsync(ApplicationDbContext dbContext)
+{
+    const string sql = """
+        IF OBJECT_ID(N'[dbo].[Users]', N'U') IS NULL
+        BEGIN
+            CREATE TABLE [dbo].[Users]
+            (
+                [Id] INT IDENTITY(1,1) NOT NULL CONSTRAINT [PK_Users] PRIMARY KEY,
+                [Username] NVARCHAR(256) NULL,
+                [Email] NVARCHAR(256) NOT NULL,
+                [PasswordHash] NVARCHAR(256) NOT NULL,
+                [FirstName] NVARCHAR(100) NOT NULL,
+                [LastName] NVARCHAR(100) NOT NULL,
+                [Phone] NVARCHAR(50) NULL,
+                [Status] NVARCHAR(50) NOT NULL,
+                [RoleId] INT NOT NULL,
+                [OrganizationId] INT NULL,
+                [DepartmentId] INT NULL,
+                [IsActive] BIT NOT NULL,
+                [FailedLoginAttempts] INT NOT NULL,
+                [LockoutEnd] DATETIME2 NULL,
+                [ResetToken] NVARCHAR(256) NULL,
+                [ResetTokenExpiry] DATETIME2 NULL,
+                [CreatedAt] DATETIME2 NOT NULL,
+                [UpdatedAt] DATETIME2 NOT NULL
+            );
+        END
+        """;
+
+    await dbContext.Database.ExecuteSqlRawAsync(sql);
+}
 
 static string ResolveLocalDbConnectionString(string connectionString)
 {

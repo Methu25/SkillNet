@@ -12,12 +12,21 @@ namespace SkillNet.Infrastructure.Data
 
         // Authentication Entities
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<UserRole> UserRoles { get; set; } = null!;
+        public DbSet<Organization> Organizations { get; set; } = null!;
+        public DbSet<Department> Departments { get; set; } = null!;
+        public DbSet<RecruiterProfile> RecruiterProfiles { get; set; } = null!;
 
         // Candidate Module Entities
         public DbSet<Candidate> Candidates { get; set; } = null!;
         public DbSet<Resume> Resumes { get; set; } = null!;
         public DbSet<Skill> Skills { get; set; } = null!;
         public DbSet<CandidateSkill> CandidateSkills { get; set; } = null!;
+
+        // Job / Recruiter Module Entities
+        public DbSet<JobCategory> JobCategories { get; set; } = null!;
+        public DbSet<JobPost> JobPosts { get; set; } = null!;
+        public DbSet<JobSkill> JobSkills { get; set; } = null!;
 
         // Interview / Hiring Manager Module Entities
         public DbSet<Interview> Interviews { get; set; } = null!;
@@ -33,11 +42,11 @@ namespace SkillNet.Infrastructure.Data
             // Existing configuration for User
             modelBuilder.Entity<User>(entity =>
             {
-                entity.ToTable("Users", t => t.ExcludeFromMigrations());
+                entity.ToTable("Users");
 
                 entity.HasKey(e => e.UserID);
 
-                // Existing Users table has column name "Id", not "UserID"
+                // Keep compatibility with the existing code path that uses UserID internally.
                 entity.Property(e => e.UserID)
                     .HasColumnName("Id");
 
@@ -110,6 +119,114 @@ namespace SkillNet.Infrastructure.Data
                 entity.HasOne(cs => cs.Skill)
                     .WithMany(s => s.CandidateSkills)
                     .HasForeignKey(cs => cs.SkillId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Authentication / Organization / Recruiter Configuration
+            modelBuilder.Entity<UserRole>(entity =>
+            {
+                entity.ToTable("UserRole");
+                entity.HasKey(e => e.RoleId);
+                entity.Property(e => e.RoleName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            });
+
+            modelBuilder.Entity<Organization>(entity =>
+            {
+                entity.ToTable("Organization");
+                entity.HasKey(e => e.OrganizationId);
+                entity.Property(e => e.OrganizationName).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Industry).HasMaxLength(150);
+                entity.Property(e => e.Website).HasMaxLength(255);
+                entity.Property(e => e.Logo).HasMaxLength(255);
+                entity.Property(e => e.Address).HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            });
+
+            modelBuilder.Entity<Department>(entity =>
+            {
+                entity.ToTable("Department");
+                entity.HasKey(e => e.DepartmentId);
+                entity.Property(e => e.DepartmentName).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.HasOne<Organization>()
+                    .WithMany()
+                    .HasForeignKey(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<RecruiterProfile>(entity =>
+            {
+                entity.ToTable("RecruiterProfile");
+                entity.HasKey(e => e.RecruiterProfileId);
+                entity.Property(e => e.Headline).HasMaxLength(200);
+                entity.Property(e => e.Bio).HasColumnType("nvarchar(max)");
+                entity.Property(e => e.LinkedInUrl).HasMaxLength(255);
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.HasIndex(e => e.UserId).IsUnique();
+                entity.HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Organization>()
+                    .WithMany()
+                    .HasForeignKey(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            // Job / Recruiter Configuration
+            modelBuilder.Entity<JobCategory>(entity =>
+            {
+                entity.ToTable("JobCategory");
+                entity.HasKey(e => e.CategoryId);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+            });
+
+            modelBuilder.Entity<JobPost>(entity =>
+            {
+                entity.ToTable("JobPost");
+                entity.HasKey(e => e.JobId);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).IsRequired().HasColumnType("nvarchar(max)");
+                entity.Property(e => e.EmploymentType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.WorkMode).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Location).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.ExperienceLevel).HasMaxLength(50);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.SalaryMin).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.SalaryMax).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.HasOne<RecruiterProfile>()
+                    .WithMany()
+                    .HasForeignKey(e => e.RecruiterId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Organization>()
+                    .WithMany()
+                    .HasForeignKey(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne<JobCategory>()
+                    .WithMany()
+                    .HasForeignKey(e => e.CategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<JobSkill>(entity =>
+            {
+                entity.ToTable("JobSkill");
+                entity.HasKey(e => new { e.JobId, e.SkillId });
+                entity.Ignore(e => e.SkillName);
+                entity.HasOne<JobPost>()
+                    .WithMany()
+                    .HasForeignKey(e => e.JobId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Skill>()
+                    .WithMany()
+                    .HasForeignKey(e => e.SkillId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
