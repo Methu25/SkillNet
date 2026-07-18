@@ -10,12 +10,9 @@ namespace SkillNet.Infrastructure.Data
         {
         }
 
-        // Authentication Entities
+        // Authentication / Existing Reference Entities
         public DbSet<User> Users { get; set; } = null!;
-        public DbSet<UserRole> UserRoles { get; set; } = null!;
         public DbSet<Organization> Organizations { get; set; } = null!;
-        public DbSet<Department> Departments { get; set; } = null!;
-        public DbSet<RecruiterProfile> RecruiterProfiles { get; set; } = null!;
 
         // Candidate Module Entities
         public DbSet<Candidate> Candidates { get; set; } = null!;
@@ -24,6 +21,7 @@ namespace SkillNet.Infrastructure.Data
         public DbSet<CandidateSkill> CandidateSkills { get; set; } = null!;
 
         // Job / Recruiter Module Entities
+        public DbSet<RecruiterProfile> RecruiterProfiles { get; set; } = null!;
         public DbSet<JobCategory> JobCategories { get; set; } = null!;
         public DbSet<JobPost> JobPosts { get; set; } = null!;
         public DbSet<JobSkill> JobSkills { get; set; } = null!;
@@ -42,7 +40,7 @@ namespace SkillNet.Infrastructure.Data
             // Existing configuration for User
             modelBuilder.Entity<User>(entity =>
             {
-                entity.ToTable("Users");
+                entity.ToTable("Users", t => t.ExcludeFromMigrations());
 
                 entity.HasKey(e => e.UserID);
 
@@ -122,16 +120,7 @@ namespace SkillNet.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Authentication / Organization / Recruiter Configuration
-            modelBuilder.Entity<UserRole>(entity =>
-            {
-                entity.ToTable("UserRole");
-                entity.HasKey(e => e.RoleId);
-                entity.Property(e => e.RoleName).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.Description).HasMaxLength(500);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
-            });
-
+            // Existing reference entities used by the recruiter/job module
             modelBuilder.Entity<Organization>(entity =>
             {
                 entity.ToTable("Organization");
@@ -144,19 +133,6 @@ namespace SkillNet.Infrastructure.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
             });
 
-            modelBuilder.Entity<Department>(entity =>
-            {
-                entity.ToTable("Department");
-                entity.HasKey(e => e.DepartmentId);
-                entity.Property(e => e.DepartmentName).IsRequired().HasMaxLength(200);
-                entity.Property(e => e.Description).HasMaxLength(500);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
-                entity.HasOne<Organization>()
-                    .WithMany()
-                    .HasForeignKey(e => e.OrganizationId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
             modelBuilder.Entity<RecruiterProfile>(entity =>
             {
                 entity.ToTable("RecruiterProfile");
@@ -164,17 +140,22 @@ namespace SkillNet.Infrastructure.Data
                 entity.Property(e => e.Headline).HasMaxLength(200);
                 entity.Property(e => e.Bio).HasColumnType("nvarchar(max)");
                 entity.Property(e => e.LinkedInUrl).HasMaxLength(255);
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
                 entity.HasIndex(e => e.UserId).IsUnique();
-                entity.HasOne<User>()
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
-                entity.HasOne<Organization>()
+                entity.HasOne(e => e.Organization)
                     .WithMany()
                     .HasForeignKey(e => e.OrganizationId)
                     .OnDelete(DeleteBehavior.SetNull);
+                entity.HasMany(e => e.JobPosts)
+                    .WithOne(e => e.RecruiterProfile)
+                    .HasForeignKey(e => e.RecruiterId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Job / Recruiter Configuration
@@ -184,6 +165,11 @@ namespace SkillNet.Infrastructure.Data
                 entity.HasKey(e => e.CategoryId);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasMaxLength(500);
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasMany(e => e.JobPosts)
+                    .WithOne(e => e.JobCategory)
+                    .HasForeignKey(e => e.CategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<JobPost>(entity =>
@@ -201,18 +187,14 @@ namespace SkillNet.Infrastructure.Data
                 entity.Property(e => e.SalaryMax).HasColumnType("decimal(18,2)");
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
-                entity.HasOne<RecruiterProfile>()
-                    .WithMany()
-                    .HasForeignKey(e => e.RecruiterId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                entity.HasOne<Organization>()
+                entity.HasIndex(e => e.RecruiterId);
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.CategoryId);
+                entity.HasIndex(e => e.Status);
+                entity.HasOne(e => e.Organization)
                     .WithMany()
                     .HasForeignKey(e => e.OrganizationId)
                     .OnDelete(DeleteBehavior.SetNull);
-                entity.HasOne<JobCategory>()
-                    .WithMany()
-                    .HasForeignKey(e => e.CategoryId)
-                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<JobSkill>(entity =>
@@ -220,12 +202,13 @@ namespace SkillNet.Infrastructure.Data
                 entity.ToTable("JobSkill");
                 entity.HasKey(e => new { e.JobId, e.SkillId });
                 entity.Ignore(e => e.SkillName);
-                entity.HasOne<JobPost>()
-                    .WithMany()
+                entity.HasIndex(e => e.SkillId);
+                entity.HasOne(e => e.JobPost)
+                    .WithMany(e => e.JobSkills)
                     .HasForeignKey(e => e.JobId)
                     .OnDelete(DeleteBehavior.Cascade);
-                entity.HasOne<Skill>()
-                    .WithMany()
+                entity.HasOne(e => e.Skill)
+                    .WithMany(e => e.JobSkills)
                     .HasForeignKey(e => e.SkillId)
                     .OnDelete(DeleteBehavior.Cascade);
             });

@@ -7,6 +7,7 @@ namespace SkillNet.Domain.Entities
         public DateTime CreatedDate { get; set; }
 
         public ICollection<CandidateSkill> CandidateSkills { get; set; } = new List<CandidateSkill>();
+        public ICollection<JobSkill> JobSkills { get; set; } = new List<JobSkill>();
     }
 }
 

@@ -11,5 +11,9 @@ namespace SkillNet.Domain.Entities
         public int? OrganizationId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+
+        public User User { get; set; } = null!;
+        public Organization? Organization { get; set; }
+        public ICollection<JobPost> JobPosts { get; set; } = new List<JobPost>();
     }
 }
