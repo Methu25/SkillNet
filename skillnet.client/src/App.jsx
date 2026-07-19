@@ -17,6 +17,7 @@ import CandidateProfileCreate from './pages/CandidateProfileCreate';
 import CandidateProfile from './pages/CandidateProfile';
 import CandidateResumes from './pages/CandidateResumes';
 import CandidateSkills from './pages/CandidateSkills';
+import CandidateApplications from './pages/CandidateApplications';
 
 // Admin sub-pages (protected, Admin only)
 import UserManagement from './pages/UserManagement';
@@ -170,6 +171,22 @@ function App() {
                         element={
                             <ProtectedRoute allowedRoles={['Candidate']}>
                                 <CandidateSkills />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/applications"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateApplications />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/applications/:applicationId"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateApplications />
                             </ProtectedRoute>
                         }
                     />

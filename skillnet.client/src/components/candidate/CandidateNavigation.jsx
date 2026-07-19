@@ -5,7 +5,8 @@ const links = [
     ['Dashboard', '/candidate/dashboard'],
     ['My Profile', '/candidate/profile'],
     ['Resumes', '/candidate/resumes'],
-    ['Skills', '/candidate/skills']
+    ['Skills', '/candidate/skills'],
+    ['Applications', '/candidate/applications']
 ];
 
 const CandidateNavigation = () => {
@@ -22,7 +23,6 @@ const CandidateNavigation = () => {
             <button className="candidate-brand" onClick={() => navigate('/candidate/dashboard')}>Skill<span>Net</span></button>
             <nav className="candidate-navigation" aria-label="Candidate navigation">
                 {links.map(([label, path]) => <NavLink key={path} to={path} className={({ isActive }) => isActive ? 'is-active' : ''}>{label}</NavLink>)}
-                <span className="candidate-nav-placeholder" title="Applications module integration point">Applications</span>
             </nav>
             <button className="candidate-button candidate-button--ghost candidate-logout" onClick={signOut}>Logout</button>
         </header>
