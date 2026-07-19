@@ -6,6 +6,7 @@ const links = [
     ['My Profile', '/candidate/profile'],
     ['Resumes', '/candidate/resumes'],
     ['Skills', '/candidate/skills'],
+    ['Jobs', '/candidate/jobs'],
     ['Applications', '/candidate/applications']
 ];
 
