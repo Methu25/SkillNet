@@ -1,0 +1,315 @@
+/* Landing Page Specific CSS */
+:root {
+    --primary-orange: #FF681F;
+    --light-orange: #FFF4F0;
+    --hover-orange: #E65A15;
+    --text-main: #1F2937;
+    --text-muted: #6B7280;
+    --bg-white: #FFFFFF;
+    --bg-gray: #F9FAFB;
+}
+
+.landing-body {
+    background-color: var(--bg-white) !important;
+    color: var(--text-main) !important;
+    line-height: 1.6;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Navigation */
+.landing-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 5%;
+    background-color: var(--bg-white);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+}
+
+.landing-logo {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-main);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+}
+
+.landing-logo span {
+    color: var(--primary-orange);
+}
+
+.landing-nav-links a {
+    text-decoration: none;
+    color: var(--text-muted);
+    margin: 0 1.5rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.landing-nav-links a:hover {
+    color: var(--primary-orange);
+}
+
+.landing-nav-actions .btn-login {
+    text-decoration: none;
+    color: var(--text-main);
+    font-weight: 600;
+    margin-right: 1.5rem;
+}
+
+.btn-primary-orange {
+    background-color: var(--primary-orange);
+    color: var(--bg-white) !important;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary-orange:hover {
+    background-color: var(--hover-orange);
+    transform: translateY(-2px);
+}
+
+.btn-secondary-orange {
+    background-color: var(--bg-white);
+    color: var(--primary-orange) !important;
+    border: 2px solid var(--primary-orange);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.btn-secondary-orange:hover {
+    background-color: var(--light-orange);
+}
+
+/* Hero Section */
+.landing-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6rem 5%;
+    background: linear-gradient(135deg, var(--bg-white) 50%, var(--light-orange) 100%);
+    min-height: 80vh;
+    width: 100%;
+}
+
+.landing-hero-content {
+    max-width: 50%;
+}
+
+.landing-hero-badge {
+    background-color: var(--light-orange);
+    color: var(--primary-orange);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+}
+
+.landing-hero h1 {
+    font-size: 4rem;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    color: var(--text-main);
+    font-weight: 800;
+}
+
+.landing-hero p {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin-bottom: 2.5rem;
+    max-width: 90%;
+}
+
+.landing-hero-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.landing-hero-visual {
+    width: 45%;
+    position: relative;
+}
+
+/* Abstract UI Mockup Graphic */
+.landing-mockup-card {
+    background: var(--bg-white);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 104, 31, 0.1);
+    position: relative;
+    z-index: 2;
+}
+
+.landing-mockup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.landing-mockup-avatar {
+    width: 50px;
+    height: 50px;
+    background: var(--light-orange);
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.landing-mockup-bar {
+    height: 12px;
+    background: #E5E7EB;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.landing-mockup-bar.orange {
+    background: var(--primary-orange);
+    width: 70%;
+}
+
+.landing-floating-badge {
+    position: absolute;
+    background: var(--primary-orange);
+    color: white;
+    padding: 1rem;
+    border-radius: 12px;
+    font-weight: bold;
+    box-shadow: 0 10px 20px rgba(255, 104, 31, 0.2);
+    z-index: 3;
+    bottom: -20px;
+    left: -30px;
+    animation: float-landing 3s ease-in-out infinite;
+}
+
+@keyframes float-landing {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+/* Features Section */
+.landing-features {
+    padding: 5rem 5%;
+    background-color: var(--bg-white);
+    text-align: center;
+    width: 100%;
+}
+
+.landing-features h2 {
+    font-size: 2.5rem;
+    margin-bottom: 3rem;
+    color: var(--text-main);
+    font-weight: 700;
+}
+
+.landing-features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+
+.landing-feature-card {
+    padding: 2.5rem;
+    border-radius: 12px;
+    background-color: var(--bg-gray);
+    transition: transform 0.3s ease;
+    text-align: left;
+    border: 1px solid transparent;
+}
+
+.landing-feature-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-orange);
+    background-color: var(--bg-white);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.landing-feature-icon {
+    width: 50px;
+    height: 50px;
+    background-color: var(--light-orange);
+    color: var(--primary-orange);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-weight: bold;
+}
+
+.landing-feature-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: var(--text-main);
+}
+
+.landing-feature-card p {
+    color: var(--text-muted);
+}
+
+/* Responsive Design */
+@media (max-width: 968px) {
+    .landing-hero {
+        flex-direction: column;
+        text-align: center;
+        padding-top: 4rem;
+    }
+
+    .landing-hero-content {
+        max-width: 100%;
+        margin-bottom: 3rem;
+    }
+
+    .landing-hero p {
+        margin: 0 auto 2.5rem auto;
+    }
+
+    .landing-hero-buttons {
+        justify-content: center;
+    }
+
+    .landing-hero-visual {
+        width: 90%;
+    }
+
+    .landing-features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .landing-nav-links {
+        display: none;
+    }
+}
