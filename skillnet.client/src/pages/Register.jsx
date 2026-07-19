@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import './Register.css';
 
 const Register = () => {
     const { register } = useAuth();
@@ -71,110 +72,122 @@ const Register = () => {
     };
 
     return (
-        <div style={{ maxWidth: '450px', margin: '30px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-            <h2>Register for SkillNet</h2>
-            {error && <div style={{ color: 'red', marginBottom: '15px', padding: '8px', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>{error}</div>}
-            {success && <div style={{ color: 'green', marginBottom: '15px', padding: '8px', backgroundColor: '#e6ffe6', borderRadius: '4px' }}>{success}</div>}
-            
-            <form onSubmit={handleSubmit}>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>First Name</label>
+        <div className="register-container">
+            <div className="register-card">
+                <Link to="/" className="register-logo-link">Skill<span>Net</span>.</Link>
+                <h2 className="register-title">Create Account</h2>
+                <p className="register-subtitle">Join SkillNet to unlock the future of hiring</p>
+
+                {error && <div className="register-error">{error}</div>}
+                {success && <div className="register-success">{success}</div>}
+                
+                <form onSubmit={handleSubmit}>
+                    <div className="register-form-row">
+                        <div>
+                            <label className="register-label">First Name</label>
+                            <input 
+                                type="text" 
+                                className="register-input"
+                                placeholder="John"
+                                value={firstName} 
+                                onChange={(e) => setFirstName(e.target.value)} 
+                                required 
+                            />
+                        </div>
+                        <div>
+                            <label className="register-label">Last Name</label>
+                            <input 
+                                type="text" 
+                                className="register-input"
+                                placeholder="Doe"
+                                value={lastName} 
+                                onChange={(e) => setLastName(e.target.value)} 
+                                required 
+                            />
+                        </div>
+                    </div>
+
+                    <div className="register-form-group">
+                        <label className="register-label">Email Address</label>
                         <input 
-                            type="text" 
-                            value={firstName} 
-                            onChange={(e) => setFirstName(e.target.value)} 
+                            type="email" 
+                            className="register-input"
+                            placeholder="name@example.com"
+                            value={email} 
+                            onChange={(e) => setEmail(e.target.value)} 
                             required 
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
                         />
                     </div>
-                    <div style={{ flex: 1 }}>
-                        <label style={{ display: 'block', marginBottom: '5px' }}>Last Name</label>
+
+                    <div className="register-form-group">
+                        <label className="register-label">Phone Number (Optional)</label>
                         <input 
                             type="text" 
-                            value={lastName} 
-                            onChange={(e) => setLastName(e.target.value)} 
-                            required 
-                            style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                            className="register-input"
+                            placeholder="+1 (555) 000-0000"
+                            value={phone} 
+                            onChange={(e) => setPhone(e.target.value)} 
                         />
                     </div>
-                </div>
 
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Email Address</label>
-                    <input 
-                        type="email" 
-                        value={email} 
-                        onChange={(e) => setEmail(e.target.value)} 
-                        required 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    />
-                </div>
-
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Phone Number (Optional)</label>
-                    <input 
-                        type="text" 
-                        value={phone} 
-                        onChange={(e) => setPhone(e.target.value)} 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    />
-                </div>
-
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Register As</label>
-                    <select 
-                        value={roleName} 
-                        onChange={(e) => setRoleName(e.target.value)} 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    >
-                        <option value="Candidate">Candidate</option>
-                        <option value="Recruiter">Recruiter</option>
-                        <option value="HiringManager">Hiring Manager</option>
-                        <option value="Admin">Administrator</option>
-                    </select>
-                </div>
-
-                <div style={{ marginBottom: '15px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Password</label>
-                    <input 
-                        type="password" 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        required 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    />
-                    
-                    {/* Password Policy visual checklist */}
-                    <div style={{ fontSize: '12px', marginTop: '5px', padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
-                        <strong>Password Policy Checklist:</strong>
-                        <ul style={{ margin: '5px 0 0 0', paddingLeft: '20px' }}>
-                            <li style={{ color: pwdChecks.length ? 'green' : 'red' }}>At least 8 characters</li>
-                            <li style={{ color: pwdChecks.upper ? 'green' : 'red' }}>At least 1 uppercase letter</li>
-                            <li style={{ color: pwdChecks.lower ? 'green' : 'red' }}>At least 1 lowercase letter</li>
-                            <li style={{ color: pwdChecks.number ? 'green' : 'red' }}>At least 1 number</li>
-                            <li style={{ color: pwdChecks.special ? 'green' : 'red' }}>At least 1 special character</li>
-                        </ul>
+                    <div className="register-form-group">
+                        <label className="register-label">Register As</label>
+                        <select 
+                            value={roleName} 
+                            onChange={(e) => setRoleName(e.target.value)} 
+                            className="register-select"
+                        >
+                            <option value="Candidate">Candidate</option>
+                            <option value="Recruiter">Recruiter</option>
+                            <option value="HiringManager">Hiring Manager</option>
+                            <option value="Admin">Administrator</option>
+                        </select>
                     </div>
-                </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px' }}>Confirm Password</label>
-                    <input 
-                        type="password" 
-                        value={confirmPassword} 
-                        onChange={(e) => setConfirmPassword(e.target.value)} 
-                        required 
-                        style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
-                    />
-                </div>
+                    <div className="register-form-group">
+                        <label className="register-label">Password</label>
+                        <input 
+                            type="password" 
+                            className="register-input"
+                            placeholder="••••••••"
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)} 
+                            required 
+                        />
+                        
+                        {/* Password Policy checklist */}
+                        <div className="register-password-policy">
+                            <strong>Password Requirements:</strong>
+                            <ul>
+                                <li className={pwdChecks.length ? 'valid' : 'invalid'}>At least 8 characters</li>
+                                <li className={pwdChecks.upper ? 'valid' : 'invalid'}>At least 1 uppercase letter</li>
+                                <li className={pwdChecks.lower ? 'valid' : 'invalid'}>At least 1 lowercase letter</li>
+                                <li className={pwdChecks.number ? 'valid' : 'invalid'}>At least 1 number</li>
+                                <li className={pwdChecks.special ? 'valid' : 'invalid'}>At least 1 special character</li>
+                            </ul>
+                        </div>
+                    </div>
 
-                <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                    {loading ? 'Registering...' : 'Register'}
-                </button>
-            </form>
-            <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                <p>Already have an account? <Link to="/login">Login here</Link></p>
+                    <div className="register-form-group" style={{ marginBottom: '1.5rem' }}>
+                        <label className="register-label">Confirm Password</label>
+                        <input 
+                            type="password" 
+                            className="register-input"
+                            placeholder="••••••••"
+                            value={confirmPassword} 
+                            onChange={(e) => setConfirmPassword(e.target.value)} 
+                            required 
+                        />
+                    </div>
+
+                    <button type="submit" className="register-btn" disabled={loading}>
+                        {loading ? 'Creating Account...' : 'Create Account'}
+                    </button>
+                </form>
+                
+                <div className="register-footer">
+                    <p>Already have an account? <Link to="/login">Login here</Link></p>
+                </div>
             </div>
         </div>
     );
