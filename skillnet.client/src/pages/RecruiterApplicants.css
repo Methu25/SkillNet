@@ -51,6 +51,53 @@
 .recruiter-placeholder-message p { margin-bottom: 0; color: var(--muted); line-height: 1.55; }
 @keyframes recruiter-shimmer { to { background-position: -200% 0; } }
 
+.recruiter-detail-backdrop { position: fixed; z-index: 30; inset: 0; display: flex; justify-content: flex-end; background: rgba(28,25,23,.46); backdrop-filter: blur(4px); }
+.recruiter-application-detail { position: relative; width: min(760px,100%); height: 100%; overflow-y: auto; background: #fffaf7; box-shadow: -18px 0 55px rgba(34,26,21,.2); }
+.recruiter-detail-close { position: absolute; z-index: 2; top: 16px; right: 20px; display: grid; width: 40px; height: 40px; place-items: center; color: #565c65; background: #fff; border: 1px solid #e8e1dc; border-radius: 50%; font-size: 1.35rem; cursor: pointer; }
+.recruiter-detail-content { padding: 42px 42px 54px; }
+.recruiter-detail-back { margin: 0 0 24px; padding: 0; color: #59606b; background: none; border: 0; font-weight: 750; cursor: pointer; }
+.recruiter-detail-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-top: 8px; }
+.recruiter-detail-heading h1 { margin: 0 0 5px; font-size: clamp(1.8rem,4vw,2.45rem); letter-spacing: -.04em; }
+.recruiter-detail-heading p { margin: 0; color: var(--muted); }
+.recruiter-detail-facts { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 24px 0; }
+.recruiter-detail-facts > div { padding: 14px; background: #fff; border: 1px solid #eee6e0; border-radius: 12px; }
+.recruiter-detail-facts dt, .recruiter-resume-detail dt { color: var(--muted); font-size: .68rem; }
+.recruiter-detail-facts dd, .recruiter-resume-detail dd { margin: 4px 0 0; font-size: .78rem; font-weight: 750; }
+.recruiter-detail-card { margin-top: 16px; padding: 22px; background: #fff; border: 1px solid #eee7e1; border-radius: 17px; box-shadow: 0 9px 27px rgba(46,37,31,.04); }
+.recruiter-detail-card > h2 { margin: 6px 0 15px; font-size: 1.05rem; }
+.recruiter-detail-section-heading { display: flex; align-items: center; gap: 14px; }
+.recruiter-detail-section-heading h2 { margin: 3px 0; font-size: 1.2rem; }
+.recruiter-detail-section-heading a { color: var(--orange-dark); font-size: .8rem; text-decoration: none; }
+.recruiter-detail-avatar { display: grid; width: 58px; height: 58px; place-items: center; color: #fff; background: linear-gradient(145deg,#ff681f,#b7440e); border-radius: 50%; font-size: 1.25rem; font-weight: 850; }
+.recruiter-candidate-title { margin: 16px 0 0; color: #4d525a; font-weight: 700; }
+.recruiter-detail-muted { margin: 14px 0 0; color: var(--muted); font-size: .78rem; }
+.recruiter-resume-detail { display: grid; grid-template-columns: 54px 1fr; align-items: center; gap: 15px; margin-top: 15px; }
+.recruiter-resume-detail > span { display: grid; width: 54px; height: 66px; place-items: center; color: #fff; background: linear-gradient(145deg,#c96f35,#9e4f24); border-radius: 9px; font-size: .68rem; font-weight: 900; }
+.recruiter-resume-detail h2 { margin: 0 0 10px; font-size: 1rem; }
+.recruiter-resume-detail dl { display: flex; flex-wrap: wrap; gap: 15px 25px; margin: 0; }
+.recruiter-resume-detail dl div { display: grid; }
+.recruiter-cover-letter { margin: 0; padding: 17px; color: #4f545c; background: #fffaf7; border: 1px solid #eee3dc; border-radius: 12px; line-height: 1.7; white-space: pre-wrap; }
+.recruiter-inline-empty { display: grid; min-height: 105px; place-content: center; justify-items: center; color: var(--muted); text-align: center; }
+.recruiter-inline-empty > span { color: #d49365; font-size: 1.4rem; }
+.recruiter-inline-empty p { margin: 7px 0 0; }
+.recruiter-history { display: grid; margin: 20px 0 0; padding: 0; list-style: none; }
+.recruiter-history li { position: relative; display: grid; grid-template-columns: 18px 1fr; gap: 12px; padding-bottom: 24px; }
+.recruiter-history li::before { position: absolute; top: 13px; bottom: -1px; left: 5px; width: 2px; content: ''; background: #f1d8c9; }
+.recruiter-history li:last-child { padding-bottom: 0; }
+.recruiter-history li:last-child::before { display: none; }
+.recruiter-history-dot { z-index: 1; width: 12px; height: 12px; margin-top: 3px; background: var(--orange); border: 3px solid #fff1e8; border-radius: 50%; }
+.recruiter-history-entry > div { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.recruiter-history-entry > div span { color: var(--orange-dark); }
+.recruiter-history-entry time { display: block; margin-top: 5px; color: var(--muted); font-size: .72rem; }
+.recruiter-history-actor { margin: 5px 0 0; color: #555b64; font-size: .77rem; }
+.recruiter-history-comment { margin: 9px 0 0; padding: 10px 12px; color: #555b64; background: #fff6f0; border-radius: 9px; font-size: .8rem; line-height: 1.5; }
+.recruiter-detail-loading { height: calc(100vh - 40px); margin: 20px; }
+.recruiter-detail-state { display: grid; min-height: 75vh; padding: 30px; place-content: center; justify-items: center; text-align: center; }
+.recruiter-detail-state > span { display: grid; width: 50px; height: 50px; place-items: center; color: #fff; background: #b85c50; border-radius: 50%; font-weight: 850; }
+.recruiter-detail-state h1 { margin: 15px 0 7px; }
+.recruiter-detail-state p { max-width: 430px; margin: 0 0 18px; color: var(--muted); }
+.recruiter-detail-state > div { display: flex; gap: 9px; }
+
 @media (max-width: 720px) {
     .recruiter-applicants-page { width: min(100% - 24px,1120px); padding-top: 28px; }
     .recruiter-applicants-heading { align-items: flex-start; flex-direction: column; }
@@ -60,4 +107,11 @@
     .recruiter-applicant-card > button { grid-column: 1/-1; width: 100%; }
     .recruiter-applicant-title { flex-direction: column; }
     .recruiter-placeholder { padding: 55px 22px; }
+    .recruiter-detail-content { padding: 55px 20px 35px; }
+    .recruiter-detail-heading { flex-direction: column; }
+    .recruiter-detail-facts { grid-template-columns: 1fr; }
+    .recruiter-detail-card { padding: 18px; }
+    .recruiter-resume-detail { grid-template-columns: 44px 1fr; align-items: flex-start; }
+    .recruiter-resume-detail > span { width: 44px; height: 55px; }
+    .recruiter-detail-state > div { width: 100%; flex-direction: column; }
 }
