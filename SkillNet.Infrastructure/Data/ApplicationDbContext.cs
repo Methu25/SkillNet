@@ -7,14 +7,21 @@ namespace SkillNet.Infrastructure.Data
         : DbContext(options)
     {
 
-        // Authentication Entities
+        // Authentication / Existing Reference Entities
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Organization> Organizations { get; set; } = null!;
 
         // Candidate Module Entities
         public DbSet<Candidate> Candidates { get; set; } = null!;
         public DbSet<Resume> Resumes { get; set; } = null!;
         public DbSet<Skill> Skills { get; set; } = null!;
         public DbSet<CandidateSkill> CandidateSkills { get; set; } = null!;
+
+        // Job / Recruiter Module Entities
+        public DbSet<RecruiterProfile> RecruiterProfiles { get; set; } = null!;
+        public DbSet<JobCategory> JobCategories { get; set; } = null!;
+        public DbSet<JobPost> JobPosts { get; set; } = null!;
+        public DbSet<JobSkill> JobSkills { get; set; } = null!;
 
         // Interview / Hiring Manager Module Entities
         public DbSet<Interview> Interviews { get; set; } = null!;
@@ -33,6 +40,7 @@ namespace SkillNet.Infrastructure.Data
                 entity.ToTable("Users", t => t.ExcludeFromMigrations());
 
                 entity.HasKey(e => e.UserID);
+
                 entity.Ignore(e => e.UserId);
             });
 
@@ -102,6 +110,99 @@ namespace SkillNet.Infrastructure.Data
                 entity.HasOne(cs => cs.Skill)
                     .WithMany(s => s.CandidateSkills)
                     .HasForeignKey(cs => cs.SkillId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Existing reference entities used by the recruiter/job module
+            modelBuilder.Entity<Organization>(entity =>
+            {
+                entity.ToTable("Organization");
+                entity.HasKey(e => e.OrganizationId);
+                entity.Property(e => e.OrganizationName).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Industry).HasMaxLength(150);
+                entity.Property(e => e.Website).HasMaxLength(255);
+                entity.Property(e => e.Logo).HasMaxLength(255);
+                entity.Property(e => e.Address).HasMaxLength(500);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+            });
+
+            modelBuilder.Entity<RecruiterProfile>(entity =>
+            {
+                entity.ToTable("RecruiterProfile");
+                entity.HasKey(e => e.RecruiterProfileId);
+                entity.Property(e => e.Headline).HasMaxLength(200);
+                entity.Property(e => e.Bio).HasColumnType("nvarchar(max)");
+                entity.Property(e => e.LinkedInUrl).HasMaxLength(255);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.HasIndex(e => e.UserId).IsUnique();
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Organization)
+                    .WithMany()
+                    .HasForeignKey(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasMany(e => e.JobPosts)
+                    .WithOne(e => e.RecruiterProfile)
+                    .HasForeignKey(e => e.RecruiterId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Job / Recruiter Configuration
+            modelBuilder.Entity<JobCategory>(entity =>
+            {
+                entity.ToTable("JobCategory");
+                entity.HasKey(e => e.CategoryId);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasMany(e => e.JobPosts)
+                    .WithOne(e => e.JobCategory)
+                    .HasForeignKey(e => e.CategoryId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<JobPost>(entity =>
+            {
+                entity.ToTable("JobPost");
+                entity.HasKey(e => e.JobId);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).IsRequired().HasColumnType("nvarchar(max)");
+                entity.Property(e => e.EmploymentType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.WorkMode).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Location).IsRequired().HasMaxLength(255);
+                entity.Property(e => e.ExperienceLevel).HasMaxLength(50);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.SalaryMin).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.SalaryMax).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETDATE()");
+                entity.HasIndex(e => e.RecruiterId);
+                entity.HasIndex(e => e.OrganizationId);
+                entity.HasIndex(e => e.CategoryId);
+                entity.HasIndex(e => e.Status);
+                entity.HasOne(e => e.Organization)
+                    .WithMany()
+                    .HasForeignKey(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<JobSkill>(entity =>
+            {
+                entity.ToTable("JobSkill");
+                entity.HasKey(e => new { e.JobId, e.SkillId });
+                entity.Ignore(e => e.SkillName);
+                entity.HasIndex(e => e.SkillId);
+                entity.HasOne(e => e.JobPost)
+                    .WithMany(e => e.JobSkills)
+                    .HasForeignKey(e => e.JobId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.Skill)
+                    .WithMany(e => e.JobSkills)
+                    .HasForeignKey(e => e.SkillId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 

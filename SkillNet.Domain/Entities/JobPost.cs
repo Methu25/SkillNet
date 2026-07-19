@@ -21,6 +21,11 @@ namespace SkillNet.Domain.Entities
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
+        public RecruiterProfile RecruiterProfile { get; set; } = null!;
+        public Organization? Organization { get; set; }
+        public JobCategory JobCategory { get; set; } = null!;
+        public ICollection<JobSkill> JobSkills { get; set; } = new List<JobSkill>();
+
         /// <summary>
         /// Prototype Pattern — Creates a new Draft copy of this job posting.
         /// Resets the ID, status, and deadline. Prefixes title with "[Copy]".
