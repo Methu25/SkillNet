@@ -24,6 +24,8 @@ namespace SkillNet.Domain.Entities
 
         public DateTime CreatedAt { get; set; }
 
+        public JobApplication Application { get; set; } = null!;
+
         public ICollection<InterviewAssignment> InterviewAssignments { get; set; } = new List<InterviewAssignment>();
 
         public ICollection<InterviewEvaluation> InterviewEvaluations { get; set; } = new List<InterviewEvaluation>();

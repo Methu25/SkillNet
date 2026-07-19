@@ -12,5 +12,6 @@ namespace SkillNet.Domain.Entities
         public bool IsActive { get; set; }
 
         public Candidate Candidate { get; set; } = null!;
+        public ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();
     }
 }

@@ -15,5 +15,6 @@ namespace SkillNet.Domain.Entities
         public User User { get; set; } = null!;
         public Organization? Organization { get; set; }
         public ICollection<JobPost> JobPosts { get; set; } = new List<JobPost>();
+        public ICollection<RecruiterNote> RecruiterNotes { get; set; } = new List<RecruiterNote>();
     }
 }
