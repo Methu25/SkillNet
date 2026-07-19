@@ -199,7 +199,7 @@ namespace SkillNet.Infrastructure.Repositories
                 command.Parameters.AddWithValue("@Comments", (object?)evaluation.Comments ?? DBNull.Value);
                 command.Parameters.AddWithValue("@SubmittedAt", evaluation.SubmittedAt);
 
-                evaluation.EvaluationId = (int)await command.ExecuteScalarAsync();
+                evaluation.EvaluationId = (int)(await command.ExecuteScalarAsync() ?? 0);
             }
             return evaluation;
         }
@@ -299,26 +299,26 @@ namespace SkillNet.Infrastructure.Repositories
                 await connection.OpenAsync();
 
                 using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Interview", connection))
-                    response.TotalInterviews = (int)await cmd.ExecuteScalarAsync();
+                    response.TotalInterviews = (int)(await cmd.ExecuteScalarAsync() ?? 0);
 
                 using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Interview WHERE CONVERT(date, ScheduledDate) = CONVERT(date, GETDATE())", connection))
-                    response.TodaysInterviews = (int)await cmd.ExecuteScalarAsync();
+                    response.TodaysInterviews = (int)(await cmd.ExecuteScalarAsync() ?? 0);
 
                 using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Interview WHERE ScheduledDate > GETDATE()", connection))
-                    response.UpcomingInterviews = (int)await cmd.ExecuteScalarAsync();
+                    response.UpcomingInterviews = (int)(await cmd.ExecuteScalarAsync() ?? 0);
 
                 using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Interview WHERE Status = 'Completed'", connection))
-                    response.CompletedInterviews = (int)await cmd.ExecuteScalarAsync();
+                    response.CompletedInterviews = (int)(await cmd.ExecuteScalarAsync() ?? 0);
 
                 using (var cmd = new SqlCommand("SELECT COUNT(*) FROM Interview WHERE Status = 'Cancelled'", connection))
-                    response.CancelledInterviews = (int)await cmd.ExecuteScalarAsync();
+                    response.CancelledInterviews = (int)(await cmd.ExecuteScalarAsync() ?? 0);
 
                 using (var cmd = new SqlCommand(@"
                     SELECT COUNT(*) 
                     FROM Interview i
                     LEFT JOIN InterviewEvaluation e ON i.InterviewId = e.InterviewId
                     WHERE e.EvaluationId IS NULL AND i.Status = 'Completed'", connection))
-                    response.PendingEvaluations = (int)await cmd.ExecuteScalarAsync();
+                    response.PendingEvaluations = (int)(await cmd.ExecuteScalarAsync() ?? 0);
             }
             return response;
         }
