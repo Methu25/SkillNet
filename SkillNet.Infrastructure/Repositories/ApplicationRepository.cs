@@ -23,18 +23,29 @@ namespace SkillNet.Infrastructure.Repositories
 
         public async Task<JobApplication?> GetApplicationByIdAsync(int applicationId)
         {
-            return await ApplicationQuery()
+            var application = await ApplicationQuery()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(application => application.ApplicationId == applicationId);
+
+            if (application != null)
+            {
+                await PopulateUserDisplayDataAsync([application]);
+            }
+
+            return application;
         }
 
         public async Task<IEnumerable<JobApplication>> GetApplicationsByCandidateIdAsync(
             int candidateId)
         {
-            return await ApplicationQuery()
+            var applications = await ApplicationQuery()
                 .AsNoTracking()
                 .Where(application => application.CandidateId == candidateId)
                 .OrderByDescending(application => application.AppliedDate)
                 .ToListAsync();
+
+            await PopulateUserDisplayDataAsync(applications);
+            return applications;
         }
 
         public async Task<bool> HasCandidateAppliedAsync(int candidateId, int jobId)
@@ -47,29 +58,65 @@ namespace SkillNet.Infrastructure.Repositories
 
         public async Task<bool> WithdrawApplicationAsync(JobApplication application)
         {
-            _context.Set<JobApplication>().Update(application);
+            var persistedApplication = new JobApplication
+            {
+                ApplicationId = application.ApplicationId,
+                CurrentStatus = application.CurrentStatus,
+                LastUpdated = application.LastUpdated
+            };
+
+            _context.Set<JobApplication>().Attach(persistedApplication);
+            _context.Entry(persistedApplication)
+                .Property(item => item.CurrentStatus)
+                .IsModified = true;
+            _context.Entry(persistedApplication)
+                .Property(item => item.LastUpdated)
+                .IsModified = true;
+
             return await _context.SaveChangesAsync() > 0;
         }
 
         public async Task<IEnumerable<JobApplication>> GetApplicationsByJobIdAsync(int jobId)
         {
-            return await ApplicationQuery()
+            var applications = await ApplicationQuery()
                 .AsNoTracking()
                 .Where(application => application.JobId == jobId)
                 .OrderByDescending(application => application.AppliedDate)
                 .ToListAsync();
+
+            await PopulateUserDisplayDataAsync(applications);
+            return applications;
         }
 
         public async Task UpdateApplicationAsync(JobApplication application)
         {
-            _context.Set<JobApplication>().Update(application);
+            var persistedApplication = new JobApplication
+            {
+                ApplicationId = application.ApplicationId,
+                CurrentStatus = application.CurrentStatus,
+                LastUpdated = application.LastUpdated
+            };
+
+            _context.Set<JobApplication>().Attach(persistedApplication);
+            _context.Entry(persistedApplication)
+                .Property(item => item.CurrentStatus)
+                .IsModified = true;
+            _context.Entry(persistedApplication)
+                .Property(item => item.LastUpdated)
+                .IsModified = true;
+
             await _context.SaveChangesAsync();
         }
 
         public async Task<RecruiterNote> AddRecruiterNoteAsync(RecruiterNote recruiterNote)
         {
+            var recruiter = recruiterNote.Recruiter;
+            recruiterNote.Recruiter = null!;
+
             await _context.Set<RecruiterNote>().AddAsync(recruiterNote);
             await _context.SaveChangesAsync();
+
+            recruiterNote.Recruiter = recruiter;
             return recruiterNote;
         }
 
@@ -108,17 +155,81 @@ namespace SkillNet.Infrastructure.Repositories
         {
             return _context.Set<JobApplication>()
                 .Include(application => application.Candidate)
-                    .ThenInclude(candidate => candidate.User)
                 .Include(application => application.Resume)
                 .Include(application => application.Job)
                     .ThenInclude(job => job.RecruiterProfile)
-                        .ThenInclude(recruiter => recruiter.User)
                 .Include(application => application.StatusHistory)
-                    .ThenInclude(history => history.ChangedByUser)
                 .Include(application => application.RecruiterNotes)
                     .ThenInclude(note => note.Recruiter)
-                        .ThenInclude(recruiter => recruiter.User)
                 .AsSplitQuery();
+        }
+
+        private async Task PopulateUserDisplayDataAsync(
+            IReadOnlyCollection<JobApplication> applications)
+        {
+            var userIds = applications
+                .SelectMany(application =>
+                    new[]
+                    {
+                        application.Candidate?.UserId,
+                        application.Job?.RecruiterProfile?.UserId
+                    }
+                    .Concat(application.StatusHistory.Select(history => (int?)history.ChangedBy))
+                    .Concat(application.RecruiterNotes.Select(note => (int?)note.Recruiter?.UserId)))
+                .Where(userId => userId.HasValue)
+                .Select(userId => userId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (userIds.Count == 0)
+            {
+                return;
+            }
+
+            var users = await _context.Users
+                .AsNoTracking()
+                .Where(user => userIds.Contains(user.UserID))
+                .Select(user => new User
+                {
+                    UserID = user.UserID,
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName
+                })
+                .ToDictionaryAsync(user => user.UserID);
+
+            foreach (var application in applications)
+            {
+                if (application.Candidate != null &&
+                    users.TryGetValue(application.Candidate.UserId, out var candidateUser))
+                {
+                    application.Candidate.User = candidateUser;
+                }
+
+                var recruiterProfile = application.Job?.RecruiterProfile;
+                if (recruiterProfile != null &&
+                    users.TryGetValue(recruiterProfile.UserId, out var recruiterUser))
+                {
+                    recruiterProfile.User = recruiterUser;
+                }
+
+                foreach (var history in application.StatusHistory)
+                {
+                    if (users.TryGetValue(history.ChangedBy, out var changedByUser))
+                    {
+                        history.ChangedByUser = changedByUser;
+                    }
+                }
+
+                foreach (var note in application.RecruiterNotes)
+                {
+                    if (note.Recruiter != null &&
+                        users.TryGetValue(note.Recruiter.UserId, out var noteRecruiterUser))
+                    {
+                        note.Recruiter.User = noteRecruiterUser;
+                    }
+                }
+            }
         }
     }
 }
