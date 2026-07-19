@@ -3,12 +3,9 @@ using SkillNet.Domain.Entities;
 
 namespace SkillNet.Infrastructure.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        : DbContext(options)
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
 
         // Authentication / Existing Reference Entities
         public DbSet<User> Users { get; set; } = null!;
@@ -43,10 +40,6 @@ namespace SkillNet.Infrastructure.Data
                 entity.ToTable("Users", t => t.ExcludeFromMigrations());
 
                 entity.HasKey(e => e.UserID);
-
-                // Keep compatibility with the existing code path that uses UserID internally.
-                entity.Property(e => e.UserID)
-                    .HasColumnName("Id");
 
                 entity.Ignore(e => e.UserId);
             });
