@@ -76,7 +76,7 @@ namespace SkillNet.WebApi.Controllers
                             {
                                 UserId = Convert.ToInt32(reader["UserId"]),
                                 Username = reader["Username"].ToString(),
-                                Email = reader["Email"].ToString(),
+                                Email = reader["Email"].ToString()!,
                                 RoleId = Convert.ToInt32(reader["RoleId"]),
                                 IsActive = Convert.ToBoolean(reader["IsActive"]),
                                 OrganizationId = reader["OrganizationId"] != DBNull.Value ? Convert.ToInt32(reader["OrganizationId"]) : null,

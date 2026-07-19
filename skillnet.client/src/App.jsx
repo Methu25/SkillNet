@@ -1,7 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
-import HiringDashboard from './pages/HiringDashboard';
-import InterviewDetails from './pages/InterviewDetails';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
