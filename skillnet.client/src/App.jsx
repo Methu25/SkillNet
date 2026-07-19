@@ -11,6 +11,7 @@ import ResetPassword from './pages/ResetPassword';
 // Role-specific dashboards (protected)
 import AdminDashboard from './pages/AdminDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
+import RecruiterApplicants from './pages/RecruiterApplicants';
 import HiringDashboard from './pages/HiringDashboard';
 import CandidateDashboard from './pages/CandidateDashboard';
 import CandidateProfileCreate from './pages/CandidateProfileCreate';
@@ -172,6 +173,22 @@ function App() {
                         element={
                             <ProtectedRoute allowedRoles={['Candidate']}>
                                 <CandidateSkills />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/recruiter/jobs/:jobId/applicants"
+                        element={
+                            <ProtectedRoute allowedRoles={['Recruiter']}>
+                                <RecruiterApplicants />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/recruiter/jobs/:jobId/applicants/:applicationId"
+                        element={
+                            <ProtectedRoute allowedRoles={['Recruiter']}>
+                                <RecruiterApplicants />
                             </ProtectedRoute>
                         }
                     />

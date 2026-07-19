@@ -15,15 +15,18 @@ namespace SkillNet.WebApi.Controllers
         private readonly IApplicationService _applicationService;
         private readonly IUserService _userService;
         private readonly IRecruiterService _recruiterService;
+        private readonly IJobService _jobService;
 
         public ApplicationController(
             IApplicationService applicationService,
             IUserService userService,
-            IRecruiterService recruiterService)
+            IRecruiterService recruiterService,
+            IJobService jobService)
         {
             _applicationService = applicationService;
             _userService = userService;
             _recruiterService = recruiterService;
+            _jobService = jobService;
         }
 
         [HttpPost]
@@ -117,6 +120,25 @@ namespace SkillNet.WebApi.Controllers
                 request);
 
             return Ok(applications);
+        }
+
+        [HttpGet("recruiter/jobs")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetRecruiterJobs()
+        {
+            if (!TryGetCurrentUserId(out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var recruiterId = await GetRecruiterProfileIdAsync(userId);
+            if (!recruiterId.HasValue)
+            {
+                return NotFound(new { message = "Recruiter profile not found." });
+            }
+
+            var jobs = await _jobService.GetRecruiterJobsAsync(recruiterId.Value);
+            return Ok(jobs);
         }
 
         [HttpGet("recruiter/{applicationId:int}")]
