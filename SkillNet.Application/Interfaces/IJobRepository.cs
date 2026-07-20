@@ -14,7 +14,9 @@ namespace SkillNet.Application.Interfaces
         Task<bool> UpdateJobStatusAsync(int jobId, int recruiterProfileId, string status);
         Task InsertJobSkillsAsync(int jobId, List<int> skillIds);
         Task DeleteJobSkillsAsync(int jobId);
+        Task<IEnumerable<int>> GetSkillIdsByJobIdAsync(int jobId);
         Task<IEnumerable<string>> GetSkillsByJobIdAsync(int jobId);
+        Task<IEnumerable<SkillDto>> GetAllSkillsAsync();
         Task<int> GetRecruiterOrganizationIdAsync(int recruiterProfileId);
     }
 }

@@ -259,6 +259,10 @@ namespace SkillNet.Application.Services
 
         public async Task<JobResponse?> PublishJobAsync(int jobId, int userId)
         {
+            if (!await _recruiterService.IsOrganizationApprovedAsync(userId))
+                throw new InvalidOperationException(
+                    "Jobs can only be published after the recruiter's organization is approved.");
+
             var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
             var updated = await _jobRepository.UpdateJobStatusAsync(jobId, recruiterProfileId, "Published");
             if (!updated) return null;
@@ -289,10 +293,16 @@ namespace SkillNet.Application.Services
             var cloned = (JobPost)original.Clone();
             var newJobId = await _jobRepository.InsertJobAsync(cloned);
 
-            // Copy skills from original to clone
-            var originalSkills = await _jobRepository.GetSkillsByJobIdAsync(jobId);
+            var originalSkillIds = (await _jobRepository.GetSkillIdsByJobIdAsync(jobId)).ToList();
+            if (originalSkillIds.Count > 0)
+                await _jobRepository.InsertJobSkillsAsync(newJobId, originalSkillIds);
 
             return await BuildJobResponseAsync(newJobId);
+        }
+
+        public Task<IEnumerable<SkillDto>> GetSkillsAsync()
+        {
+            return _jobRepository.GetAllSkillsAsync();
         }
 
         // ─── Factory Method ────────────────────────────────────────────────────

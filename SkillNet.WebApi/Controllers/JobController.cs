@@ -49,6 +49,14 @@ namespace SkillNet.WebApi.Controllers
             return Ok(categories);
         }
 
+        // GET /api/job/skills — shared Skills catalog for Recruiter Job forms
+        [HttpGet("skills")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetSkills()
+        {
+            return Ok(await _jobService.GetSkillsAsync());
+        }
+
         // POST /api/job — create new job (Recruiter only, uses Builder Pattern)
         [HttpPost]
         [Authorize(Roles = "Recruiter")]

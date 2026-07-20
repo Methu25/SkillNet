@@ -49,6 +49,41 @@ namespace SkillNet.WebApi.Controllers
             return Ok(profile);
         }
 
+        [HttpGet("organization")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetOrganization()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
+
+            var organization = await _recruiterService.GetOrganizationAsync(userId);
+            if (organization == null)
+                return NotFound(new { message = "Recruiter organization not yet created." });
+
+            return Ok(organization);
+        }
+
+        [HttpPost("organization")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> UpsertOrganization(
+            [FromBody] UpsertRecruiterOrganizationRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
+
+            return Ok(await _recruiterService.UpsertOrganizationAsync(userId, request));
+        }
+
+        [HttpPost("organization/submit")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> SubmitOrganization()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
+
+            return Ok(await _recruiterService.SubmitOrganizationAsync(userId));
+        }
+
         // GET /api/recruiter/jobs — recruiter's own job postings with dashboard stats
         [HttpGet("jobs")]
         [Authorize(Roles = "Recruiter")]

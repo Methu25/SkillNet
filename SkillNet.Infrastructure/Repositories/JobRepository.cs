@@ -211,6 +211,19 @@ namespace SkillNet.Infrastructure.Repositories
             await cmd.ExecuteNonQueryAsync();
         }
 
+        public async Task<IEnumerable<int>> GetSkillIdsByJobIdAsync(int jobId)
+        {
+            const string query = "SELECT SkillId FROM JobSkill WHERE JobId=@JobId ORDER BY SkillId";
+            var skillIds = new List<int>();
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@JobId", jobId);
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync()) skillIds.Add((int)reader["SkillId"]);
+            return skillIds;
+        }
+
         public async Task<IEnumerable<string>> GetSkillsByJobIdAsync(int jobId)
         {
             const string query = "SELECT s.SkillName FROM JobSkill js JOIN Skills s ON js.SkillId = s.SkillId WHERE js.JobId=@JobId";
@@ -221,6 +234,25 @@ namespace SkillNet.Infrastructure.Repositories
             cmd.Parameters.AddWithValue("@JobId", jobId);
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync()) skills.Add(reader["SkillName"].ToString()!);
+            return skills;
+        }
+
+        public async Task<IEnumerable<SkillDto>> GetAllSkillsAsync()
+        {
+            const string query = "SELECT SkillId, SkillName FROM Skills ORDER BY SkillName";
+            var skills = new List<SkillDto>();
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(query, con);
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                skills.Add(new SkillDto
+                {
+                    SkillId = (int)reader["SkillId"],
+                    SkillName = reader["SkillName"].ToString()!
+                });
+            }
             return skills;
         }
 

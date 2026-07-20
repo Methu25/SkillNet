@@ -9,5 +9,9 @@ namespace SkillNet.Domain.Entities
         public string? Logo { get; set; }
         public string? Address { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string ApprovalStatus { get; set; } = "Draft";
+        public DateTime? SubmittedAt { get; set; }
+        public DateTime? ReviewedAt { get; set; }
+        public string? RejectionReason { get; set; }
     }
 }

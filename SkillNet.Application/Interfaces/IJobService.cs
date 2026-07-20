@@ -13,5 +13,6 @@ namespace SkillNet.Application.Interfaces
         Task<JobResponse?> PublishJobAsync(int jobId, int userId);
         Task<JobResponse?> CloseJobAsync(int jobId, int userId);
         Task<JobResponse> DuplicateJobAsync(int jobId, int userId);
+        Task<IEnumerable<SkillDto>> GetSkillsAsync();
     }
 }

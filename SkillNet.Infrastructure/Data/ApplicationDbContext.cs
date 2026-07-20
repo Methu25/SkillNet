@@ -124,6 +124,9 @@ namespace SkillNet.Infrastructure.Data
                 entity.Property(e => e.Logo).HasMaxLength(255);
                 entity.Property(e => e.Address).HasMaxLength(500);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.Property(e => e.ApprovalStatus).IsRequired().HasMaxLength(20).HasDefaultValue("Draft");
+                entity.Property(e => e.RejectionReason).HasMaxLength(1000);
+                entity.HasIndex(e => e.ApprovalStatus);
             });
 
             modelBuilder.Entity<RecruiterProfile>(entity =>
