@@ -138,11 +138,13 @@ namespace SkillNet.Application.Services
     public class JobService : IJobService
     {
         private readonly IJobRepository _jobRepository;
+        private readonly IRecruiterService _recruiterService;
         private readonly IConfiguration _configuration;
 
-        public JobService(IJobRepository jobRepository, IConfiguration configuration)
+        public JobService(IJobRepository jobRepository, IRecruiterService recruiterService, IConfiguration configuration)
         {
             _jobRepository = jobRepository;
+            _recruiterService = recruiterService;
             _configuration = configuration;
         }
 
@@ -151,13 +153,14 @@ namespace SkillNet.Application.Services
         /// Instead of passing 12+ parameters to a constructor, we chain
         /// setter methods on JobPostBuilder to assemble the object step-by-step.
         /// </summary>
-        public async Task<JobResponse> CreateJobAsync(int recruiterId, CreateJobRequest request)
+        public async Task<JobResponse> CreateJobAsync(int userId, CreateJobRequest request)
         {
             // Builder Pattern — assemble JobPost step-by-step
-            var orgId = await _jobRepository.GetRecruiterOrganizationIdAsync(recruiterId);
+            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
+            var orgId = await _jobRepository.GetRecruiterOrganizationIdAsync(recruiterProfileId);
 
             var job = new JobPostBuilder()
-                .SetRecruiter(recruiterId, orgId > 0 ? orgId : null)
+                .SetRecruiter(recruiterProfileId, orgId > 0 ? orgId : null)
                 .SetTitle(request.Title)
                 .SetDescription(request.Description)
                 .SetCategory(request.CategoryId)
@@ -209,19 +212,21 @@ namespace SkillNet.Application.Services
             return responses;
         }
 
-        public async Task<IEnumerable<JobResponse>> GetRecruiterJobsAsync(int recruiterId)
+        public async Task<IEnumerable<JobResponse>> GetRecruiterJobsAsync(int userId)
         {
-            var jobs = await _jobRepository.GetJobsByRecruiterAsync(recruiterId);
+            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
+            var jobs = await _jobRepository.GetJobsByRecruiterAsync(recruiterProfileId);
             var responses = new List<JobResponse>();
             foreach (var job in jobs)
                 responses.Add(await BuildJobResponseAsync(job.JobId));
             return responses;
         }
 
-        public async Task<JobResponse?> UpdateJobAsync(int jobId, int recruiterId, UpdateJobRequest request)
+        public async Task<JobResponse?> UpdateJobAsync(int jobId, int userId, UpdateJobRequest request)
         {
+            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
             var existing = await _jobRepository.GetJobByIdAsync(jobId);
-            if (existing == null || existing.RecruiterId != recruiterId) return null;
+            if (existing == null || existing.RecruiterId != recruiterProfileId) return null;
 
             existing.Title = request.Title ?? existing.Title;
             existing.Description = request.Description ?? existing.Description;
@@ -246,21 +251,28 @@ namespace SkillNet.Application.Services
             return await BuildJobResponseAsync(jobId);
         }
 
-        public async Task<bool> DeleteJobAsync(int jobId, int recruiterId)
+        public async Task<bool> DeleteJobAsync(int jobId, int userId)
         {
-            return await _jobRepository.DeleteJobAsync(jobId, recruiterId);
+            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
+            return await _jobRepository.DeleteJobAsync(jobId, recruiterProfileId);
         }
 
-        public async Task<JobResponse?> PublishJobAsync(int jobId, int recruiterId)
+        public async Task<JobResponse?> PublishJobAsync(int jobId, int userId)
         {
-            var updated = await _jobRepository.UpdateJobStatusAsync(jobId, recruiterId, "Published");
+            if (!await _recruiterService.IsOrganizationApprovedAsync(userId))
+                throw new InvalidOperationException(
+                    "Jobs can only be published after the recruiter's organization is approved.");
+
+            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
+            var updated = await _jobRepository.UpdateJobStatusAsync(jobId, recruiterProfileId, "Published");
             if (!updated) return null;
             return await BuildJobResponseAsync(jobId);
         }
 
-        public async Task<JobResponse?> CloseJobAsync(int jobId, int recruiterId)
+        public async Task<JobResponse?> CloseJobAsync(int jobId, int userId)
         {
-            var updated = await _jobRepository.UpdateJobStatusAsync(jobId, recruiterId, "Closed");
+            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
+            var updated = await _jobRepository.UpdateJobStatusAsync(jobId, recruiterProfileId, "Closed");
             if (!updated) return null;
             return await BuildJobResponseAsync(jobId);
         }
@@ -270,20 +282,27 @@ namespace SkillNet.Application.Services
         /// Instead of building a new job from scratch, we clone the existing one.
         /// More efficient when the recruiter posts a similar role again.
         /// </summary>
-        public async Task<JobResponse> DuplicateJobAsync(int jobId, int recruiterId)
+        public async Task<JobResponse> DuplicateJobAsync(int jobId, int userId)
         {
+            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
             var original = await _jobRepository.GetJobByIdAsync(jobId);
             if (original == null) throw new KeyNotFoundException($"Job {jobId} not found.");
-            if (original.RecruiterId != recruiterId) throw new UnauthorizedAccessException("You can only duplicate your own jobs.");
+            if (original.RecruiterId != recruiterProfileId) throw new UnauthorizedAccessException("You can only duplicate your own jobs.");
 
             // Prototype Pattern — clone the existing job object
             var cloned = (JobPost)original.Clone();
             var newJobId = await _jobRepository.InsertJobAsync(cloned);
 
-            // Copy skills from original to clone
-            var originalSkills = await _jobRepository.GetSkillsByJobIdAsync(jobId);
+            var originalSkillIds = (await _jobRepository.GetSkillIdsByJobIdAsync(jobId)).ToList();
+            if (originalSkillIds.Count > 0)
+                await _jobRepository.InsertJobSkillsAsync(newJobId, originalSkillIds);
 
             return await BuildJobResponseAsync(newJobId);
+        }
+
+        public Task<IEnumerable<SkillDto>> GetSkillsAsync()
+        {
+            return _jobRepository.GetAllSkillsAsync();
         }
 
         // ─── Factory Method ────────────────────────────────────────────────────
@@ -322,6 +341,13 @@ namespace SkillNet.Application.Services
         }
 
         // ─── Helpers ───────────────────────────────────────────────────────────
+
+        private async Task<int> GetRequiredRecruiterProfileIdAsync(int userId)
+        {
+            var recruiterProfileId = await _recruiterService.GetRecruiterProfileIdAsync(userId);
+            return recruiterProfileId
+                ?? throw new InvalidOperationException("Recruiter profile not yet created.");
+        }
 
         private async Task<JobResponse> BuildJobResponseAsync(int jobId)
         {

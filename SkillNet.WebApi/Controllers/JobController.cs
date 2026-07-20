@@ -13,11 +13,13 @@ namespace SkillNet.WebApi.Controllers
     public class JobController : ControllerBase
     {
         private readonly IJobService _jobService;
+        private readonly IUserService _userService;
         private readonly IConfiguration _configuration;
 
-        public JobController(IJobService jobService, IConfiguration configuration)
+        public JobController(IJobService jobService, IUserService userService, IConfiguration configuration)
         {
             _jobService = jobService;
+            _userService = userService;
             _configuration = configuration;
         }
 
@@ -47,15 +49,23 @@ namespace SkillNet.WebApi.Controllers
             return Ok(categories);
         }
 
+        // GET /api/job/skills — shared Skills catalog for Recruiter Job forms
+        [HttpGet("skills")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetSkills()
+        {
+            return Ok(await _jobService.GetSkillsAsync());
+        }
+
         // POST /api/job — create new job (Recruiter only, uses Builder Pattern)
         [HttpPost]
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> CreateJob([FromBody] CreateJobRequest request)
         {
-            var recruiterId = GetCurrentUserId();
-            if (recruiterId == 0) return Unauthorized();
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
 
-            var job = await _jobService.CreateJobAsync(recruiterId, request);
+            var job = await _jobService.CreateJobAsync(userId, request);
             return CreatedAtAction(nameof(GetJob), new { id = job.JobId }, job);
         }
 
@@ -64,10 +74,10 @@ namespace SkillNet.WebApi.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> UpdateJob(int id, [FromBody] UpdateJobRequest request)
         {
-            var recruiterId = GetCurrentUserId();
-            if (recruiterId == 0) return Unauthorized();
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
 
-            var job = await _jobService.UpdateJobAsync(id, recruiterId, request);
+            var job = await _jobService.UpdateJobAsync(id, userId, request);
             if (job == null) return NotFound(new { message = "Job not found or access denied." });
             return Ok(job);
         }
@@ -77,10 +87,10 @@ namespace SkillNet.WebApi.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> DeleteJob(int id)
         {
-            var recruiterId = GetCurrentUserId();
-            if (recruiterId == 0) return Unauthorized();
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
 
-            var deleted = await _jobService.DeleteJobAsync(id, recruiterId);
+            var deleted = await _jobService.DeleteJobAsync(id, userId);
             if (!deleted) return NotFound(new { message = "Job not found or access denied." });
             return Ok(new { message = "Job deleted successfully." });
         }
@@ -90,10 +100,10 @@ namespace SkillNet.WebApi.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> PublishJob(int id)
         {
-            var recruiterId = GetCurrentUserId();
-            if (recruiterId == 0) return Unauthorized();
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
 
-            var job = await _jobService.PublishJobAsync(id, recruiterId);
+            var job = await _jobService.PublishJobAsync(id, userId);
             if (job == null) return NotFound(new { message = "Job not found or access denied." });
             return Ok(job);
         }
@@ -103,10 +113,10 @@ namespace SkillNet.WebApi.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> CloseJob(int id)
         {
-            var recruiterId = GetCurrentUserId();
-            if (recruiterId == 0) return Unauthorized();
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
 
-            var job = await _jobService.CloseJobAsync(id, recruiterId);
+            var job = await _jobService.CloseJobAsync(id, userId);
             if (job == null) return NotFound(new { message = "Job not found or access denied." });
             return Ok(job);
         }
@@ -116,12 +126,12 @@ namespace SkillNet.WebApi.Controllers
         [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> DuplicateJob(int id)
         {
-            var recruiterId = GetCurrentUserId();
-            if (recruiterId == 0) return Unauthorized();
+            var userId = GetCurrentUserId();
+            if (userId == 0) return Unauthorized();
 
             try
             {
-                var cloned = await _jobService.DuplicateJobAsync(id, recruiterId);
+                var cloned = await _jobService.DuplicateJobAsync(id, userId);
                 return CreatedAtAction(nameof(GetJob), new { id = cloned.JobId }, cloned);
             }
             catch (KeyNotFoundException ex)
@@ -136,8 +146,10 @@ namespace SkillNet.WebApi.Controllers
 
         private int GetCurrentUserId()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(claim, out var id) ? id : 0;
+            var email = User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrWhiteSpace(email)) return 0;
+
+            return _userService.GetUserByEmail(email)?.UserID ?? 0;
         }
     }
 }
