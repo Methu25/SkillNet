@@ -19,6 +19,7 @@ import CandidateResumes from './pages/CandidateResumes';
 import CandidateSkills from './pages/CandidateSkills';
 import CandidateApplications from './pages/CandidateApplications';
 import CandidateJobs from './pages/CandidateJobs';
+import RecruiterApplicants from './pages/RecruiterApplicants';
 
 // Recruiter workspace
 import RecruiterRoute from './components/recruiter/RecruiterRoute';
