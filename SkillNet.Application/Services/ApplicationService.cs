@@ -7,12 +7,22 @@ namespace SkillNet.Application.Services
     public class ApplicationService : IApplicationService
     {
         private const string AppliedStatus = "Applied";
+        private const string ShortlistedStatus = "Shortlisted";
+        private const string HiredStatus = "Hired";
+        private const string RejectedStatus = "Rejected";
         private const string WithdrawnStatus = "Withdrawn";
+
+        private static readonly IReadOnlyDictionary<string, string[]> ValidRecruiterTransitions =
+            new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                [AppliedStatus] = [ShortlistedStatus, RejectedStatus],
+                [ShortlistedStatus] = [HiredStatus, RejectedStatus]
+            };
 
         private static readonly HashSet<string> TerminalStatuses = new(StringComparer.OrdinalIgnoreCase)
         {
-            "Hired",
-            "Rejected",
+            HiredStatus,
+            RejectedStatus,
             WithdrawnStatus
         };
 
@@ -232,7 +242,7 @@ namespace SkillNet.Application.Services
 
             var application = await _applicationRepository.GetApplicationByIdAsync(applicationId);
             return application != null && IsOwnedByRecruiter(application, recruiterId)
-                ? MapToJobApplicationDto(application)
+                ? MapToJobApplicationDto(application, includeRecruiterNotes: true)
                 : null;
         }
 
@@ -273,6 +283,17 @@ namespace SkillNet.Application.Services
                 throw new InvalidOperationException("The application already has the requested status.");
             }
 
+            var validNextStatuses = GetValidNextStatuses(application.CurrentStatus);
+            var canonicalStatus = validNextStatuses.FirstOrDefault(status =>
+                string.Equals(status, newStatus, StringComparison.OrdinalIgnoreCase));
+            if (canonicalStatus == null)
+            {
+                throw new InvalidOperationException(
+                    $"The status cannot change from '{application.CurrentStatus}' to '{newStatus}'.");
+            }
+
+            newStatus = canonicalStatus;
+
             var previousStatus = application.CurrentStatus;
             var changedAt = DateTime.UtcNow;
             application.CurrentStatus = newStatus;
@@ -290,7 +311,7 @@ namespace SkillNet.Application.Services
             });
 
             var updatedApplication = await _applicationRepository.GetApplicationByIdAsync(applicationId);
-            return MapToJobApplicationDto(updatedApplication ?? application);
+            return MapToJobApplicationDto(updatedApplication ?? application, includeRecruiterNotes: true);
         }
 
         public async Task<RecruiterNoteDto?> AddRecruiterNoteAsync(
@@ -356,7 +377,9 @@ namespace SkillNet.Application.Services
             };
         }
 
-        private static JobApplicationDto MapToJobApplicationDto(JobApplication application)
+        private static JobApplicationDto MapToJobApplicationDto(
+            JobApplication application,
+            bool includeRecruiterNotes = false)
         {
             return new JobApplicationDto
             {
@@ -382,10 +405,13 @@ namespace SkillNet.Application.Services
                     .OrderBy(history => history.ChangedAt)
                     .Select(MapToHistoryDto)
                     .ToList(),
-                RecruiterNotes = application.RecruiterNotes
-                    .OrderByDescending(note => note.CreatedAt)
-                    .Select(MapToRecruiterNoteDto)
-                    .ToList()
+                ValidNextStatuses = GetValidNextStatuses(application.CurrentStatus).ToList(),
+                RecruiterNotes = includeRecruiterNotes
+                    ? application.RecruiterNotes
+                        .OrderByDescending(note => note.CreatedAt)
+                        .Select(MapToRecruiterNoteDto)
+                        .ToList()
+                    : null
             };
         }
 
@@ -439,6 +465,13 @@ namespace SkillNet.Application.Services
         private static bool IsOwnedByRecruiter(JobApplication application, int recruiterId)
         {
             return application.Job?.RecruiterId == recruiterId;
+        }
+
+        private static IReadOnlyCollection<string> GetValidNextStatuses(string currentStatus)
+        {
+            return ValidRecruiterTransitions.TryGetValue(currentStatus, out var statuses)
+                ? statuses
+                : Array.Empty<string>();
         }
 
         private static string GetCandidateName(Candidate? candidate)

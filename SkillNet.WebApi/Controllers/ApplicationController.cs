@@ -185,10 +185,18 @@ namespace SkillNet.WebApi.Controllers
                 return NotFound(new { message = "Recruiter profile not found." });
             }
 
-            var application = await _applicationService.UpdateApplicationStatusAsync(
-                recruiterId.Value,
-                applicationId,
-                dto);
+            JobApplicationDto? application;
+            try
+            {
+                application = await _applicationService.UpdateApplicationStatusAsync(
+                    recruiterId.Value,
+                    applicationId,
+                    dto);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Conflict(new { message = exception.Message });
+            }
 
             if (application == null)
             {
@@ -215,10 +223,18 @@ namespace SkillNet.WebApi.Controllers
                 return NotFound(new { message = "Recruiter profile not found." });
             }
 
-            var note = await _applicationService.AddRecruiterNoteAsync(
-                recruiterId.Value,
-                applicationId,
-                dto);
+            RecruiterNoteDto? note;
+            try
+            {
+                note = await _applicationService.AddRecruiterNoteAsync(
+                    recruiterId.Value,
+                    applicationId,
+                    dto);
+            }
+            catch (ArgumentException exception)
+            {
+                return BadRequest(new { message = exception.Message });
+            }
 
             if (note == null)
             {

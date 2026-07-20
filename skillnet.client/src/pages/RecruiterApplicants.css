@@ -20,6 +20,7 @@
 .recruiter-button--primary { color: #fff; background: linear-gradient(135deg,#ff681f,#ff8a4c); }
 .recruiter-button--secondary { color: var(--orange-dark); background: #fff2eb; border-color: #f0d7c5; }
 .recruiter-button--ghost { color: #555b64; background: #fff; border-color: #e7e2dd; }
+.recruiter-button--danger { color: #8e3e38; background: #fff0ef; border-color: #ecc8c5; }
 .recruiter-button:disabled { opacity: .45; cursor: not-allowed; }
 .recruiter-applicant-list { display: grid; gap: 14px; }
 .recruiter-applicant-card { display: grid; grid-template-columns: 52px minmax(0,1fr) auto; align-items: center; gap: 18px; min-height: 120px; padding: 21px; background: #fff; border: 1px solid #eee8e3; border-radius: 18px; box-shadow: 0 10px 30px rgba(46,37,31,.05); }
@@ -65,6 +66,27 @@
 .recruiter-detail-facts dd, .recruiter-resume-detail dd { margin: 4px 0 0; font-size: .78rem; font-weight: 750; }
 .recruiter-detail-card { margin-top: 16px; padding: 22px; background: #fff; border: 1px solid #eee7e1; border-radius: 17px; box-shadow: 0 9px 27px rgba(46,37,31,.04); }
 .recruiter-detail-card > h2 { margin: 6px 0 15px; font-size: 1.05rem; }
+.recruiter-status-management > .recruiter-detail-muted { margin-top: -7px; }
+.recruiter-quick-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 17px 0; }
+.recruiter-status-field { display: grid; gap: 7px; margin-top: 13px; color: #4c515a; font-size: .76rem; font-weight: 750; }
+.recruiter-status-field small { color: var(--muted); font-weight: 500; }
+.recruiter-status-field select, .recruiter-status-field textarea { width: 100%; box-sizing: border-box; padding: 11px 12px; color: var(--ink); background: #fff; border: 1px solid #ddd5cf; border-radius: 10px; font: inherit; resize: vertical; }
+.recruiter-status-field select:focus, .recruiter-status-field textarea:focus { outline: 3px solid rgba(255,104,31,.14); border-color: var(--orange); }
+.recruiter-status-submit { width: 100%; margin-top: 15px; }
+.recruiter-status-terminal { margin: 16px 0 0; padding: 13px; color: var(--muted); background: #f7f4f2; border-radius: 10px; font-size: .8rem; }
+.recruiter-status-feedback { margin-top: 15px; padding: 11px 13px; border-radius: 10px; font-size: .8rem; font-weight: 650; }
+.recruiter-status-feedback--success { color: #236443; background: #eaf8f0; border: 1px solid #bfe3ce; }
+.recruiter-status-feedback--error { color: #873e38; background: #fff0ef; border: 1px solid #efcfcc; }
+.recruiter-note-form { margin-top: 18px; padding: 16px; background: #fffaf7; border: 1px solid #eee3dc; border-radius: 12px; }
+.recruiter-note-form .recruiter-status-field { margin-top: 0; }
+.recruiter-note-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 11px; }
+.recruiter-note-form-footer small { color: var(--muted); font-size: .7rem; }
+.recruiter-note-list { display: grid; gap: 10px; margin-top: 18px; }
+.recruiter-note { padding: 15px; background: #fff; border: 1px solid #eee6e0; border-left: 3px solid var(--orange); border-radius: 10px; }
+.recruiter-note > div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.recruiter-note strong { font-size: .8rem; }
+.recruiter-note time { color: var(--muted); font-size: .7rem; }
+.recruiter-note p { margin: 10px 0 0; color: #4f545c; font-size: .82rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
 .recruiter-detail-section-heading { display: flex; align-items: center; gap: 14px; }
 .recruiter-detail-section-heading h2 { margin: 3px 0; font-size: 1.2rem; }
 .recruiter-detail-section-heading a { color: var(--orange-dark); font-size: .8rem; text-decoration: none; }
