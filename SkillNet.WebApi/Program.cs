@@ -131,6 +131,13 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 
+    // Fix duplicate schema name errors
+    // Example: ResetPasswordRequest in Controller and Model
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+
+    // Fix duplicate/conflicting route errors if Swagger finds same method + path
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
+
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Enter the JWT access token.",

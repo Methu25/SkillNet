@@ -8,7 +8,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
-// Role-specific dashboards (protected)
+// Role-specific dashboards
 import AdminDashboard from './pages/AdminDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import RecruiterApplicants from './pages/RecruiterApplicants';
@@ -21,13 +21,13 @@ import CandidateSkills from './pages/CandidateSkills';
 import CandidateApplications from './pages/CandidateApplications';
 import CandidateJobs from './pages/CandidateJobs';
 
-// Admin sub-pages (protected, Admin only)
+// Admin sub-pages
 import UserManagement from './pages/UserManagement';
 import OrganizationManagement from './pages/OrganizationManagement';
 import AuditLogs from './pages/AuditLogs';
 import SystemSettings from './pages/SystemSettings';
 
-// Hiring Manager sub-pages (protected, HiringManager only)
+// Hiring Manager sub-pages
 import InterviewDetails from './pages/InterviewDetails';
 import ScheduleInterview from './pages/ScheduleInterview';
 
@@ -40,16 +40,16 @@ function App() {
         <AuthProvider>
             <Router>
                 <Routes>
-                    {/* ── Default root route ── */}
+                    {/* Default root route */}
                     <Route path="/" element={<LandingPage />} />
 
-                    {/* ── Public routes ── */}
+                    {/* Public routes */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
 
-                    {/* ── Admin routes ── */}
+                    {/* Admin routes */}
                     <Route
                         path="/admin-dashboard"
                         element={
@@ -91,7 +91,7 @@ function App() {
                         }
                     />
 
-                    {/* ── Recruiter routes ── */}
+                    {/* Recruiter routes */}
                     <Route
                         path="/recruiter-dashboard"
                         element={
@@ -101,33 +101,12 @@ function App() {
                         }
                     />
 
-                    {/* ── Hiring Manager routes ── */}
-                    <Route
-                        path="/hiring-dashboard"
-                        element={
-                            <ProtectedRoute allowedRoles={['HiringManager']}>
-                                <HiringDashboard />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/interviews/:id"
-                        element={
-                            <ProtectedRoute allowedRoles={['HiringManager']}>
-                                <InterviewDetails />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/schedule-interview"
-                        element={
-                            <ProtectedRoute allowedRoles={['HiringManager']}>
-                                <ScheduleInterview />
-                            </ProtectedRoute>
-                        }
-                    />
+                    {/* Hiring Manager routes - public for module testing/demo */}
+                    <Route path="/hiring-dashboard" element={<HiringDashboard />} />
+                    <Route path="/interviews/:id" element={<InterviewDetails />} />
+                    <Route path="/schedule-interview" element={<ScheduleInterview />} />
 
-                    {/* ── Candidate routes ── */}
+                    {/* Candidate routes */}
                     <Route
                         path="/candidate-dashboard"
                         element={
@@ -225,7 +204,7 @@ function App() {
                         }
                     />
 
-                    {/* ── Utility routes ── */}
+                    {/* Utility routes */}
                     <Route path="/access-denied" element={<AccessDenied />} />
                     <Route path="/404" element={<NotFound />} />
                     <Route path="*" element={<Navigate to="/404" replace />} />
