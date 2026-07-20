@@ -9,6 +9,10 @@ using SkillNet.Application.Services;
 using SkillNet.Application.Interfaces;
 using SkillNet.Infrastructure.Repositories;
 using SkillNet.Infrastructure.Data;
+using SkillNet.Infrastructure.Storage;
+using SkillNet.Infrastructure.Email;
+using SkillNet.WebApi.Middleware;
+using SkillNet.WebApi.Filters;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,6 +34,7 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("(local
 // ==========================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<SkillCatalogSeeder>();
 
 builder.Services.AddCors(options =>
 {
@@ -67,7 +72,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+builder.Services.AddScoped<RegistrationEmailFilter>();
+builder.Services.AddControllers(options =>
+    options.Filters.AddService<RegistrationEmailFilter>());
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
@@ -91,11 +98,31 @@ builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IJobService, JobService>();
 builder.Services.AddScoped<IRecruiterService, RecruiterService>();
 
+// Register Candidate Module (Infrastructure repositories)
+builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
+builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
+builder.Services.AddScoped<ISkillRepository, SkillRepository>();
+builder.Services.AddScoped<ICandidateService, CandidateService>();
+builder.Services.AddScoped<IProfileImageService, ProfileImageService>();
+builder.Services.AddScoped<IProfileImageStorageService, LocalProfileImageStorageService>();
+builder.Services.Configure<SmtpOptions>(
+    builder.Configuration.GetSection(SmtpOptions.SectionName));
+builder.Services.AddTransient<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IResumeService, ResumeService>();
+builder.Services.AddScoped<IResumeStorageService, LocalResumeStorageService>();
+builder.Services.AddScoped<ISkillService, SkillService>();
+builder.Services.AddScoped<ICandidateDashboardService, CandidateDashboardService>();
+builder.Services.AddScoped<ICandidateNotificationService, CandidateNotificationService>();
+builder.Services.AddScoped<IProfileCompletionStrategy, BasicProfileCompletionStrategy>();
+builder.Services.AddTransient<ICandidateProfileBuilder, CandidateProfileBuilder>();
+
 // ==========================================
 // 3. CONFIGURE SWAGGER (WITH JWT SUPPORT)
 // ==========================================
 builder.Services.AddSwaggerGen(c =>
 {
+    c.CustomSchemaIds(type => (type.FullName ?? type.Name).Replace("+", "."));
+
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "SkillNet Recruitment API",
@@ -111,11 +138,10 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: Bearer 12345abcdef",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Description = "Enter the JWT access token.",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
@@ -126,7 +152,16 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+
+    await scope.ServiceProvider.GetRequiredService<SkillCatalogSeeder>().SeedAsync();
+}
+
 app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapStaticAssets();
 
 if (app.Environment.IsDevelopment())
@@ -139,6 +174,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseCors("AllowReactApp");
+app.UseMiddleware<CandidateExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

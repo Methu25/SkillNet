@@ -262,6 +262,216 @@ namespace SkillNet.Infrastructure.Migrations
                     b.ToTable("Interviewer", (string)null);
                 });
 
+            modelBuilder.Entity("SkillNet.Domain.Entities.JobCategory", b =>
+                {
+                    b.Property<int>("CategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("CategoryId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("JobCategory", (string)null);
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.JobPost", b =>
+                {
+                    b.Property<int>("JobId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("JobId"));
+
+                    b.Property<DateTime?>("ApplicationDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmploymentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ExperienceLevel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("OrganizationId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RecruiterId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("SalaryMax")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("SalaryMin")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("WorkMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("JobId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("RecruiterId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("JobPost", (string)null);
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.JobSkill", b =>
+                {
+                    b.Property<int>("JobId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SkillId")
+                        .HasColumnType("int");
+
+                    b.HasKey("JobId", "SkillId");
+
+                    b.HasIndex("SkillId");
+
+                    b.ToTable("JobSkill", (string)null);
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.Organization", b =>
+                {
+                    b.Property<int>("OrganizationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrganizationId"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("Industry")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Logo")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("OrganizationName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Website")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("OrganizationId");
+
+                    b.ToTable("Organization", (string)null);
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.RecruiterProfile", b =>
+                {
+                    b.Property<int>("RecruiterProfileId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RecruiterProfileId"));
+
+                    b.Property<string>("Bio")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<int?>("ExperienceYears")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Headline")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("LinkedInUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("OrganizationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("RecruiterProfileId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("RecruiterProfile", (string)null);
+                });
+
             modelBuilder.Entity("SkillNet.Domain.Entities.Resume", b =>
                 {
                     b.Property<int>("ResumeId")
@@ -330,7 +540,8 @@ namespace SkillNet.Infrastructure.Migrations
                 {
                     b.Property<int>("UserID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserID"));
 
@@ -477,6 +688,69 @@ namespace SkillNet.Infrastructure.Migrations
                     b.Navigation("InterviewEvaluation");
                 });
 
+            modelBuilder.Entity("SkillNet.Domain.Entities.JobPost", b =>
+                {
+                    b.HasOne("SkillNet.Domain.Entities.JobCategory", "JobCategory")
+                        .WithMany("JobPosts")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SkillNet.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SkillNet.Domain.Entities.RecruiterProfile", "RecruiterProfile")
+                        .WithMany("JobPosts")
+                        .HasForeignKey("RecruiterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobCategory");
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("RecruiterProfile");
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.JobSkill", b =>
+                {
+                    b.HasOne("SkillNet.Domain.Entities.JobPost", "JobPost")
+                        .WithMany("JobSkills")
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SkillNet.Domain.Entities.Skill", "Skill")
+                        .WithMany("JobSkills")
+                        .HasForeignKey("SkillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobPost");
+
+                    b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.RecruiterProfile", b =>
+                {
+                    b.HasOne("SkillNet.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SkillNet.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SkillNet.Domain.Entities.Resume", b =>
                 {
                     b.HasOne("SkillNet.Domain.Entities.Candidate", "Candidate")
@@ -514,9 +788,26 @@ namespace SkillNet.Infrastructure.Migrations
                     b.Navigation("InterviewEvaluations");
                 });
 
+            modelBuilder.Entity("SkillNet.Domain.Entities.JobCategory", b =>
+                {
+                    b.Navigation("JobPosts");
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.JobPost", b =>
+                {
+                    b.Navigation("JobSkills");
+                });
+
+            modelBuilder.Entity("SkillNet.Domain.Entities.RecruiterProfile", b =>
+                {
+                    b.Navigation("JobPosts");
+                });
+
             modelBuilder.Entity("SkillNet.Domain.Entities.Skill", b =>
                 {
                     b.Navigation("CandidateSkills");
+
+                    b.Navigation("JobSkills");
                 });
 
             modelBuilder.Entity("SkillNet.Domain.Entities.User", b =>

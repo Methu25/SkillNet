@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -38,7 +38,7 @@ namespace SkillNet.Infrastructure.Migrations
                         name: "FK_Candidates_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
+                        principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -51,10 +51,7 @@ namespace SkillNet.Infrastructure.Migrations
                     SkillName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Skills", x => x.SkillId);
-                });
+                constraints: table => table.PrimaryKey("PK_Skills", x => x.SkillId));
 
             migrationBuilder.CreateTable(
                 name: "Resumes",
