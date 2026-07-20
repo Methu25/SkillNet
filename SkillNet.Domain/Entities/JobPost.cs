@@ -25,6 +25,7 @@ namespace SkillNet.Domain.Entities
         public Organization? Organization { get; set; }
         public JobCategory JobCategory { get; set; } = null!;
         public ICollection<JobSkill> JobSkills { get; set; } = new List<JobSkill>();
+        public ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();
 
         /// <summary>
         /// Prototype Pattern — Creates a new Draft copy of this job posting.

@@ -71,7 +71,7 @@ namespace SkillNet.Infrastructure.Migrations
                         name: "FK_RecruiterProfile_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
+                        principalColumn: "UserID",
                         onDelete: ReferentialAction.Cascade);
                 });
 

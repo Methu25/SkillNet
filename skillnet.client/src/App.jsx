@@ -11,12 +11,15 @@ import ResetPassword from './pages/ResetPassword';
 // Role-specific dashboards (protected)
 import AdminDashboard from './pages/AdminDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
+import RecruiterApplicants from './pages/RecruiterApplicants';
 import HiringDashboard from './pages/HiringDashboard';
 import CandidateDashboard from './pages/CandidateDashboard';
 import CandidateProfileCreate from './pages/CandidateProfileCreate';
 import CandidateProfile from './pages/CandidateProfile';
 import CandidateResumes from './pages/CandidateResumes';
 import CandidateSkills from './pages/CandidateSkills';
+import CandidateApplications from './pages/CandidateApplications';
+import CandidateJobs from './pages/CandidateJobs';
 
 // Admin sub-pages (protected, Admin only)
 import UserManagement from './pages/UserManagement';
@@ -170,6 +173,54 @@ function App() {
                         element={
                             <ProtectedRoute allowedRoles={['Candidate']}>
                                 <CandidateSkills />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/recruiter/jobs/:jobId/applicants"
+                        element={
+                            <ProtectedRoute allowedRoles={['Recruiter']}>
+                                <RecruiterApplicants />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/recruiter/jobs/:jobId/applicants/:applicationId"
+                        element={
+                            <ProtectedRoute allowedRoles={['Recruiter']}>
+                                <RecruiterApplicants />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/applications"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateApplications />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/applications/:applicationId"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateApplications />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/jobs"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateJobs />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/jobs/:jobId"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateJobs />
                             </ProtectedRoute>
                         }
                     />

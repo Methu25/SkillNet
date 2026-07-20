@@ -31,6 +31,7 @@ namespace SkillNet.Application.Services
             {
                 return new RecruiterProfileDto
                 {
+                    RecruiterProfileId = (int)reader["RecruiterProfileId"],
                     UserId = userId,
                     Headline = reader["Headline"] == DBNull.Value ? null : reader["Headline"].ToString(),
                     Bio = reader["Bio"] == DBNull.Value ? null : reader["Bio"].ToString(),

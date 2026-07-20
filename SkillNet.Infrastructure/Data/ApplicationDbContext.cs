@@ -23,6 +23,11 @@ namespace SkillNet.Infrastructure.Data
         public DbSet<JobPost> JobPosts { get; set; } = null!;
         public DbSet<JobSkill> JobSkills { get; set; } = null!;
 
+        // Application Module Entities
+        public DbSet<JobApplication> JobApplications { get; set; } = null!;
+        public DbSet<ApplicationStatusHistory> ApplicationStatusHistories { get; set; } = null!;
+        public DbSet<RecruiterNote> RecruiterNotes { get; set; } = null!;
+
         // Interview / Hiring Manager Module Entities
         public DbSet<Interview> Interviews { get; set; } = null!;
         public DbSet<Interviewer> Interviewers { get; set; } = null!;
@@ -206,6 +211,131 @@ namespace SkillNet.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+            // Application Module Configuration
+            modelBuilder.Entity<JobApplication>(entity =>
+            {
+                entity.ToTable("JobApplications");
+                entity.HasKey(e => e.ApplicationId);
+
+                entity.Property(e => e.CandidateId)
+                    .IsRequired();
+
+                entity.Property(e => e.JobId)
+                    .IsRequired();
+
+                entity.Property(e => e.ResumeId)
+                    .IsRequired();
+
+                entity.Property(e => e.CurrentStatus)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.CoverLetter)
+                    .HasMaxLength(2000);
+
+                entity.Property(e => e.Source)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.AppliedDate)
+                    .IsRequired();
+
+                entity.Property(e => e.LastUpdated)
+                    .IsRequired();
+
+                entity.HasOne(e => e.Candidate)
+                    .WithMany(e => e.JobApplications)
+                    .HasForeignKey(e => e.CandidateId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Job)
+                    .WithMany(e => e.JobApplications)
+                    .HasForeignKey(e => e.JobId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Resume)
+                    .WithMany(e => e.JobApplications)
+                    .HasForeignKey(e => e.ResumeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.CandidateId, e.JobId })
+                    .IsUnique();
+                entity.HasIndex(e => e.JobId);
+                entity.HasIndex(e => e.CandidateId);
+                entity.HasIndex(e => e.CurrentStatus);
+                entity.HasIndex(e => e.AppliedDate);
+            });
+
+            modelBuilder.Entity<ApplicationStatusHistory>(entity =>
+            {
+                entity.ToTable("ApplicationStatusHistories");
+                entity.HasKey(e => e.StatusHistoryId);
+
+                entity.Property(e => e.ApplicationId)
+                    .IsRequired();
+
+                entity.Property(e => e.OldStatus)
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.NewStatus)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.ChangedBy)
+                    .IsRequired();
+
+                entity.Property(e => e.ChangedAt)
+                    .IsRequired();
+
+                entity.Property(e => e.Comment)
+                    .HasMaxLength(2000);
+
+                entity.HasOne(e => e.Application)
+                    .WithMany(e => e.StatusHistory)
+                    .HasForeignKey(e => e.ApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.ChangedByUser)
+                    .WithMany(e => e.ApplicationStatusChanges)
+                    .HasForeignKey(e => e.ChangedBy)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasIndex(e => e.ApplicationId);
+                entity.HasIndex(e => e.ChangedAt);
+            });
+
+            modelBuilder.Entity<RecruiterNote>(entity =>
+            {
+                entity.ToTable("RecruiterNotes");
+                entity.HasKey(e => e.NoteId);
+
+                entity.Property(e => e.ApplicationId)
+                    .IsRequired();
+
+                entity.Property(e => e.RecruiterId)
+                    .IsRequired();
+
+                entity.Property(e => e.Comment)
+                    .IsRequired()
+                    .HasMaxLength(2000);
+
+                entity.Property(e => e.CreatedAt)
+                    .IsRequired();
+
+                entity.HasOne(e => e.Application)
+                    .WithMany(e => e.RecruiterNotes)
+                    .HasForeignKey(e => e.ApplicationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Recruiter)
+                    .WithMany(e => e.RecruiterNotes)
+                    .HasForeignKey(e => e.RecruiterId)
+                    .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasIndex(e => e.ApplicationId);
+                entity.HasIndex(e => e.RecruiterId);
+                entity.HasIndex(e => e.CreatedAt);
+            });
+
             // Interview Configuration
             modelBuilder.Entity<Interview>(entity =>
             {
@@ -227,6 +357,12 @@ namespace SkillNet.Infrastructure.Data
 
                 entity.Property(e => e.CreatedAt)
                     .HasDefaultValueSql("GETDATE()");
+
+                entity.HasOne(e => e.Application)
+                    .WithMany(e => e.Interviews)
+                    .HasForeignKey(e => e.ApplicationId)
+                    .IsRequired()
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 // Display-only fields. These should not become DB columns.
                 entity.Ignore(e => e.CandidateName);
