@@ -2,19 +2,17 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using SkillNet.Server.Services;
 using System.Text;
+using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ==========================================
 // 1. ADD CORS POLICY
 // ==========================================
-// 1. ADD CORS POLICY
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        // 5173 is standard for Vite (the modern VS React template)
-        // 3000 is standard if using older Create React App
         policy.WithOrigins("https://localhost:5173", "http://localhost:5173", "http://localhost:3000")
               .AllowAnyHeader()
               .AllowAnyMethod();
@@ -52,8 +50,10 @@ builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+// ==========================================
+// 3. CONFIGURE SWAGGER (Simplified)
+// ==========================================
+builder.Services.AddSwaggerGen(); // Removed the problematic security code here
 
 var app = builder.Build();
 
@@ -63,18 +63,18 @@ app.MapStaticAssets();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
 
 // ==========================================
-// 3. ACTIVATE SECURITY MIDDLEWARE (ORDER MATTERS)
+// 4. ACTIVATE SECURITY MIDDLEWARE
 // ==========================================
-app.UseCors("AllowAngularApp"); // CORS must come before Auth
-
-app.UseAuthentication(); // MUST come before Authorization (Verifies WHO you are)
-app.UseAuthorization();  // You already had this! (Verifies WHAT you can do)
+app.UseCors("AllowReactApp");
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.MapFallbackToFile("/index.html");

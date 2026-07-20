@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import '../AdminModule.css';
 
 export default function SystemSettings() {
     const [configs, setConfigs] = useState([]);
@@ -31,35 +32,62 @@ export default function SystemSettings() {
             .catch(err => alert("Failed to save changes."));
     };
 
-    if (loading) return <h2>Loading System Configurations...</h2>;
+    if (loading) return <h2 className="admin-page-title">Loading System Configurations...</h2>;
 
     return (
-        <div style={{ maxWidth: '800px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2 style={{ margin: 0, color: '#000' }}>System Settings</h2>
-                <button onClick={handleSave} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '10px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+        <div className="admin-module-container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '1rem' }}>
+                <h2 className="admin-page-title" style={{ marginBottom: 0 }}>System Settings</h2>
+                <button onClick={handleSave} className="admin-btn admin-btn-primary">
                     Save Changes
                 </button>
             </div>
 
-            <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', padding: '24px' }}>
-                <form onSubmit={e => e.preventDefault()}>
+            <div className="admin-card">
+                <form onSubmit={e => e.preventDefault()} className="admin-form">
                     {configs.map((config) => (
-                        <div key={config.key} style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', color: '#1e293b' }}>
-                                {config.key}
-                            </label>
-                            <input
-                                type="text"
-                                value={config.value}
-                                onChange={(e) => handleChange(config.key, e.target.value)}
-                                style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '14px' }}
-                            />
-                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                                {config.description}
+                        <div key={config.key} className="admin-settings-row">
+                            <div className="admin-settings-info">
+                                <h4>{config.key}</h4>
+                                <p>{config.description}</p>
+                            </div>
+                            <div style={{ flex: '0 0 300px' }}>
+                                {['AllowMultipleApplications', 'RequireStrongPassword'].includes(config.key) ? (
+                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', height: '100%' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                            <input 
+                                                type="radio" 
+                                                name={config.key} 
+                                                value="true"
+                                                checked={config.value === 'true' || config.value === 'True' || config.value === '1'} 
+                                                onChange={() => handleChange(config.key, 'true')} 
+                                            />
+                                            Yes
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                            <input 
+                                                type="radio" 
+                                                name={config.key} 
+                                                value="false"
+                                                checked={config.value === 'false' || config.value === 'False' || config.value === '0'} 
+                                                onChange={() => handleChange(config.key, 'false')} 
+                                            />
+                                            No
+                                        </label>
+                                    </div>
+                                ) : (
+                                    <input
+                                        type="text"
+                                        value={config.value}
+                                        onChange={(e) => handleChange(config.key, e.target.value)}
+                                        className="admin-input"
+                                        style={{ width: '100%' }}
+                                    />
+                                )}
                             </div>
                         </div>
                     ))}
+                    {configs.length === 0 && <p style={{ opacity: 0.7 }}>No configuration keys found.</p>}
                 </form>
             </div>
         </div>
