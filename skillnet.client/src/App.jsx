@@ -1,93 +1,181 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Import Pages
+import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+
+// Role-specific dashboards (protected)
 import AdminDashboard from './pages/AdminDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import HiringDashboard from './pages/HiringDashboard';
 import CandidateDashboard from './pages/CandidateDashboard';
+import CandidateProfileCreate from './pages/CandidateProfileCreate';
+import CandidateProfile from './pages/CandidateProfile';
+import CandidateResumes from './pages/CandidateResumes';
+import CandidateSkills from './pages/CandidateSkills';
+
+// Admin sub-pages (protected, Admin only)
+import UserManagement from './pages/UserManagement';
+import OrganizationManagement from './pages/OrganizationManagement';
+import AuditLogs from './pages/AuditLogs';
+import SystemSettings from './pages/SystemSettings';
+
+// Hiring Manager sub-pages (protected, HiringManager only)
+import InterviewDetails from './pages/InterviewDetails';
+import ScheduleInterview from './pages/ScheduleInterview';
+
+// Utility pages
 import AccessDenied from './pages/AccessDenied';
 import NotFound from './pages/NotFound';
-
-import './App.css';
-
-const HomeRedirect = () => {
-    const { user, loading } = useAuth();
-
-    if (loading) {
-        return <div style={{ textAlign: 'center', marginTop: '100px' }}>Loading...</div>;
-    }
-
-    if (!user) {
-        return <Navigate to="/login" replace />;
-    }
-
-    const roles = user.roles || [];
-    if (roles.includes('Admin')) return <Navigate to="/admin-dashboard" replace />;
-    if (roles.includes('Recruiter')) return <Navigate to="/recruiter-dashboard" replace />;
-    if (roles.includes('HiringManager')) return <Navigate to="/hiring-dashboard" replace />;
-    if (roles.includes('Candidate')) return <Navigate to="/candidate-dashboard" replace />;
-
-    return <Navigate to="/access-denied" replace />;
-};
 
 function App() {
     return (
         <AuthProvider>
             <Router>
                 <Routes>
-                    {/* Home Route Redirect */}
-                    <Route path="/" element={<HomeRedirect />} />
+                    {/* ── Default root route ── */}
+                    <Route path="/" element={<LandingPage />} />
 
-                    {/* Public Auth Routes */}
+                    {/* ── Public routes ── */}
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
 
-                    {/* Protected Dashboard Routes */}
-                    <Route 
-                        path="/admin-dashboard" 
+                    {/* ── Admin routes ── */}
+                    <Route
+                        path="/admin-dashboard"
                         element={
                             <ProtectedRoute allowedRoles={['Admin']}>
                                 <AdminDashboard />
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                    <Route 
-                        path="/recruiter-dashboard" 
+                    <Route
+                        path="/user-management"
+                        element={
+                            <ProtectedRoute allowedRoles={['Admin']}>
+                                <UserManagement />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/organization-management"
+                        element={
+                            <ProtectedRoute allowedRoles={['Admin']}>
+                                <OrganizationManagement />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/audit-logs"
+                        element={
+                            <ProtectedRoute allowedRoles={['Admin']}>
+                                <AuditLogs />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/system-settings"
+                        element={
+                            <ProtectedRoute allowedRoles={['Admin']}>
+                                <SystemSettings />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* ── Recruiter routes ── */}
+                    <Route
+                        path="/recruiter-dashboard"
                         element={
                             <ProtectedRoute allowedRoles={['Recruiter']}>
                                 <RecruiterDashboard />
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                    <Route 
-                        path="/hiring-dashboard" 
+
+                    {/* ── Hiring Manager routes ── */}
+                    <Route
+                        path="/hiring-dashboard"
                         element={
                             <ProtectedRoute allowedRoles={['HiringManager']}>
                                 <HiringDashboard />
                             </ProtectedRoute>
-                        } 
+                        }
                     />
-                    <Route 
-                        path="/candidate-dashboard" 
+                    <Route
+                        path="/interviews/:id"
+                        element={
+                            <ProtectedRoute allowedRoles={['HiringManager']}>
+                                <InterviewDetails />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/schedule-interview"
+                        element={
+                            <ProtectedRoute allowedRoles={['HiringManager']}>
+                                <ScheduleInterview />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* ── Candidate routes ── */}
+                    <Route
+                        path="/candidate-dashboard"
                         element={
                             <ProtectedRoute allowedRoles={['Candidate']}>
                                 <CandidateDashboard />
                             </ProtectedRoute>
-                        } 
+                        }
+                    />
+                    <Route
+                        path="/candidate/dashboard"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateDashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/profile"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateProfile />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/profile/create"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateProfileCreate />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/resumes"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateResumes />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/candidate/skills"
+                        element={
+                            <ProtectedRoute allowedRoles={['Candidate']}>
+                                <CandidateSkills />
+                            </ProtectedRoute>
+                        }
                     />
 
-                    {/* Error Routes */}
+                    {/* ── Utility routes ── */}
                     <Route path="/access-denied" element={<AccessDenied />} />
-                    <Route path="/unauthorized" element={<AccessDenied />} />
                     <Route path="/404" element={<NotFound />} />
                     <Route path="*" element={<Navigate to="/404" replace />} />
                 </Routes>
