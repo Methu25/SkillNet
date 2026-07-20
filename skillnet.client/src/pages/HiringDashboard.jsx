@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './HiringDashboard.css';
 
 const toDateTimeLocalValue = (value) => {
@@ -27,6 +28,8 @@ const normalizeDateTimeForApi = (value) => {
 };
 
 function HiringDashboard() {
+    const { logout } = useAuth();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('All Interviews');
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -393,13 +396,22 @@ function HiringDashboard() {
                     </p>
                 </div>
 
-                <button
-                    className="create-interview-button"
-                    type="button"
-                    onClick={openCreateModal}
-                >
-                    + Create Interview
-                </button>
+                <div className="header-actions">
+                    <button
+                        className="create-interview-button"
+                        type="button"
+                        onClick={openCreateModal}
+                    >
+                        + Create Interview
+                    </button>
+                    <button
+                        className="logout-button"
+                        type="button"
+                        onClick={async () => { await logout(); navigate('/login'); }}
+                    >
+                        Logout
+                    </button>
+                </div>
             </div>
 
             <div className="stats-grid">

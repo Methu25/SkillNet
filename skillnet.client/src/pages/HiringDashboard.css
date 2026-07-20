@@ -67,6 +67,13 @@ body {
 }
 
 /* Create button */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
 .create-interview-button {
     padding: 16px 28px;
     border: none;
@@ -83,6 +90,25 @@ body {
 
     .create-interview-button:hover {
         background: var(--sn-orange-hover);
+        transform: translateY(-1px);
+    }
+
+.logout-button {
+    padding: 16px 28px;
+    border: 2px solid var(--sn-red);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--sn-red);
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    white-space: nowrap;
+}
+
+    .logout-button:hover {
+        background: var(--sn-red);
+        color: #ffffff;
         transform: translateY(-1px);
     }
 

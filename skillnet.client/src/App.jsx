@@ -129,10 +129,31 @@ function App() {
                         </Route>
                     </Route>
 
-                    {/* Hiring Manager routes - public for module testing/demo */}
-                    <Route path="/hiring-dashboard" element={<HiringDashboard />} />
-                    <Route path="/interviews/:id" element={<InterviewDetails />} />
-                    <Route path="/schedule-interview" element={<ScheduleInterview />} />
+                    {/* Hiring Manager routes */}
+                    <Route
+                        path="/hiring-dashboard"
+                        element={
+                            <ProtectedRoute allowedRoles={['HiringManager']}>
+                                <HiringDashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/interviews/:id"
+                        element={
+                            <ProtectedRoute allowedRoles={['HiringManager']}>
+                                <InterviewDetails />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/schedule-interview"
+                        element={
+                            <ProtectedRoute allowedRoles={['HiringManager']}>
+                                <ScheduleInterview />
+                            </ProtectedRoute>
+                        }
+                    />
 
                     {/* Candidate routes */}
                     <Route
