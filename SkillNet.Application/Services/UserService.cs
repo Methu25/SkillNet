@@ -18,8 +18,12 @@ namespace SkillNet.Application.Services
         bool ResetPassword(int userId, string newPasswordHash);
     }
 
-    public class UserService(IUserRepository userRepository, IRoleRepository roleRepository) : IUserService
+    public class UserService(
+        IUnitOfWork unitOfWork,
+        IUserRepository userRepository,
+        IRoleRepository roleRepository) : IUserService
     {
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IUserRepository _userRepository = userRepository;
         private readonly IRoleRepository _roleRepository = roleRepository;
 
@@ -35,16 +39,60 @@ namespace SkillNet.Application.Services
 
         public bool CreateUser(RegisterRequest request, string passwordHash)
         {
-            var user = new User
+            // Run registration inside Unit of Work transaction context
+            try
             {
-                Email = request.Email,
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Phone = request.Phone,
-                Status = "Active"
-            };
+                // Start unit of work asynchronously and wait sync
+                _unitOfWork.BeginTransactionAsync().GetAwaiter().GetResult();
 
-            return _userRepository.CreateUser(user, passwordHash, request.RoleName);
+                // 1. Resolve role ID
+                int? roleId = _roleRepository.GetRoleIdByName(request.RoleName);
+                if (!roleId.HasValue)
+                {
+                    _unitOfWork.RollbackAsync().GetAwaiter().GetResult();
+                    return false;
+                }
+
+                // 2. Create user record
+                var user = new User
+                {
+                    Email = request.Email,
+                    FirstName = request.FirstName,
+                    LastName = request.LastName,
+                    Phone = request.Phone,
+                    Status = "Active"
+                };
+
+                bool userCreated = _userRepository.CreateUser(user, passwordHash);
+                if (!userCreated)
+                {
+                    _unitOfWork.RollbackAsync().GetAwaiter().GetResult();
+                    return false;
+                }
+
+                // 3. Assign role to user
+                bool roleAssigned = _roleRepository.AssignRoleToUser(user.UserID, roleId.Value);
+                if (!roleAssigned)
+                {
+                    _unitOfWork.RollbackAsync().GetAwaiter().GetResult();
+                    return false;
+                }
+
+                _unitOfWork.CommitAsync().GetAwaiter().GetResult();
+                return true;
+            }
+            catch
+            {
+                try
+                {
+                    _unitOfWork.RollbackAsync().GetAwaiter().GetResult();
+                }
+                catch
+                {
+                    // Suppress nested rollback exceptions
+                }
+                throw;
+            }
         }
 
         public List<string> GetUserRoles(int userId)
