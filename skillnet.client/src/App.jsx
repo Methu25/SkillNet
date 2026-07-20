@@ -10,13 +10,26 @@ import ResetPassword from './pages/ResetPassword';
 
 // Role-specific dashboards (protected)
 import AdminDashboard from './pages/AdminDashboard';
-import RecruiterDashboard from './pages/RecruiterDashboard';
 import HiringDashboard from './pages/HiringDashboard';
 import CandidateDashboard from './pages/CandidateDashboard';
 import CandidateProfileCreate from './pages/CandidateProfileCreate';
 import CandidateProfile from './pages/CandidateProfile';
 import CandidateResumes from './pages/CandidateResumes';
 import CandidateSkills from './pages/CandidateSkills';
+
+// Recruiter workspace
+import RecruiterRoute from './components/recruiter/RecruiterRoute';
+import OrganizationApprovalGuard from './components/recruiter/OrganizationApprovalGuard';
+import RecruiterLayout from './components/recruiter/RecruiterLayout';
+import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
+import RecruiterJobs from './pages/recruiter/RecruiterJobs';
+import CreateJob from './pages/recruiter/CreateJob';
+import JobDetails from './pages/recruiter/JobDetails';
+import EditJob from './pages/recruiter/EditJob';
+import RecruiterCompany from './pages/recruiter/RecruiterCompany';
+import RecruiterSetup from './pages/recruiter/RecruiterSetup';
+import RecruiterPending from './pages/recruiter/RecruiterPending';
+import RecruiterSettings from './pages/recruiter/RecruiterSettings';
 
 // Admin sub-pages (protected, Admin only)
 import UserManagement from './pages/UserManagement';
@@ -89,14 +102,28 @@ function App() {
                     />
 
                     {/* ── Recruiter routes ── */}
+                    <Route path="/recruiter-dashboard" element={<Navigate to="/recruiter/dashboard" replace />} />
                     <Route
-                        path="/recruiter-dashboard"
+                        path="/recruiter"
                         element={
-                            <ProtectedRoute allowedRoles={['Recruiter']}>
-                                <RecruiterDashboard />
-                            </ProtectedRoute>
+                            <RecruiterRoute>
+                                <RecruiterLayout />
+                            </RecruiterRoute>
                         }
-                    />
+                    >
+                        <Route index element={<Navigate to="dashboard" replace />} />
+                        <Route path="setup" element={<RecruiterSetup />} />
+                        <Route path="pending" element={<RecruiterPending />} />
+                        <Route path="company" element={<RecruiterCompany />} />
+                        <Route element={<OrganizationApprovalGuard />}>
+                            <Route path="dashboard" element={<RecruiterDashboard />} />
+                            <Route path="jobs" element={<RecruiterJobs />} />
+                            <Route path="jobs/create" element={<CreateJob />} />
+                            <Route path="jobs/:id" element={<JobDetails />} />
+                            <Route path="jobs/:id/edit" element={<EditJob />} />
+                            <Route path="settings" element={<RecruiterSettings />} />
+                        </Route>
+                    </Route>
 
                     {/* ── Hiring Manager routes ── */}
                     <Route
