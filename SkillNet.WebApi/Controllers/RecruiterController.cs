@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
+using SkillNet.Application.Services;
 using System.Security.Claims;
 
 namespace SkillNet.WebApi.Controllers
@@ -13,11 +14,13 @@ namespace SkillNet.WebApi.Controllers
     {
         private readonly IRecruiterService _recruiterService;
         private readonly IJobService _jobService;
+        private readonly IUserService _userService;
 
-        public RecruiterController(IRecruiterService recruiterService, IJobService jobService)
+        public RecruiterController(IRecruiterService recruiterService, IJobService jobService, IUserService userService)
         {
             _recruiterService = recruiterService;
             _jobService = jobService;
+            _userService = userService;
         }
 
         // GET /api/recruiter/profile
@@ -62,8 +65,10 @@ namespace SkillNet.WebApi.Controllers
 
         private int GetCurrentUserId()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return int.TryParse(claim, out var id) ? id : 0;
+            var email = User.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrWhiteSpace(email)) return 0;
+
+            return _userService.GetUserByEmail(email)?.UserID ?? 0;
         }
     }
 }

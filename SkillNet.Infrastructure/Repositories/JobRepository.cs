@@ -60,14 +60,14 @@ namespace SkillNet.Infrastructure.Repositories
             return null;
         }
 
-        public async Task<IEnumerable<JobPost>> GetJobsByRecruiterAsync(int recruiterId)
+        public async Task<IEnumerable<JobPost>> GetJobsByRecruiterAsync(int recruiterProfileId)
         {
             const string query = "SELECT * FROM JobPost WHERE RecruiterId = @RecruiterId ORDER BY CreatedAt DESC";
             var jobs = new List<JobPost>();
             using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
             using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@RecruiterId", recruiterId);
+            cmd.Parameters.AddWithValue("@RecruiterId", recruiterProfileId);
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync()) jobs.Add(MapJobPost(reader));
             return jobs;
@@ -162,18 +162,18 @@ namespace SkillNet.Infrastructure.Repositories
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
-        public async Task<bool> DeleteJobAsync(int jobId, int recruiterId)
+        public async Task<bool> DeleteJobAsync(int jobId, int recruiterProfileId)
         {
             const string query = "DELETE FROM JobPost WHERE JobId=@JobId AND RecruiterId=@RecruiterId";
             using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
             using var cmd = new SqlCommand(query, con);
             cmd.Parameters.AddWithValue("@JobId", jobId);
-            cmd.Parameters.AddWithValue("@RecruiterId", recruiterId);
+            cmd.Parameters.AddWithValue("@RecruiterId", recruiterProfileId);
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
-        public async Task<bool> UpdateJobStatusAsync(int jobId, int recruiterId, string status)
+        public async Task<bool> UpdateJobStatusAsync(int jobId, int recruiterProfileId, string status)
         {
             const string query = "UPDATE JobPost SET Status=@Status, UpdatedAt=@UpdatedAt WHERE JobId=@JobId AND RecruiterId=@RecruiterId";
             using var con = new SqlConnection(_connectionString);
@@ -182,7 +182,7 @@ namespace SkillNet.Infrastructure.Repositories
             cmd.Parameters.AddWithValue("@Status", status);
             cmd.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
             cmd.Parameters.AddWithValue("@JobId", jobId);
-            cmd.Parameters.AddWithValue("@RecruiterId", recruiterId);
+            cmd.Parameters.AddWithValue("@RecruiterId", recruiterProfileId);
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
@@ -213,7 +213,7 @@ namespace SkillNet.Infrastructure.Repositories
 
         public async Task<IEnumerable<string>> GetSkillsByJobIdAsync(int jobId)
         {
-            const string query = "SELECT s.SkillName FROM JobSkill js JOIN Skill s ON js.SkillId = s.SkillId WHERE js.JobId=@JobId";
+            const string query = "SELECT s.SkillName FROM JobSkill js JOIN Skills s ON js.SkillId = s.SkillId WHERE js.JobId=@JobId";
             var skills = new List<string>();
             using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
@@ -224,13 +224,13 @@ namespace SkillNet.Infrastructure.Repositories
             return skills;
         }
 
-        public async Task<int> GetRecruiterOrganizationIdAsync(int recruiterId)
+        public async Task<int> GetRecruiterOrganizationIdAsync(int recruiterProfileId)
         {
-            const string query = "SELECT OrganizationId FROM RecruiterProfile WHERE UserId=@UserId";
+            const string query = "SELECT OrganizationId FROM RecruiterProfile WHERE RecruiterProfileId=@RecruiterProfileId";
             using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
             using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@UserId", recruiterId);
+            cmd.Parameters.AddWithValue("@RecruiterProfileId", recruiterProfileId);
             var result = await cmd.ExecuteScalarAsync();
             return result != null && result != DBNull.Value ? (int)result : 0;
         }

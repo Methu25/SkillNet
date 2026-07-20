@@ -6,6 +6,7 @@ namespace SkillNet.Application.Interfaces
     {
         Task<RecruiterProfileDto?> GetProfileAsync(int userId);
         Task<RecruiterProfileDto> UpsertProfileAsync(int userId, RecruiterProfileDto dto);
-        Task<RecruiterDashboardDto> GetDashboardStatsAsync(int recruiterId);
+        Task<int?> GetRecruiterProfileIdAsync(int userId);
+        Task<RecruiterDashboardDto> GetDashboardStatsAsync(int userId);
     }
 }

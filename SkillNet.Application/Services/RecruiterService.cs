@@ -70,8 +70,25 @@ namespace SkillNet.Application.Services
             return (await GetProfileAsync(userId))!;
         }
 
-        public async Task<RecruiterDashboardDto> GetDashboardStatsAsync(int recruiterId)
+        public async Task<int?> GetRecruiterProfileIdAsync(int userId)
         {
+            const string query = "SELECT RecruiterProfileId FROM RecruiterProfile WHERE UserId = @UserId";
+
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            var result = await cmd.ExecuteScalarAsync();
+
+            return result == null || result == DBNull.Value ? null : (int)result;
+        }
+
+        public async Task<RecruiterDashboardDto> GetDashboardStatsAsync(int userId)
+        {
+            var recruiterProfileId = await GetRecruiterProfileIdAsync(userId);
+            if (!recruiterProfileId.HasValue)
+                return new RecruiterDashboardDto();
+
             const string query = @"
                 SELECT
                     COUNT(*) AS TotalJobs,
@@ -84,7 +101,7 @@ namespace SkillNet.Application.Services
             using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
             using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@RecruiterId", recruiterId);
+            cmd.Parameters.AddWithValue("@RecruiterId", recruiterProfileId.Value);
             using var reader = await cmd.ExecuteReaderAsync();
             if (await reader.ReadAsync())
             {
