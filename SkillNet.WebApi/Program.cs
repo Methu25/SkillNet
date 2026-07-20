@@ -78,6 +78,11 @@ builder.Services.AddControllers(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
+// Register Auth Repositories (Infrastructure Layer)
+builder.Services.AddScoped<IUserRepository, SqlUserRepository>();
+builder.Services.AddScoped<IRoleRepository, SqlRoleRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, SqlRefreshTokenRepository>();
+
 // Register Auth Services (Application Layer)
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
