@@ -170,6 +170,9 @@
 .dashboard-list { display: grid; gap: 10px; }
 .dashboard-list article { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px; background: #faf8f6; border-radius: 11px; }
 .dashboard-list article span { color: var(--candidate-muted); font-size: 0.76rem; text-align: right; }
+.dashboard-list article > div { display: grid; gap: 4px; }
+.dashboard-list article > div span { text-align: left; }
+.dashboard-list article > button { flex: 0 0 auto; }
 .quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .quick-actions button { display: flex; justify-content: space-between; padding: 15px; color: #5f493c; background: #fff8f3; border: 1px solid #f1ded0; border-radius: 12px; font-weight: 700; cursor: pointer; }
 .quick-actions button span { color: var(--candidate-orange); }

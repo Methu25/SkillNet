@@ -21,5 +21,6 @@ namespace SkillNet.Domain.Entities
         public User User { get; set; } = null!;
         public ICollection<Resume> Resumes { get; set; } = new List<Resume>();
         public ICollection<CandidateSkill> CandidateSkills { get; set; } = new List<CandidateSkill>();
+        public ICollection<JobApplication> JobApplications { get; set; } = new List<JobApplication>();
     }
 }

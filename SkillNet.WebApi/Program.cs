@@ -96,6 +96,8 @@ builder.Services.AddScoped<IInterviewService, InterviewService>();
 // Register Job & Recruiter Module
 builder.Services.AddScoped<IJobRepository, JobRepository>();
 builder.Services.AddScoped<IJobService, JobService>();
+builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+builder.Services.AddScoped<IApplicationService, ApplicationService>();
 builder.Services.AddScoped<IRecruiterService, RecruiterService>();
 
 // Register Candidate Module (Infrastructure repositories)
@@ -128,6 +130,13 @@ builder.Services.AddSwaggerGen(c =>
         Title = "SkillNet Recruitment API",
         Version = "v1"
     });
+
+    // Fix duplicate schema name errors
+    // Example: ResetPasswordRequest in Controller and Model
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
+
+    // Fix duplicate/conflicting route errors if Swagger finds same method + path
+    c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First());
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {

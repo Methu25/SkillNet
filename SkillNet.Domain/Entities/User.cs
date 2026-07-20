@@ -28,5 +28,6 @@ namespace SkillNet.Domain.Entities
         public DateTime UpdatedAt { get; set; }
 
         public Candidate? Candidate { get; set; }
+        public ICollection<ApplicationStatusHistory> ApplicationStatusChanges { get; set; } = new List<ApplicationStatusHistory>();
     }
 }

@@ -173,8 +173,8 @@ const CandidateDashboard = () => {
                                     ? <div className="empty-state"><span>◇</span><p>No job recommendations yet.</p></div>
                                     : <div className="dashboard-list">{dashboard.recommendedJobs.map(job => (
                                         <article key={job.jobId}>
-                                            <strong>{job.title}</strong>
-                                            <span>{job.organizationName || job.location || 'SkillNet opportunity'}</span>
+                                            <div><strong>{job.title}</strong><span>{job.organizationName || job.location || 'SkillNet opportunity'}</span></div>
+                                            <button className="candidate-button candidate-button--secondary" onClick={() => navigate(`/candidate/jobs/${job.jobId}`)}>View details</button>
                                         </article>
                                     ))}</div>}
                             </DashboardCard>
@@ -185,7 +185,7 @@ const CandidateDashboard = () => {
                                 {!completion.isComplete && <button onClick={() => navigate('/candidate/profile')}>Complete Profile <span>→</span></button>}
                                 <button onClick={() => navigate('/candidate/resumes')}>Upload Resume <span>→</span></button>
                                 <button onClick={() => navigate('/candidate/skills')}>Manage Skills <span>→</span></button>
-                                <button onClick={() => navigate('/jobs')}>Browse Jobs <span>→</span></button>
+                                <button onClick={() => navigate('/candidate/jobs')}>Browse Jobs <span>→</span></button>
                             </div>
                         </DashboardCard>
                     </>

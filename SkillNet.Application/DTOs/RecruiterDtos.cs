@@ -2,6 +2,7 @@ namespace SkillNet.Application.DTOs
 {
     public class RecruiterProfileDto
     {
+        public int RecruiterProfileId { get; set; }
         public int UserId { get; set; }
         public string? Headline { get; set; }
         public string? Bio { get; set; }
