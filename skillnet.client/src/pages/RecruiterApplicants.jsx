@@ -36,6 +36,10 @@ const RecruiterApplicants = () => {
     const [applicationDetail, setApplicationDetail] = useState(null);
     const [detailLoading, setDetailLoading] = useState(Boolean(applicationId));
     const [detailError, setDetailError] = useState('');
+    const [statusSubmitting, setStatusSubmitting] = useState(false);
+    const [statusFeedback, setStatusFeedback] = useState(null);
+    const [noteSubmitting, setNoteSubmitting] = useState(false);
+    const [noteFeedback, setNoteFeedback] = useState(null);
     const validJobId = isPositiveInteger(jobId);
     const validApplicationId = !applicationId || isPositiveInteger(applicationId);
 
@@ -131,11 +135,60 @@ const RecruiterApplicants = () => {
     const clearFilters = () => { setSearch(''); setStatus(''); };
     const listRoute = `/recruiter/jobs/${jobId}/applicants`;
 
+    const updateApplicationStatus = async (nextStatus, comment) => {
+        if (!applicationDetail || statusSubmitting) return;
+        if (!window.confirm(`Change this application from ${applicationDetail.currentStatus} to ${nextStatus}?`)) return;
+
+        setStatusSubmitting(true);
+        setStatusFeedback(null);
+        try {
+            await applicationApi.updateRecruiterStatus(applicationDetail.applicationId, nextStatus, comment);
+            await Promise.all([loadApplicationDetail(), loadApplicants()]);
+            setStatusFeedback({ type: 'success', message: `Application status changed to ${nextStatus}.` });
+        } catch (requestError) {
+            const message = requestError.status === 401 || requestError.status === 403
+                ? 'You are not authorized to update this application.'
+                : requestError.status === 404
+                    ? 'This application is no longer available to your recruiter profile.'
+                    : requestError.status === 409 || requestError.status === 400
+                        ? requestError.message
+                        : 'The status could not be updated. Please try again.';
+            setStatusFeedback({ type: 'error', message });
+        } finally {
+            setStatusSubmitting(false);
+        }
+    };
+
+    const addRecruiterNote = async (comment) => {
+        if (!applicationDetail || noteSubmitting) return false;
+
+        setNoteSubmitting(true);
+        setNoteFeedback(null);
+        try {
+            await applicationApi.addRecruiterNote(applicationDetail.applicationId, comment);
+            await loadApplicationDetail();
+            setNoteFeedback({ type: 'success', message: 'Recruiter note added.' });
+            return true;
+        } catch (requestError) {
+            const message = requestError.status === 401 || requestError.status === 403
+                ? 'You are not authorized to add notes to this application.'
+                : requestError.status === 404
+                    ? 'This application is no longer available to your recruiter profile.'
+                    : requestError.status === 400
+                        ? requestError.message
+                        : 'The note could not be saved. Please try again.';
+            setNoteFeedback({ type: 'error', message });
+            return false;
+        } finally {
+            setNoteSubmitting(false);
+        }
+    };
+
     return (
         <div className="recruiter-applicants-shell">
             <header className="recruiter-applicants-nav"><button className="recruiter-brand" onClick={() => navigate('/recruiter-dashboard')}>Skill<span>Net</span></button><button className="recruiter-nav-button" onClick={() => navigate('/recruiter-dashboard')}>Recruiter Dashboard</button></header>
             <main className="recruiter-applicants-page">
-                <header className="recruiter-applicants-heading"><div><button className="recruiter-back" onClick={() => navigate('/recruiter-dashboard')}>← Back to jobs</button><span className="recruiter-eyebrow">Applicant pipeline</span><h1>{job?.title || 'Job applicants'}</h1><p>Review candidates who applied for this role. Status changes and notes are intentionally not available in this view.</p></div>{!loading && !error && <div className="recruiter-applicant-total"><strong>{applications.length}</strong><span>Total applicants</span></div>}</header>
+                <header className="recruiter-applicants-heading"><div><button className="recruiter-back" onClick={() => navigate('/recruiter-dashboard')}>← Back to jobs</button><span className="recruiter-eyebrow">Applicant pipeline</span><h1>{job?.title || 'Job applicants'}</h1><p>Review candidates who applied for this role and manage each application through its valid next steps.</p></div>{!loading && !error && <div className="recruiter-applicant-total"><strong>{applications.length}</strong><span>Total applicants</span></div>}</header>
                 {!loading && !error && applications.length > 0 && <section className="recruiter-applicant-filters" aria-label="Applicant filters"><label><span>Search applicants</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Candidate name or email" /></label><label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value)}><option value="">All statuses</option>{statuses.map(value => <option key={value} value={value}>{value}</option>)}</select></label><button className="recruiter-button recruiter-button--ghost" onClick={clearFilters} disabled={!search && !status}>Clear filters</button></section>}
                 {loading ? <div className="recruiter-applicant-list" aria-label="Loading applicants"><div className="recruiter-applicant-card recruiter-skeleton" /><div className="recruiter-applicant-card recruiter-skeleton" /></div>
                     : error ? <section className="recruiter-state recruiter-state--error" role="alert"><span>!</span><h2>Unable to load applicants</h2><p>{error}</p><button className="recruiter-button recruiter-button--primary" onClick={loadApplicants}>Retry</button></section>
@@ -143,7 +196,7 @@ const RecruiterApplicants = () => {
                     : filtered.length === 0 ? <section className="recruiter-state"><span>⌕</span><h2>No matching applicants</h2><p>Try a different name, email, or status.</p><button className="recruiter-button recruiter-button--ghost" onClick={clearFilters}>Clear filters</button></section>
                     : <section className="recruiter-applicant-list" aria-label="Applicants">{filtered.map(application => <ApplicantCard key={application.applicationId} application={application} onOpen={() => navigate(`${listRoute}/${application.applicationId}`)} />)}</section>}
             </main>
-            {applicationId && <div className="recruiter-detail-backdrop"><aside className="recruiter-application-detail" aria-label="Recruiter application details"><button className="recruiter-detail-close" onClick={() => navigate(listRoute)} aria-label="Back to applicants list">×</button>{detailLoading ? <div className="recruiter-detail-loading recruiter-skeleton" /> : detailError ? <DetailError message={detailError} onRetry={validJobId && validApplicationId ? loadApplicationDetail : null} onBack={() => navigate(listRoute)} /> : applicationDetail && <ApplicationDetail application={applicationDetail} onBack={() => navigate(listRoute)} />}</aside></div>}
+            {applicationId && <div className="recruiter-detail-backdrop"><aside className="recruiter-application-detail" aria-label="Recruiter application details"><button className="recruiter-detail-close" onClick={() => navigate(listRoute)} aria-label="Back to applicants list" disabled={statusSubmitting || noteSubmitting}>×</button>{detailLoading ? <div className="recruiter-detail-loading recruiter-skeleton" /> : detailError ? <DetailError message={detailError} onRetry={validJobId && validApplicationId ? loadApplicationDetail : null} onBack={() => navigate(listRoute)} /> : applicationDetail && <ApplicationDetail key={`${applicationDetail.applicationId}-${applicationDetail.currentStatus}`} application={applicationDetail} onBack={() => navigate(listRoute)} onStatusChange={updateApplicationStatus} submitting={statusSubmitting} feedback={statusFeedback} onAddNote={addRecruiterNote} noteSubmitting={noteSubmitting} noteFeedback={noteFeedback} />}</aside></div>}
         </div>
     );
 };
@@ -152,15 +205,29 @@ const ApplicantCard = ({ application, onOpen }) => <article className="recruiter
 
 const DetailError = ({ message, onRetry, onBack }) => <section className="recruiter-detail-state" role="alert"><span>!</span><h1>Unable to load application</h1><p>{message}</p><div>{onRetry && <button className="recruiter-button recruiter-button--primary" onClick={onRetry}>Retry</button>}<button className="recruiter-button recruiter-button--ghost" onClick={onBack}>Back to applicants</button></div></section>;
 
-const ApplicationDetail = ({ application, onBack }) => {
+const ApplicationDetail = ({ application, onBack, onStatusChange, submitting, feedback, onAddNote, noteSubmitting, noteFeedback }) => {
+    const [selectedStatus, setSelectedStatus] = useState('');
+    const [comment, setComment] = useState('');
+    const [noteComment, setNoteComment] = useState('');
     const history = Array.isArray(application.statusHistory) ? [...application.statusHistory].sort((left, right) => new Date(left.changedAt) - new Date(right.changedAt)) : [];
+    const validNextStatuses = Array.isArray(application.validNextStatuses) ? application.validNextStatuses : [];
+    const canShortlist = validNextStatuses.includes('Shortlisted');
+    const canReject = validNextStatuses.includes('Rejected');
+    const notes = Array.isArray(application.recruiterNotes) ? application.recruiterNotes : [];
+    const submitNote = async (event) => {
+        event.preventDefault();
+        const saved = await onAddNote(noteComment.trim());
+        if (saved) setNoteComment('');
+    };
     return <div className="recruiter-detail-content">
-        <button className="recruiter-detail-back" onClick={onBack}>← Back to applicants</button><span className="recruiter-eyebrow">Application #{application.applicationId}</span>
+        <button className="recruiter-detail-back" onClick={onBack} disabled={submitting}>← Back to applicants</button><span className="recruiter-eyebrow">Application #{application.applicationId}</span>
         <div className="recruiter-detail-heading"><div><h1>{application.jobTitle || 'Job application'}</h1><p>Submitted {formatDateTime(application.appliedDate)}</p></div><span className={`recruiter-status recruiter-status--${statusClass(application.currentStatus)}`}>{application.currentStatus || 'Unknown'}</span></div>
         <dl className="recruiter-detail-facts"><div><dt>Application ID</dt><dd>#{application.applicationId}</dd></div><div><dt>Last updated</dt><dd>{formatDateTime(application.lastUpdated)}</dd></div><div><dt>Source</dt><dd>{application.source || 'Not specified'}</dd></div></dl>
+        <section className="recruiter-detail-card recruiter-status-management"><span className="recruiter-eyebrow">Recruiter action</span><h2>Manage application status</h2><p className="recruiter-detail-muted">Current status: <strong>{application.currentStatus}</strong></p>{feedback && <div className={`recruiter-status-feedback recruiter-status-feedback--${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'}>{feedback.message}</div>}{validNextStatuses.length === 0 ? <p className="recruiter-status-terminal">No further recruiter status changes are available.</p> : <><div className="recruiter-quick-actions">{canShortlist && <button className="recruiter-button recruiter-button--secondary" onClick={() => onStatusChange('Shortlisted', comment)} disabled={submitting}>Shortlist</button>}{canReject && <button className="recruiter-button recruiter-button--danger" onClick={() => onStatusChange('Rejected', comment)} disabled={submitting}>Reject</button>}</div><label className="recruiter-status-field"><span>Next status</span><select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value)} disabled={submitting}><option value="">Select a valid next status</option>{validNextStatuses.map(value => <option key={value} value={value}>{value}</option>)}</select></label><label className="recruiter-status-field"><span>Comment <small>(optional)</small></span><textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={2000} rows={3} disabled={submitting} placeholder="Add context to the status history" /></label><button className="recruiter-button recruiter-button--primary recruiter-status-submit" onClick={() => onStatusChange(selectedStatus, comment)} disabled={!selectedStatus || submitting}>{submitting ? 'Updating…' : 'Update status'}</button></>}</section>
         <section className="recruiter-detail-card"><div className="recruiter-detail-section-heading"><span className="recruiter-detail-avatar">{application.candidateName?.charAt(0)?.toUpperCase() || 'C'}</span><div><span className="recruiter-eyebrow">Candidate</span><h2>{application.candidateName || 'Candidate name unavailable'}</h2>{application.candidateEmail && <a href={`mailto:${application.candidateEmail}`}>{application.candidateEmail}</a>}</div></div>{application.candidateProfessionalTitle ? <p className="recruiter-candidate-title">{application.candidateProfessionalTitle}</p> : <p className="recruiter-detail-muted">No professional title was provided.</p>}</section>
         <section className="recruiter-detail-card"><span className="recruiter-eyebrow">Submitted resume</span><div className="recruiter-resume-detail"><span>PDF</span><div><h2>{application.resumeFileName || `Resume #${application.resumeId}`}</h2><dl><div><dt>File type</dt><dd>{application.resumeFileType || 'Not available'}</dd></div><div><dt>File size</dt><dd>{formatFileSize(application.resumeFileSize)}</dd></div><div><dt>Uploaded</dt><dd>{formatDateTime(application.resumeUploadedDate)}</dd></div></dl></div></div><p className="recruiter-detail-muted">Resume download is unavailable because the existing endpoint is candidate-owned.</p></section>
         <section className="recruiter-detail-card"><span className="recruiter-eyebrow">Cover letter</span><h2>Candidate message</h2>{application.coverLetter ? <p className="recruiter-cover-letter">{application.coverLetter}</p> : <div className="recruiter-inline-empty"><span>—</span><p>No cover letter was provided with this application.</p></div>}</section>
+        <section className="recruiter-detail-card recruiter-notes"><span className="recruiter-eyebrow">Private recruiter workspace</span><h2>Recruiter notes</h2><p className="recruiter-detail-muted">These notes are visible only to the recruiter who manages this application.</p><form className="recruiter-note-form" onSubmit={submitNote}><label className="recruiter-status-field"><span>New note</span><textarea value={noteComment} onChange={(event) => setNoteComment(event.target.value)} maxLength={2000} rows={4} disabled={noteSubmitting} placeholder="Add an internal note about this application" /></label><div className="recruiter-note-form-footer"><small>{noteComment.length}/2000</small><button className="recruiter-button recruiter-button--primary" disabled={!noteComment.trim() || noteSubmitting}>{noteSubmitting ? 'Saving…' : 'Add note'}</button></div></form>{noteFeedback && <div className={`recruiter-status-feedback recruiter-status-feedback--${noteFeedback.type}`} role={noteFeedback.type === 'error' ? 'alert' : 'status'}>{noteFeedback.message}</div>}<div className="recruiter-note-list">{notes.length === 0 ? <div className="recruiter-inline-empty"><span>◇</span><p>No recruiter notes have been added.</p></div> : notes.map(note => <article className="recruiter-note" key={note.noteId}><div><strong>{note.recruiterName || note.recruiterEmail || 'Recruiter'}</strong><time>{formatDateTime(note.createdAt)}</time></div><p>{note.comment}</p></article>)}</div></section>
         <section className="recruiter-detail-card"><span className="recruiter-eyebrow">Application progress</span><h2>Status history</h2>{history.length === 0 ? <div className="recruiter-inline-empty"><span>◇</span><p>No status history is available for this application.</p></div> : <ol className="recruiter-history">{history.map(item => <li key={item.statusHistoryId}><span className="recruiter-history-dot" /><div className="recruiter-history-entry"><div><strong>{item.oldStatus || 'Initial submission'}</strong><span>→</span><strong>{item.newStatus}</strong></div><time>{formatDateTime(item.changedAt)}</time>{(item.changedByName || item.changedByEmail) && <p className="recruiter-history-actor">Changed by {item.changedByName || item.changedByEmail}</p>}{item.comment && <p className="recruiter-history-comment">{item.comment}</p>}</div></li>)}</ol>}</section>
     </div>;
 };

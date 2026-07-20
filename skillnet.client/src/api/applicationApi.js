@@ -22,5 +22,14 @@ export const applicationApi = {
         return (await jsonRequest(`/api/application/job/${jobId}${suffix}`)).data;
     },
     getRecruiterApplication: async (applicationId) =>
-        (await jsonRequest(`/api/application/recruiter/${applicationId}`)).data
+        (await jsonRequest(`/api/application/recruiter/${applicationId}`)).data,
+    updateRecruiterStatus: async (applicationId, status, comment) =>
+        (await jsonRequest(`/api/application/recruiter/${applicationId}/status`, 'PATCH', {
+            status,
+            comment: comment?.trim() || null
+        })).data,
+    addRecruiterNote: async (applicationId, comment) =>
+        (await jsonRequest(`/api/application/recruiter/${applicationId}/notes`, 'POST', {
+            comment: comment.trim()
+        })).data
 };

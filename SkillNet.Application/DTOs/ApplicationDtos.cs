@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace SkillNet.Application.DTOs
 {
@@ -81,7 +82,9 @@ namespace SkillNet.Application.DTOs
         public DateTime ResumeUploadedDate { get; set; }
 
         public List<ApplicationStatusHistoryDto> StatusHistory { get; set; } = new();
-        public List<RecruiterNoteDto> RecruiterNotes { get; set; } = new();
+        public List<string> ValidNextStatuses { get; set; } = new();
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<RecruiterNoteDto>? RecruiterNotes { get; set; }
     }
 
     public class JobApplicationSummaryDto
