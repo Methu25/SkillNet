@@ -1,5 +1,4 @@
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using SkillNet.Application.Interfaces;
 using SkillNet.Domain.Entities;
 
@@ -7,20 +6,17 @@ namespace SkillNet.Infrastructure.Repositories
 {
     public class SqlRefreshTokenRepository : IRefreshTokenRepository
     {
-        private readonly string _connectionString;
+        private readonly AuthDbSession _session;
 
-        public SqlRefreshTokenRepository(IConfiguration configuration)
+        public SqlRefreshTokenRepository(AuthDbSession session)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("DefaultConnection string is not configured.");
+            _session = session;
         }
 
         public async Task CreateRefreshTokenAsync(int userId, string token, DateTime expiresAt)
         {
             const string query = "INSERT INTO RefreshTokens (UserID, Token, ExpiresAt) VALUES (@UserID, @Token, @ExpiresAt)";
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@UserID", userId);
             cmd.Parameters.AddWithValue("@Token", token);
             cmd.Parameters.AddWithValue("@ExpiresAt", expiresAt);
@@ -30,9 +26,7 @@ namespace SkillNet.Infrastructure.Repositories
         public void CreateRefreshToken(int userId, string token, DateTime expiresAt)
         {
             const string query = "INSERT INTO RefreshTokens (UserID, Token, ExpiresAt) VALUES (@UserID, @Token, @ExpiresAt)";
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@UserID", userId);
             cmd.Parameters.AddWithValue("@Token", token);
             cmd.Parameters.AddWithValue("@ExpiresAt", expiresAt);
@@ -42,9 +36,7 @@ namespace SkillNet.Infrastructure.Repositories
         public async Task<RefreshToken?> GetRefreshTokenAsync(string token)
         {
             const string query = "SELECT TokenID, UserID, Token, ExpiresAt, IsRevoked, CreatedAt FROM RefreshTokens WHERE Token = @Token";
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@Token", token);
             using var reader = await cmd.ExecuteReaderAsync();
             if (await reader.ReadAsync())
@@ -57,9 +49,7 @@ namespace SkillNet.Infrastructure.Repositories
         public RefreshToken? GetRefreshToken(string token)
         {
             const string query = "SELECT TokenID, UserID, Token, ExpiresAt, IsRevoked, CreatedAt FROM RefreshTokens WHERE Token = @Token";
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@Token", token);
             using var reader = cmd.ExecuteReader();
             if (reader.Read())
@@ -72,9 +62,7 @@ namespace SkillNet.Infrastructure.Repositories
         public async Task RevokeRefreshTokenAsync(string token)
         {
             const string query = "UPDATE RefreshTokens SET IsRevoked = 1 WHERE Token = @Token";
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@Token", token);
             await cmd.ExecuteNonQueryAsync();
         }
@@ -82,9 +70,7 @@ namespace SkillNet.Infrastructure.Repositories
         public void RevokeRefreshToken(string token)
         {
             const string query = "UPDATE RefreshTokens SET IsRevoked = 1 WHERE Token = @Token";
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@Token", token);
             cmd.ExecuteNonQuery();
         }

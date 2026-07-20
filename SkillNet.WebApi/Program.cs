@@ -78,6 +78,10 @@ builder.Services.AddControllers(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
+// Register Auth Database Session and Unit of Work (Infrastructure & Application)
+builder.Services.AddScoped<AuthDbSession>();
+builder.Services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AuthDbSession>());
+
 // Register Auth Repositories (Infrastructure Layer)
 builder.Services.AddScoped<IUserRepository, SqlUserRepository>();
 builder.Services.AddScoped<IRoleRepository, SqlRoleRepository>();

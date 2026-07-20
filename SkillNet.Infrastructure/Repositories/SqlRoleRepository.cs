@@ -1,25 +1,21 @@
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using SkillNet.Application.Interfaces;
 
 namespace SkillNet.Infrastructure.Repositories
 {
     public class SqlRoleRepository : IRoleRepository
     {
-        private readonly string _connectionString;
+        private readonly AuthDbSession _session;
 
-        public SqlRoleRepository(IConfiguration configuration)
+        public SqlRoleRepository(AuthDbSession session)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("DefaultConnection string is not configured.");
+            _session = session;
         }
 
         public async Task<int?> GetRoleIdByNameAsync(string roleName)
         {
             const string query = "SELECT RoleID FROM Roles WHERE RoleName = @RoleName";
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@RoleName", roleName);
             var result = await cmd.ExecuteScalarAsync();
             return result != null ? (int?)result : null;
@@ -28,9 +24,7 @@ namespace SkillNet.Infrastructure.Repositories
         public int? GetRoleIdByName(string roleName)
         {
             const string query = "SELECT RoleID FROM Roles WHERE RoleName = @RoleName";
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@RoleName", roleName);
             var result = cmd.ExecuteScalar();
             return result != null ? (int?)result : null;
@@ -39,9 +33,7 @@ namespace SkillNet.Infrastructure.Repositories
         public async Task<bool> AssignRoleToUserAsync(int userId, int roleId)
         {
             const string query = "INSERT INTO UserRole (UserID, RoleID) VALUES (@UserID, @RoleID)";
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@UserID", userId);
             cmd.Parameters.AddWithValue("@RoleID", roleId);
             return await cmd.ExecuteNonQueryAsync() > 0;
@@ -50,9 +42,7 @@ namespace SkillNet.Infrastructure.Repositories
         public bool AssignRoleToUser(int userId, int roleId)
         {
             const string query = "INSERT INTO UserRole (UserID, RoleID) VALUES (@UserID, @RoleID)";
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@UserID", userId);
             cmd.Parameters.AddWithValue("@RoleID", roleId);
             return cmd.ExecuteNonQuery() > 0;
@@ -61,14 +51,12 @@ namespace SkillNet.Infrastructure.Repositories
         public async Task<List<string>> GetRolesByUserIdAsync(int userId)
         {
             var roles = new List<string>();
-            using var conn = new SqlConnection(_connectionString);
-            await conn.OpenAsync();
             const string query = @"
                 SELECT r.RoleName 
                 FROM Roles r 
                 JOIN UserRole ur ON r.RoleID = ur.RoleID 
                 WHERE ur.UserID = @UserID";
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@UserID", userId);
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
@@ -81,14 +69,12 @@ namespace SkillNet.Infrastructure.Repositories
         public List<string> GetRolesByUserId(int userId)
         {
             var roles = new List<string>();
-            using var conn = new SqlConnection(_connectionString);
-            conn.Open();
             const string query = @"
                 SELECT r.RoleName 
                 FROM Roles r 
                 JOIN UserRole ur ON r.RoleID = ur.RoleID 
                 WHERE ur.UserID = @UserID";
-            using var cmd = new SqlCommand(query, conn);
+            using var cmd = new SqlCommand(query, _session.Connection, _session.Transaction);
             cmd.Parameters.AddWithValue("@UserID", userId);
             using var reader = cmd.ExecuteReader();
             while (reader.Read())

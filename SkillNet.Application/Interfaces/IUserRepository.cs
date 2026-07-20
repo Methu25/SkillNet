@@ -13,8 +13,8 @@ namespace SkillNet.Application.Interfaces
         Task<bool> EmailExistsAsync(string email);
         bool EmailExists(string email);
 
-        Task<bool> CreateUserAsync(User user, string passwordHash, string roleName);
-        bool CreateUser(User user, string passwordHash, string roleName);
+        Task<bool> CreateUserAsync(User user, string passwordHash);
+        bool CreateUser(User user, string passwordHash);
 
         Task<List<string>> GetUserRolesAsync(int userId);
         List<string> GetUserRoles(int userId);
