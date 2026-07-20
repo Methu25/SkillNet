@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import '../AdminModule.css';
 
 export default function UserManagement() {
     const [users, setUsers] = useState([]);
@@ -116,70 +117,122 @@ export default function UserManagement() {
     };
 
     return (
-        <div style={{ maxWidth: '800px' }}>
-            <h2 style={{ color: '#000' }}>User Management</h2>
+        <div className="admin-module-container">
+            <h2 className="admin-page-title">User Management</h2>
 
-            <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', marginBottom: '20px', color: '#333' }}>
-                <h3>{editingId ? 'Edit User' : '+ Add New User'}</h3>
-                <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <input type="text" placeholder="Username" required value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} style={{ padding: '8px' }} />
-                    <input type="email" placeholder="Email" required value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} style={{ padding: '8px' }} />
-                    {!editingId && <input type="password" placeholder="Password" required value={newUser.passwordHash} onChange={e => setNewUser({ ...newUser, passwordHash: e.target.value })} style={{ padding: '8px' }} />}
-                    
-                    <select required value={newUser.roleId} onChange={e => setNewUser({ ...newUser, roleId: parseInt(e.target.value) })} style={{ padding: '8px' }}>
-                        <option value="" disabled>Select Role</option>
-                        {roles.map(r => (
-                            <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
-                        ))}
-                    </select>
+            <div className="admin-card">
+                <h3 className="admin-card-title">{editingId ? 'Edit User' : '+ Add New User'}</h3>
+                <form onSubmit={handleSaveUser} className="admin-form">
+                    <div className="admin-form-grid">
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Username</label>
+                            <input className="admin-input" type="text" placeholder="e.g. jdoe" required value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} style={{ width: '100%' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Email Address</label>
+                            <input className="admin-input" type="email" placeholder="john@example.com" required value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} style={{ width: '100%' }} />
+                        </div>
+                        {!editingId && (
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Password</label>
+                                <input className="admin-input" type="password" placeholder="Secure password" required value={newUser.passwordHash} onChange={e => setNewUser({ ...newUser, passwordHash: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                        )}
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Role</label>
+                            <select className="admin-select" required value={newUser.roleId} onChange={e => setNewUser({ ...newUser, roleId: parseInt(e.target.value) })} style={{ width: '100%' }}>
+                                <option value="" disabled>Select Role</option>
+                                {roles.map(r => (
+                                    <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Organization</label>
+                            <select className="admin-select" value={newUser.organizationId} onChange={e => setNewUser({ ...newUser, organizationId: e.target.value })} style={{ width: '100%' }}>
+                                <option value="">No Organization</option>
+                                {organizations.map(o => (
+                                    <option key={o.organizationId} value={o.organizationId}>{o.organizationName}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Department</label>
+                            <select className="admin-select" value={newUser.departmentId} onChange={e => setNewUser({ ...newUser, departmentId: e.target.value })} style={{ width: '100%' }}>
+                                <option value="">No Department</option>
+                                {departments.filter(d => !newUser.organizationId || d.organizationId === parseInt(newUser.organizationId)).map(d => (
+                                    <option key={d.departmentId} value={d.departmentId}>{d.departmentName}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
-                    <select value={newUser.organizationId} onChange={e => setNewUser({ ...newUser, organizationId: e.target.value })} style={{ padding: '8px' }}>
-                        <option value="">No Organization</option>
-                        {organizations.map(o => (
-                            <option key={o.organizationId} value={o.organizationId}>{o.organizationName}</option>
-                        ))}
-                    </select>
-
-                    <select value={newUser.departmentId} onChange={e => setNewUser({ ...newUser, departmentId: e.target.value })} style={{ padding: '8px' }}>
-                        <option value="">No Department</option>
-                        {departments.filter(d => !newUser.organizationId || d.organizationId === parseInt(newUser.organizationId)).map(d => (
-                            <option key={d.departmentId} value={d.departmentId}>{d.departmentName}</option>
-                        ))}
-                    </select>
-
-                    <button type="submit" style={{ background: '#8b5cf6', color: 'white', padding: '10px', border: 'none' }}>
-                        {editingId ? 'Update User' : 'Save User'}
-                    </button>
-                    {editingId && <button type="button" onClick={() => { setEditingId(null); setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '', departmentId: '' }) }} style={{ padding: '10px' }}>Cancel</button>}
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                        <button type="submit" className="admin-btn admin-btn-primary">
+                            {editingId ? 'Update User' : 'Save User'}
+                        </button>
+                        {editingId && (
+                            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => { setEditingId(null); setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '', departmentId: '' }) }}>
+                                Cancel
+                            </button>
+                        )}
+                    </div>
                 </form>
             </div>
 
-            <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', color: '#333' }}>
-                <h3>Current Users</h3>
-                <ul style={{ listStyleType: 'none', padding: 0 }}>
-                    {users.map(user => (
-                        <li key={user.userId} style={{ padding: '10px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>
-                                <strong>{user.username}</strong> ({user.email}) - Role: {roles.find(r => r.roleId === user.roleId)?.roleName || user.roleId}
-                                <span style={{ marginLeft: '10px', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', background: user.isActive ? '#dcfce7' : '#fee2e2', color: user.isActive ? '#166534' : '#991b1b' }}>
-                                    {user.isActive ? 'Active' : 'Disabled'}
-                                </span>
-                                <div style={{ fontSize: '0.85em', color: '#666', marginTop: '4px' }}>
-                                    {user.organizationId && <span>Org: {organizations.find(o => o.organizationId === user.organizationId)?.organizationName || user.organizationId}</span>}
-                                    {user.departmentId && <span style={{ marginLeft: '10px' }}>Dept: {departments.find(d => d.departmentId === user.departmentId)?.departmentName || user.departmentId}</span>}
-                                </div>
-                            </span>
-                            <div>
-                                <button onClick={() => handleEdit(user)} style={{ marginRight: '10px', background: '#eab308', border: 'none', padding: '5px 10px', color: 'white', cursor: 'pointer' }}>Edit</button>
-                                <button onClick={() => handleResetPassword(user.userId)} style={{ marginRight: '10px', background: '#3b82f6', border: 'none', padding: '5px 10px', color: 'white', cursor: 'pointer' }}>Reset Password</button>
-                                <button onClick={() => handleToggleStatus(user.userId)} style={{ marginRight: '10px', background: user.isActive ? '#f97316' : '#22c55e', border: 'none', padding: '5px 10px', color: 'white', cursor: 'pointer' }}>
-                                    {user.isActive ? 'Disable' : 'Activate'}
-                                </button>
-                                <button onClick={() => handleDelete(user.userId)} style={{ background: '#ef4444', border: 'none', padding: '5px 10px', color: 'white', cursor: 'pointer' }}>Delete</button>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+            <div className="admin-card" style={{ overflowX: 'auto', padding: 0 }}>
+                <div style={{ padding: '1.5rem 1.5rem 0' }}>
+                    <h3 className="admin-card-title">Current Users</h3>
+                </div>
+                <table className="admin-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Contact</th>
+                            <th>Role & Organization</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map(user => (
+                            <tr key={user.userId}>
+                                <td>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div className="admin-avatar">
+                                            {user.username.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span style={{ fontWeight: 600 }}>{user.username}</span>
+                                    </div>
+                                </td>
+                                <td>{user.email}</td>
+                                <td>
+                                    <div style={{ fontWeight: 500 }}>{roles.find(r => r.roleId === user.roleId)?.roleName || user.roleId}</div>
+                                    <div style={{ fontSize: '0.85em', opacity: 0.7, marginTop: '4px' }}>
+                                        {user.organizationId ? (organizations.find(o => o.organizationId === user.organizationId)?.organizationName || 'Org') : ''}
+                                        {user.departmentId ? ` - ${departments.find(d => d.departmentId === user.departmentId)?.departmentName || 'Dept'}` : ''}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span className={user.isActive ? 'admin-badge-active' : 'admin-badge-inactive'} style={{ marginLeft: 0 }}>
+                                        {user.isActive ? 'Active' : 'Disabled'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                        <button onClick={() => handleEdit(user)} className="admin-btn admin-btn-ghost">Edit</button>
+                                        <button onClick={() => handleResetPassword(user.userId)} className="admin-btn admin-btn-ghost">Reset</button>
+                                        <button onClick={() => handleToggleStatus(user.userId)} className="admin-btn admin-btn-ghost">
+                                            {user.isActive ? 'Disable' : 'Activate'}
+                                        </button>
+                                        <button onClick={() => handleDelete(user.userId)} className="admin-btn admin-btn-ghost admin-btn-ghost-danger">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {users.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.7 }}>No users found.</div>}
             </div>
         </div>
     );
