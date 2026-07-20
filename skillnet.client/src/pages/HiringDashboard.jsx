@@ -2,6 +2,30 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './HiringDashboard.css';
 
+const toDateTimeLocalValue = (value) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 16);
+};
+
+const getCurrentDateTimeLocal = () => {
+    const now = new Date();
+    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return localNow.toISOString().slice(0, 16);
+};
+
+const normalizeDateTimeForApi = (value) => {
+    if (!value) return '';
+    return value.length === 16 ? `${value}:00` : value;
+};
+
 function HiringDashboard() {
     const [activeTab, setActiveTab] = useState('All Interviews');
     const [searchTerm, setSearchTerm] = useState('');
@@ -69,6 +93,11 @@ function HiringDashboard() {
 
     const openCreateModal = () => {
         resetForm();
+        setFormData((previousData) => ({
+            ...previousData,
+            scheduledDate: getCurrentDateTimeLocal(),
+            duration: '45'
+        }));
         setShowModal(true);
     };
 
@@ -82,21 +111,6 @@ function HiringDashboard() {
         }
 
         return date.toLocaleString();
-    };
-
-    const toDateTimeLocal = (dateValue) => {
-        if (!dateValue) return '';
-
-        const date = new Date(dateValue);
-
-        if (Number.isNaN(date.getTime())) {
-            return '';
-        }
-
-        const offset = date.getTimezoneOffset();
-        const localDate = new Date(date.getTime() - offset * 60000);
-
-        return localDate.toISOString().slice(0, 16);
     };
 
     const isToday = (dateValue) => {
@@ -223,14 +237,30 @@ function HiringDashboard() {
                 return;
             }
 
+            if (Number(formData.applicationId) <= 0) {
+                alert('Application ID must be greater than 0.');
+                return;
+            }
+
+            if (Number(formData.interviewRound) <= 0) {
+                alert('Interview Round must be greater than 0.');
+                return;
+            }
+
+            if (Number(formData.duration) <= 0) {
+                alert('Duration must be greater than 0.');
+                return;
+            }
+
             const requestBody = {
                 applicationId: Number(formData.applicationId),
                 interviewType: formData.interviewType,
                 interviewRound: Number(formData.interviewRound),
-                scheduledDate: new Date(formData.scheduledDate).toISOString(),
+                scheduledDate: normalizeDateTimeForApi(formData.scheduledDate),
                 duration: Number(formData.duration),
                 location: formData.location,
-                meetingLink: formData.meetingLink
+                meetingLink: formData.meetingLink,
+                status: formData.status
             };
 
             const url = isEditMode
@@ -287,7 +317,7 @@ function HiringDashboard() {
             applicationId: interview.applicationId || '',
             interviewType: interview.interviewType || 'Technical',
             interviewRound: interview.interviewRound || '',
-            scheduledDate: toDateTimeLocal(interview.scheduledDate),
+            scheduledDate: toDateTimeLocalValue(interview.scheduledDate),
             duration: interview.duration || '',
             location: interview.location || '',
             meetingLink: interview.meetingLink || '',
@@ -317,6 +347,14 @@ function HiringDashboard() {
         } catch (err) {
             alert(err.message || 'Something went wrong while deleting.');
         }
+    };
+
+    const getStatusClassName = (status) => {
+        if (!status) return 'pending';
+
+        return status
+            .toLowerCase()
+            .replace(/\s+/g, '-');
     };
 
     if (loading) {
@@ -487,7 +525,9 @@ function HiringDashboard() {
                                 <td>{interview.location || 'N/A'}</td>
 
                                 <td>
-                                    <span className="workspace-status">
+                                    <span
+                                        className={`workspace-status ${getStatusClassName(interview.status)}`}
+                                    >
                                         {interview.status || 'Pending'}
                                     </span>
                                 </td>
@@ -555,9 +595,11 @@ function HiringDashboard() {
                             <input
                                 name="applicationId"
                                 type="number"
+                                min="1"
                                 placeholder="Enter application ID"
                                 value={formData.applicationId}
                                 onChange={handleInputChange}
+                                required
                             />
 
                             <label>Interview Type</label>
@@ -565,6 +607,7 @@ function HiringDashboard() {
                                 name="interviewType"
                                 value={formData.interviewType}
                                 onChange={handleInputChange}
+                                required
                             >
                                 <option>Technical</option>
                                 <option>HR</option>
@@ -577,9 +620,11 @@ function HiringDashboard() {
                             <input
                                 name="interviewRound"
                                 type="number"
+                                min="1"
                                 placeholder="Enter round number"
                                 value={formData.interviewRound}
                                 onChange={handleInputChange}
+                                required
                             />
 
                             <label>Date & Time</label>
@@ -588,15 +633,19 @@ function HiringDashboard() {
                                 type="datetime-local"
                                 value={formData.scheduledDate}
                                 onChange={handleInputChange}
+                                min={getCurrentDateTimeLocal()}
+                                required
                             />
 
                             <label>Duration</label>
                             <input
                                 name="duration"
                                 type="number"
+                                min="1"
                                 placeholder="Duration in minutes"
                                 value={formData.duration}
                                 onChange={handleInputChange}
+                                required
                             />
 
                             <label>Location</label>
@@ -622,6 +671,7 @@ function HiringDashboard() {
                                 name="status"
                                 value={formData.status}
                                 onChange={handleInputChange}
+                                required
                             >
                                 <option>Scheduled</option>
                                 <option>Confirmed</option>
