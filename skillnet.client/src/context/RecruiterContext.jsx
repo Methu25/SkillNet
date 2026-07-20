@@ -15,12 +15,16 @@ export const RecruiterProvider = ({ children }) => {
         setLoading(true);
         setError('');
         try {
-            setOrganization(await recruiterApi.getOrganization());
+            const refreshedOrganization = await recruiterApi.getOrganization();
+            setOrganization(refreshedOrganization);
+            return refreshedOrganization;
         } catch (requestError) {
             if (requestError instanceof ApiError && requestError.status === 404) {
                 setOrganization(null);
+                return null;
             } else {
                 setError(requestError.message || 'Organization status could not be loaded.');
+                return undefined;
             }
         } finally {
             setLoading(false);

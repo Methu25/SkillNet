@@ -1,5 +1,5 @@
-import RecruiterPlaceholderPage from '../../components/recruiter/RecruiterPlaceholderPage';
+import RecruiterJobForm from '../../components/recruiter/RecruiterJobForm';
 
-const CreateJob = () => <RecruiterPlaceholderPage eyebrow="New opportunity" title="Create a job" description="Build a complete job post and save it as a draft before publishing." />;
+const CreateJob = () => <RecruiterJobForm />;
 
 export default CreateJob;
