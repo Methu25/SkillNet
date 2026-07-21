@@ -2,6 +2,7 @@ namespace SkillNet.Domain.Entities
 {
     public class User
     {
+        [System.Text.Json.Serialization.JsonIgnore]
         public int UserID { get; set; }
         public int UserId
         {

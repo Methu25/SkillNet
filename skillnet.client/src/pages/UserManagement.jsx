@@ -1,47 +1,36 @@
 import { useState, useEffect } from 'react';
+import { apiRequest, jsonRequest } from '../api/apiClient';
 import '../AdminModule.css';
 
 export default function UserManagement() {
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
     const [organizations, setOrganizations] = useState([]);
-    const [departments, setDepartments] = useState([]);
-    const [newUser, setNewUser] = useState({ username: '', email: '', passwordHash: '', roleId: 1, isActive: true, organizationId: '', departmentId: '' });
+    const [newUser, setNewUser] = useState({ username: '', email: '', passwordHash: '', roleId: 1, isActive: true, organizationId: '' });
     const [editingId, setEditingId] = useState(null);
 
     const fetchUsers = () => {
-        fetch('/api/user', { cache: 'no-store' })
-            .then(res => res.json())
-            .then(data => setUsers(data))
+        apiRequest('/api/user', { cache: 'no-store' })
+            .then(res => setUsers(res.data))
             .catch(() => console.error("Failed to fetch users."));
     };
 
     const fetchRoles = () => {
-        fetch('/api/userrole', { cache: 'no-store' })
-            .then(res => res.json())
-            .then(data => setRoles(data))
+        apiRequest('/api/userrole', { cache: 'no-store' })
+            .then(res => setRoles(res.data))
             .catch(() => console.error("Failed to fetch roles."));
     };
 
     const fetchOrganizations = () => {
-        fetch('/api/organization', { cache: 'no-store' })
-            .then(res => res.json())
-            .then(data => setOrganizations(data))
+        apiRequest('/api/organization', { cache: 'no-store' })
+            .then(res => setOrganizations(res.data))
             .catch(() => console.error("Failed to fetch organizations."));
-    };
-
-    const fetchDepartments = () => {
-        fetch('/api/department', { cache: 'no-store' })
-            .then(res => res.json())
-            .then(data => setDepartments(data))
-            .catch(() => console.error("Failed to fetch departments."));
     };
 
     useEffect(() => { 
         fetchUsers(); 
         fetchRoles();
         fetchOrganizations();
-        fetchDepartments();
     }, []);
 
     const handleSaveUser = (e) => {
@@ -52,55 +41,46 @@ export default function UserManagement() {
         const payload = {
             ...newUser,
             organizationId: newUser.organizationId ? parseInt(newUser.organizationId) : null,
-            departmentId: newUser.departmentId ? parseInt(newUser.departmentId) : null,
         };
 
-        fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message);
-                setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '', departmentId: '' });
+        jsonRequest(url, method, payload)
+            .then(res => {
+                alert(res.data.message || "Saved successfully");
+                setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '' });
                 setEditingId(null);
                 fetchUsers();
-            });
+            })
+            .catch(err => alert("Failed to save user: " + err.message));
     };
 
     const handleToggleStatus = (id) => {
-        fetch(`/api/user/${id}/toggle-status`, { method: 'PUT' })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message);
+        apiRequest(`/api/user/${id}/toggle-status`, { method: 'PUT' })
+            .then(res => {
+                alert(res.data.message || "Status toggled");
                 fetchUsers();
-            });
+            })
+            .catch(err => alert("Failed to toggle status: " + err.message));
     };
 
     const handleResetPassword = (id) => {
         const newPassword = prompt("Enter new password:");
         if (!newPassword) return;
 
-        fetch(`/api/user/${id}/reset-password`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ newPassword })
-        })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message);
-            });
+        jsonRequest(`/api/user/${id}/reset-password`, 'POST', { newPassword })
+            .then(res => {
+                alert(res.data.message || "Password reset successful");
+            })
+            .catch(err => alert("Failed to reset password: " + err.message));
     };
 
     const handleDelete = (id) => {
         if (!window.confirm("Are you sure you want to completely delete this user? This cannot be undone. Consider disabling them instead.")) return;
-        fetch(`/api/user/${id}`, { method: 'DELETE' })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message);
+        apiRequest(`/api/user/${id}`, { method: 'DELETE' })
+            .then(res => {
+                alert(res.data?.message || "User deleted");
                 fetchUsers();
-            });
+            })
+            .catch(err => alert("Failed to delete user: " + err.message));
     };
 
     const handleEdit = (user) => {
@@ -111,8 +91,7 @@ export default function UserManagement() {
             passwordHash: '', 
             roleId: user.roleId, 
             isActive: user.isActive,
-            organizationId: user.organizationId || '',
-            departmentId: user.departmentId || ''
+            organizationId: user.organizationId || ''
         });
     };
 
@@ -120,8 +99,9 @@ export default function UserManagement() {
         <div className="admin-module-container">
             <h2 className="admin-page-title">User Management</h2>
 
-            <div className="admin-card">
-                <h3 className="admin-card-title">{editingId ? 'Edit User' : '+ Add New User'}</h3>
+            {editingId && (
+                <div className="admin-card">
+                    <h3 className="admin-card-title">Edit User</h3>
                 <form onSubmit={handleSaveUser} className="admin-form">
                     <div className="admin-form-grid">
                         <div>
@@ -156,15 +136,6 @@ export default function UserManagement() {
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Department</label>
-                            <select className="admin-select" value={newUser.departmentId} onChange={e => setNewUser({ ...newUser, departmentId: e.target.value })} style={{ width: '100%' }}>
-                                <option value="">No Department</option>
-                                {departments.filter(d => !newUser.organizationId || d.organizationId === parseInt(newUser.organizationId)).map(d => (
-                                    <option key={d.departmentId} value={d.departmentId}>{d.departmentName}</option>
-                                ))}
-                            </select>
-                        </div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
@@ -172,13 +143,14 @@ export default function UserManagement() {
                             {editingId ? 'Update User' : 'Save User'}
                         </button>
                         {editingId && (
-                            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => { setEditingId(null); setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '', departmentId: '' }) }}>
+                            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => { setEditingId(null); setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '' }) }}>
                                 Cancel
                             </button>
                         )}
                     </div>
-                </form>
-            </div>
+                    </form>
+                </div>
+            )}
 
             <div className="admin-card" style={{ overflowX: 'auto', padding: 0 }}>
                 <div style={{ padding: '1.5rem 1.5rem 0' }}>
@@ -210,7 +182,6 @@ export default function UserManagement() {
                                     <div style={{ fontWeight: 500 }}>{roles.find(r => r.roleId === user.roleId)?.roleName || user.roleId}</div>
                                     <div style={{ fontSize: '0.85em', opacity: 0.7, marginTop: '4px' }}>
                                         {user.organizationId ? (organizations.find(o => o.organizationId === user.organizationId)?.organizationName || 'Org') : ''}
-                                        {user.departmentId ? ` - ${departments.find(d => d.departmentId === user.departmentId)?.departmentName || 'Dept'}` : ''}
                                     </div>
                                 </td>
                                 <td>

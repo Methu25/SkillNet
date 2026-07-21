@@ -14,7 +14,7 @@ const Login = () => {
 
     // Helper: resolve dashboard path from roles array
     const getDashboardPath = (roles = []) => {
-        if (roles.includes('Admin'))         return '/admin-dashboard';
+        if (roles.includes('Admin'))         return '/admin/dashboard';
         if (roles.includes('Recruiter'))     return '/recruiter-dashboard';
         if (roles.includes('HiringManager')) return '/hiring-dashboard';
         if (roles.includes('Candidate'))     return '/candidate-dashboard';

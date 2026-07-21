@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiRequest, jsonRequest } from '../api/apiClient';
 import '../AdminModule.css';
 
 export default function SystemSettings() {
@@ -6,13 +7,15 @@ export default function SystemSettings() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/systemconfiguration', { cache: 'no-store' })
-            .then(res => res.json())
-            .then(data => {
-                setConfigs(Array.isArray(data) ? data : []);
+        apiRequest('/api/systemconfiguration', { cache: 'no-store' })
+            .then(res => {
+                setConfigs(Array.isArray(res.data) ? res.data : []);
                 setLoading(false);
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error(err);
+                setLoading(false);
+            });
     }, []);
 
     // Function to handle typing in the text boxes
@@ -22,14 +25,9 @@ export default function SystemSettings() {
 
     // Function to send data to C# when Save is clicked
     const handleSave = () => {
-        fetch('/api/systemconfiguration', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(configs)
-        })
-            .then(res => res.json())
-            .then(data => alert(data.message))
-            .catch(err => alert("Failed to save changes."));
+        jsonRequest('/api/systemconfiguration', 'PUT', configs)
+            .then(res => alert(res.data?.message || "Changes saved successfully"))
+            .catch(err => alert("Failed to save changes: " + err.message));
     };
 
     if (loading) return <h2 className="admin-page-title">Loading System Configurations...</h2>;

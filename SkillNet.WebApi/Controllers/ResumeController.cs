@@ -24,18 +24,17 @@ namespace SkillNet.WebApi.Controllers
         public ResumeController(
             IResumeService resumeService,
             IUserService userService,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            ISystemConfigurationService systemConfig)
         {
             _resumeService = resumeService;
             _userService = userService;
-            _maximumFileSize = long.TryParse(
-                configuration["ResumeStorage:MaximumFileSizeBytes"],
-                out var configuredMaximum)
-                    ? configuredMaximum
-                    : 10 * 1024 * 1024;
+            _systemConfig = systemConfig;
             _pdfContentType = configuration["ResumeStorage:AllowedMimeType"] ??
                 "application/pdf";
         }
+
+        private readonly ISystemConfigurationService _systemConfig;
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<ResumeDto>), StatusCodes.Status200OK)]
@@ -208,11 +207,21 @@ namespace SkillNet.WebApi.Controllers
                 return BadRequest(new { message = "A non-empty resume file is required." });
             }
 
-            if (file.Length > _maximumFileSize)
+            string maxSizeStr = _systemConfig.GetSetting("ResumeMaxSize", "5MB");
+            long maxBytes = 5 * 1024 * 1024; // Default to 5MB
+            if (maxSizeStr.EndsWith("MB", StringComparison.OrdinalIgnoreCase))
+            {
+                if (long.TryParse(maxSizeStr.Substring(0, maxSizeStr.Length - 2), out long mb))
+                {
+                    maxBytes = mb * 1024 * 1024;
+                }
+            }
+
+            if (file.Length > maxBytes)
             {
                 return StatusCode(
                     StatusCodes.Status413PayloadTooLarge,
-                    new { message = $"Resume file size cannot exceed {_maximumFileSize} bytes." });
+                    new { message = $"Resume file size cannot exceed {maxSizeStr}." });
             }
 
             if (!string.Equals(Path.GetExtension(file.FileName), ".pdf", StringComparison.OrdinalIgnoreCase) ||
