@@ -14,9 +14,7 @@ const RecruiterLayout = () => {
                 <RecruiterSidebar open={navigationOpen} onClose={() => setNavigationOpen(false)} />
                 <div className="recruiter-workspace">
                     <RecruiterHeader onMenu={() => setNavigationOpen(true)} />
-                    <main className="recruiter-main">
-                        <Outlet />
-                    </main>
+                    <main className="recruiter-main"><Outlet /></main>
                 </div>
             </div>
         </RecruiterProvider>

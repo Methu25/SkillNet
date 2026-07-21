@@ -12,12 +12,12 @@ namespace SkillNet.Application.Interfaces
         Task<RecruiterOrganizationDto> UpsertOrganizationAsync(
             int userId,
             UpsertRecruiterOrganizationRequest request);
-        Task<RecruiterOrganizationDto> SubmitOrganizationAsync(int userId);
-        Task<bool> IsOrganizationApprovedAsync(int userId);
-        Task<IEnumerable<RecruiterOrganizationDto>> GetPendingOrganizationsAsync();
-        Task<RecruiterOrganizationDto?> ApproveOrganizationAsync(int organizationId);
-        Task<RecruiterOrganizationDto?> RejectOrganizationAsync(
-            int organizationId,
-            string reason);
+        Task<RecruiterOrganizationDto> UploadOrganizationLogoAsync(
+            int userId,
+            Stream content,
+            string fileName,
+            string contentType,
+            long fileSize);
+        Task<RecruiterOrganizationDto> DeleteOrganizationLogoAsync(int userId);
     }
 }

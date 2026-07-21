@@ -214,8 +214,11 @@ namespace SkillNet.Application.Services
 
         public async Task<IEnumerable<JobResponse>> GetRecruiterJobsAsync(int userId)
         {
-            var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
-            var jobs = await _jobRepository.GetJobsByRecruiterAsync(recruiterProfileId);
+            var recruiterProfileId = await _recruiterService.GetRecruiterProfileIdAsync(userId);
+            if (!recruiterProfileId.HasValue)
+                return Array.Empty<JobResponse>();
+
+            var jobs = await _jobRepository.GetJobsByRecruiterAsync(recruiterProfileId.Value);
             var responses = new List<JobResponse>();
             foreach (var job in jobs)
                 responses.Add(await BuildJobResponseAsync(job.JobId));
@@ -259,10 +262,6 @@ namespace SkillNet.Application.Services
 
         public async Task<JobResponse?> PublishJobAsync(int jobId, int userId)
         {
-            if (!await _recruiterService.IsOrganizationApprovedAsync(userId))
-                throw new InvalidOperationException(
-                    "Jobs can only be published after the recruiter's organization is approved.");
-
             var recruiterProfileId = await GetRequiredRecruiterProfileIdAsync(userId);
             var updated = await _jobRepository.UpdateJobStatusAsync(jobId, recruiterProfileId, "Published");
             if (!updated) return null;

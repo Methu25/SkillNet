@@ -23,7 +23,7 @@ export const RecruiterProvider = ({ children }) => {
                 setOrganization(null);
                 return null;
             } else {
-                setError(requestError.message || 'Organization status could not be loaded.');
+                setError(requestError.message || 'Organization profile could not be loaded.');
                 return undefined;
             }
         } finally {
@@ -32,14 +32,12 @@ export const RecruiterProvider = ({ children }) => {
     }, []);
 
     useEffect(() => {
-        // The initial organization request synchronizes route access with the backend.
         // eslint-disable-next-line react-hooks/set-state-in-effect
         refreshOrganization();
     }, [refreshOrganization]);
 
     const value = useMemo(() => ({
         organization,
-        approvalStatus: organization?.approvalStatus || null,
         loading,
         error,
         refreshOrganization,
