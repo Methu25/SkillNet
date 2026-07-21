@@ -16,10 +16,12 @@ namespace SkillNet.Application.Services
         void RevokeRefreshToken(string refreshToken);
     }
 
+
     public class JwtTokenService(IConfiguration config, IRefreshTokenRepository refreshTokenRepository) : IJwtTokenService
     {
         private readonly IConfiguration _config = config;
         private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
+
 
         public string GenerateAccessToken(string email, List<string> roles)
         {
@@ -38,11 +40,13 @@ namespace SkillNet.Application.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            var sessionTimeout = _systemConfig.GetIntSetting("SessionTimeoutMinutes", 15);
+
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(15),
+                expires: DateTime.UtcNow.AddMinutes(sessionTimeout),
                 signingCredentials: creds
             );
 

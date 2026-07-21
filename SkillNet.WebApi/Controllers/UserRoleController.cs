@@ -23,7 +23,7 @@ namespace SkillNet.WebApi.Controllers
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = "SELECT RoleId, RoleName, Description, CreatedAt FROM UserRole";
+                string query = "SELECT RoleID as RoleId, RoleName, NULL as Description, GETDATE() as CreatedAt FROM Roles";
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     con.Open();
@@ -35,7 +35,7 @@ namespace SkillNet.WebApi.Controllers
                             {
                                 RoleId = Convert.ToInt32(reader["RoleId"]),
                                 RoleName = reader["RoleName"].ToString() ?? "",
-                                Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : null,
+                                Description = null,
                                 CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
                             });
                         }
@@ -51,12 +51,11 @@ namespace SkillNet.WebApi.Controllers
         {
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = @"INSERT INTO UserRole (RoleName, Description) 
-                                 VALUES (@Name, @Desc)";
+                string query = @"INSERT INTO Roles (RoleName) 
+                                 VALUES (@Name)";
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.Parameters.AddWithValue("@Name", role.RoleName);
-                    cmd.Parameters.AddWithValue("@Desc", (object?)role.Description ?? DBNull.Value);
                     con.Open();
                     cmd.ExecuteNonQuery();
                 }

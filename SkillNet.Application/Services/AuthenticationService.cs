@@ -14,11 +14,13 @@ namespace SkillNet.Application.Services
     public class AuthenticationService(
         IUserService userService,
         IPasswordHashService passwordHashService,
-        IJwtTokenService jwtTokenService) : IAuthenticationService
+        IJwtTokenService jwtTokenService,
+        ISystemConfigurationService configService) : IAuthenticationService
     {
         private readonly IUserService _userService = userService;
         private readonly IPasswordHashService _passwordHashService = passwordHashService;
         private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
+        private readonly ISystemConfigurationService _configService = configService;
 
 #pragma warning disable SYSLIB1045
         private static readonly Regex UpperCaseRegex = new("[A-Z]", RegexOptions.Compiled);
@@ -33,17 +35,22 @@ namespace SkillNet.Application.Services
             if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
                 return "Password must be at least 8 characters long.";
 
-            if (!UpperCaseRegex.IsMatch(password))
-                return "Password must contain at least one uppercase letter.";
+            bool requireStrong = _configService.GetBoolSetting("RequireStrongPassword", true);
 
-            if (!LowerCaseRegex.IsMatch(password))
-                return "Password must contain at least one lowercase letter.";
+            if (requireStrong)
+            {
+                if (!UpperCaseRegex.IsMatch(password))
+                    return "Password must contain at least one uppercase letter.";
 
-            if (!NumberRegex.IsMatch(password))
-                return "Password must contain at least one number.";
+                if (!LowerCaseRegex.IsMatch(password))
+                    return "Password must contain at least one lowercase letter.";
 
-            if (!SpecialCharRegex.IsMatch(password))
-                return "Password must contain at least one special character.";
+                if (!NumberRegex.IsMatch(password))
+                    return "Password must contain at least one number.";
+
+                if (!SpecialCharRegex.IsMatch(password))
+                    return "Password must contain at least one special character.";
+            }
 
             return null; // Valid
         }
@@ -106,15 +113,19 @@ namespace SkillNet.Application.Services
                 _userService.IncrementFailedAttempts(request.Email);
 
                 var updatedUser = _userService.GetUserByEmail(request.Email)!;
-                if (updatedUser.FailedLoginAttempts >= 5)
+                
+                int maxAttempts = _configService.GetIntSetting("MaxLoginAttempts", 5);
+                int lockoutMinutes = _configService.GetIntSetting("LockoutDuration", 15);
+
+                if (updatedUser.FailedLoginAttempts >= maxAttempts)
                 {
-                    var lockoutDuration = DateTime.UtcNow.AddMinutes(15);
+                    var lockoutDuration = DateTime.UtcNow.AddMinutes(lockoutMinutes);
                     _userService.LockAccount(request.Email, lockoutDuration);
-                    errorMessage = "Account locked out for 15 minutes due to 5 failed attempts.";
+                    errorMessage = $"Account locked out for {lockoutMinutes} minutes due to {maxAttempts} failed attempts.";
                 }
                 else
                 {
-                    int attemptsLeft = 5 - updatedUser.FailedLoginAttempts;
+                    int attemptsLeft = maxAttempts - updatedUser.FailedLoginAttempts;
                     errorMessage = $"Invalid credentials. {attemptsLeft} attempts remaining.";
                 }
                 return default;

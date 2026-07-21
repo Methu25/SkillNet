@@ -96,6 +96,7 @@ builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 
 // Register Admin Module Services (Application Layer)
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
 
 // Register Interview Module (Infrastructure repositories + Application services)
 // Note: JobCategoryService uses its own Singleton pattern internally (not registered here)

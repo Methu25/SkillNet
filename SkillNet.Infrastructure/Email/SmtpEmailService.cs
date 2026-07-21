@@ -3,19 +3,23 @@ using System.Net.Mail;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using SkillNet.Application.Interfaces;
+using SkillNet.Application.Services;
 
 namespace SkillNet.Infrastructure.Email
 {
     public class SmtpEmailService : IEmailService
     {
         private readonly SmtpOptions _options;
+        private readonly ISystemConfigurationService _systemConfig;
         private readonly ILogger<SmtpEmailService> _logger;
 
         public SmtpEmailService(
             IOptions<SmtpOptions> options,
+            ISystemConfigurationService systemConfig,
             ILogger<SmtpEmailService> logger)
         {
             _options = options.Value;
+            _systemConfig = systemConfig;
             _logger = logger;
         }
 
@@ -32,6 +36,12 @@ namespace SkillNet.Infrastructure.Email
                 string.IsNullOrWhiteSpace(_options.Host) ? "(not configured)" : _options.Host,
                 _options.Port,
                 _options.EnableSsl);
+
+            if (!_systemConfig.GetBoolSetting("EnableEmailNotifications", true))
+            {
+                _logger.LogWarning("Email event {EventType} was not attempted. Reason: Email notifications are disabled in System Settings.", eventType);
+                return new EmailDeliveryResult(false, false, "Email delivery is disabled globally in System Settings.");
+            }
 
             if (!_options.Enabled)
             {

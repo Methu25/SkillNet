@@ -19,15 +19,18 @@ namespace SkillNet.WebApi.Controllers
         private readonly ICandidateService _candidateService;
         private readonly IProfileImageService _profileImageService;
         private readonly IUserService _userService;
+        private readonly IAuditLogService _auditLogService;
 
         public CandidateProfileController(
             ICandidateService candidateService,
             IProfileImageService profileImageService,
-            IUserService userService)
+            IUserService userService,
+            IAuditLogService auditLogService)
         {
             _candidateService = candidateService;
             _profileImageService = profileImageService;
             _userService = userService;
+            _auditLogService = auditLogService;
         }
 
         [HttpGet]
@@ -86,6 +89,8 @@ namespace SkillNet.WebApi.Controllers
             {
                 return NotFound(new { message = "Candidate profile not yet created." });
             }
+
+            await _auditLogService.LogActionAsync("Account Changed (Profile Update)", "Candidates", userId, null, null);
 
             return Ok(profile);
         }

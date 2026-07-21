@@ -9,7 +9,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
 // Role-specific dashboards
-import AdminDashboard from './pages/AdminDashboard';
+import AdminLayout from './components/AdminLayout';
+import Dashboard from './pages/Dashboard';
 
 import HiringDashboard from './pages/HiringDashboard';
 import CandidateDashboard from './pages/CandidateDashboard';
@@ -64,46 +65,22 @@ function App() {
                     <Route path="/reset-password" element={<ResetPassword />} />
 
                     {/* Admin routes */}
+                    <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />
                     <Route
-                        path="/admin-dashboard"
+                        path="/admin"
                         element={
                             <ProtectedRoute allowedRoles={['Admin']}>
-                                <AdminDashboard />
+                                <AdminLayout />
                             </ProtectedRoute>
                         }
-                    />
-                    <Route
-                        path="/user-management"
-                        element={
-                            <ProtectedRoute allowedRoles={['Admin']}>
-                                <UserManagement />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/organization-management"
-                        element={
-                            <ProtectedRoute allowedRoles={['Admin']}>
-                                <OrganizationManagement />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/audit-logs"
-                        element={
-                            <ProtectedRoute allowedRoles={['Admin']}>
-                                <AuditLogs />
-                            </ProtectedRoute>
-                        }
-                    />
-                    <Route
-                        path="/system-settings"
-                        element={
-                            <ProtectedRoute allowedRoles={['Admin']}>
-                                <SystemSettings />
-                            </ProtectedRoute>
-                        }
-                    />
+                    >
+                        <Route index element={<Navigate to="dashboard" replace />} />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="users" element={<UserManagement />} />
+                        <Route path="organizations" element={<OrganizationManagement />} />
+                        <Route path="logs" element={<AuditLogs />} />
+                        <Route path="settings" element={<SystemSettings />} />
+                    </Route>
 
                     {/* ── Recruiter routes ── */}
                     <Route path="/recruiter-dashboard" element={<Navigate to="/recruiter/dashboard" replace />} />

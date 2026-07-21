@@ -29,15 +29,18 @@ namespace SkillNet.Application.Services
         private readonly IApplicationRepository _applicationRepository;
         private readonly IJobRepository _jobRepository;
         private readonly IResumeRepository _resumeRepository;
+        private readonly ISystemConfigurationService _systemConfig;
 
         public ApplicationService(
             IApplicationRepository applicationRepository,
             IJobRepository jobRepository,
-            IResumeRepository resumeRepository)
+            IResumeRepository resumeRepository,
+            ISystemConfigurationService systemConfig)
         {
             _applicationRepository = applicationRepository;
             _jobRepository = jobRepository;
             _resumeRepository = resumeRepository;
+            _systemConfig = systemConfig;
         }
 
         public async Task<JobApplicationDto> ApplyForJobAsync(
@@ -52,6 +55,16 @@ namespace SkillNet.Application.Services
             if (await _applicationRepository.HasCandidateAppliedAsync(candidateId, dto.JobId))
             {
                 throw new InvalidOperationException("The candidate has already applied for this job.");
+            }
+
+            var allowMultiple = _systemConfig.GetBoolSetting("AllowMultipleApplications", false);
+            if (!allowMultiple)
+            {
+                var existingApps = await _applicationRepository.GetApplicationsByCandidateIdAsync(candidateId);
+                if (existingApps.Any(a => !TerminalStatuses.Contains(a.CurrentStatus)))
+                {
+                    throw new InvalidOperationException("You already have an active application. Multiple simultaneous applications are disabled.");
+                }
             }
 
             var job = await _jobRepository.GetJobByIdAsync(dto.JobId);

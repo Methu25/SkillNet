@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiRequest } from '../api/apiClient';
 import '../AdminModule.css';
 
 export default function AuditLogs() {
@@ -22,10 +23,9 @@ export default function AuditLogs() {
         if (startDate) params.append('startDate', startDate);
         if (endDate) params.append('endDate', endDate);
 
-        fetch(`/api/auditlog?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                setLogs(Array.isArray(data) ? data : []);
+        apiRequest(`/api/auditlog?${params.toString()}`)
+            .then(res => {
+                setLogs(Array.isArray(res.data) ? res.data : []);
                 setLoading(false);
             })
             .catch(err => {

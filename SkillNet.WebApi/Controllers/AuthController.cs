@@ -15,6 +15,7 @@ namespace SkillNet.WebApi.Controllers
         IJwtTokenService jwtTokenService,
         IPasswordHashService passwordHashService,
         IEmailService emailService,
+        IAuditLogService auditLogService,
         ILogger<AuthController> logger) : ControllerBase
     {
         private readonly IAuthenticationService _authService = authService;
@@ -22,6 +23,7 @@ namespace SkillNet.WebApi.Controllers
         private readonly IJwtTokenService _jwtTokenService = jwtTokenService;
         private readonly IPasswordHashService _passwordHashService = passwordHashService;
         private readonly IEmailService _emailService = emailService;
+        private readonly IAuditLogService _auditLogService = auditLogService;
         private readonly ILogger<AuthController> _logger = logger;
 
         [HttpPost("register")]
@@ -29,6 +31,8 @@ namespace SkillNet.WebApi.Controllers
         {
             if (!_authService.Register(request, out string error))
                 return BadRequest(new { Message = error });
+
+            _auditLogService.LogActionAsync("Register", "Users", null, null, request.Email);
 
             return Ok(new { Message = "Registration successful!" });
         }
@@ -45,6 +49,8 @@ namespace SkillNet.WebApi.Controllers
 
                 if (response == null)
                     return Unauthorized(new { Message = errorMessage ?? "Invalid email or password." });
+
+                _auditLogService.LogActionAsync("Login", "Users", null, null, request.Email);
 
                 return Ok(response);
             }
@@ -145,6 +151,8 @@ namespace SkillNet.WebApi.Controllers
             string newHash = _passwordHashService.HashPassword(request.NewPassword);
             _userService.ResetPassword(user.UserID, newHash);
             _userService.ResetFailedAttempts(user.Email);
+
+            _auditLogService.LogActionAsync("Account Changed (Password Reset)", "Users", user.UserID, null, user.Email);
 
             return Ok(new { Message = "Password has been reset successfully." });
         }

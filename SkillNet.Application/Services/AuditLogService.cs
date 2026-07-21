@@ -57,6 +57,23 @@ namespace SkillNet.Application.Services
                     await con.OpenAsync();
                     await cmd.ExecuteNonQueryAsync();
                 }
+
+                if (action == "Login")
+                {
+                    string cleanupQuery = @"
+                        DELETE FROM AuditLog 
+                        WHERE Action = 'Login' 
+                        AND AuditLogId NOT IN (
+                            SELECT TOP 30 AuditLogId 
+                            FROM AuditLog 
+                            WHERE Action = 'Login' 
+                            ORDER BY Timestamp DESC
+                        )";
+                    using (SqlCommand cleanupCmd = new SqlCommand(cleanupQuery, con))
+                    {
+                        await cleanupCmd.ExecuteNonQueryAsync();
+                    }
+                }
             }
         }
     }
