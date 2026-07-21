@@ -9,7 +9,7 @@ const experienceLevels = ['Junior', 'Mid', 'Senior'];
 const emptyForm = {
     title: '', description: '', categoryId: '', employmentType: '', workMode: '',
     location: '', salaryMin: '', salaryMax: '', experienceLevel: '',
-    applicationDeadline: '', skillIds: []
+    applicationDeadline: '', skillIds: [], vacancies: '', currency: 'USD', status: 'Draft'
 };
 
 const toDateInput = (value) => value ? String(value).slice(0, 10) : '';
@@ -32,6 +32,14 @@ const validate = (form) => {
     if (minimum !== null && (Number.isNaN(minimum) || minimum < 0)) errors.salaryMin = 'Enter a valid non-negative salary.';
     if (maximum !== null && (Number.isNaN(maximum) || maximum < 0)) errors.salaryMax = 'Enter a valid non-negative salary.';
     if (minimum !== null && maximum !== null && maximum < minimum) errors.salaryMax = 'Maximum salary must be at least the minimum salary.';
+
+    if (form.vacancies !== '' && (Number(form.vacancies) < 1 || !Number.isInteger(Number(form.vacancies)))) {
+        errors.vacancies = 'Vacancies must be a positive integer.';
+    }
+    if ((form.salaryMin !== '' || form.salaryMax !== '') && !form.currency) {
+        errors.currency = 'Currency is required when salary is specified.';
+    }
+
     return errors;
 };
 
@@ -82,7 +90,10 @@ const RecruiterJobForm = ({ jobId = null }) => {
                         employmentType: job.employmentType || '', workMode: job.workMode || '', location: job.location || '',
                         salaryMin: job.salaryMin ?? '', salaryMax: job.salaryMax ?? '', experienceLevel: job.experienceLevel || '',
                         applicationDeadline: toDateInput(job.applicationDeadline),
-                        skillIds: loadedSkills.filter((skill) => selectedNames.has(skill.skillName.toLowerCase())).map((skill) => String(skill.skillId))
+                        skillIds: loadedSkills.filter((skill) => selectedNames.has(skill.skillName.toLowerCase())).map((skill) => String(skill.skillId)),
+                        vacancies: '',
+                        currency: 'USD',
+                        status: job.status || 'Draft'
                     });
                 }
                 setApiError('');
@@ -122,13 +133,12 @@ const RecruiterJobForm = ({ jobId = null }) => {
             const currentJobId = saved.jobId;
             setSavedJobId(currentJobId);
 
-            if (publishAfterSave) {
-                setSuccess('Job saved as a draft. Publishing now...');
+            if (publishAfterSave && form.status !== 'Published') {
+                setSuccess('Job saved. Publishing now...');
                 await recruiterApi.publishJob(currentJobId);
             }
 
-            navigate(`/recruiter/jobs/${currentJobId}`, {
-                replace: !isEdit,
+            navigate('/recruiter/jobs', {
                 state: { success: publishAfterSave ? 'Job saved and published successfully.' : `Job ${isEdit ? 'updated' : 'created'} successfully.` }
             });
         } catch (requestError) {
@@ -143,30 +153,151 @@ const RecruiterJobForm = ({ jobId = null }) => {
         return <div className="recruiter-route-state recruiter-route-state--error"><strong>The job form could not be loaded.</strong><span>{apiError}</span><button type="button" onClick={() => { setLoading(true); setReloadKey((value) => value + 1); }}>Try again</button></div>;
     }
 
+    const isAlreadyPublished = form.status === 'Published';
+
     return (
         <section className="recruiter-job-form-page">
-            <div className="recruiter-page-heading"><div><span className="recruiter-eyebrow">{isEdit ? `Job #${jobId}` : 'New opportunity'}</span><h2>{isEdit ? 'Edit job' : 'Create a job'}</h2><p>{isEdit ? 'Update the job information and save your changes.' : 'Build a complete job post, then save it as a draft or publish it.'}</p></div></div>
+            <div className="recruiter-page-heading">
+                <div>
+                    <span className="recruiter-eyebrow">{isEdit ? `Job #${jobId}` : 'New opportunity'}</span>
+                    <h2>{isEdit ? 'Edit job' : 'Create a job'}</h2>
+                    <p>{isEdit ? 'Update the job information and save your changes.' : 'Build a complete job post, then save it as a draft or publish it.'}</p>
+                </div>
+            </div>
             {apiError && <div className="recruiter-setup-alert recruiter-setup-alert--error" role="alert">{apiError}</div>}
             {success && <div className="recruiter-setup-alert recruiter-setup-alert--success" role="status">{success}</div>}
 
             <form className="recruiter-setup-card" onSubmit={(event) => { event.preventDefault(); save(false); }} noValidate>
-                <div className="recruiter-setup-intro"><div><h3>Job information</h3><p>Fields marked with an asterisk are required.</p></div></div>
-                <div className="recruiter-form-grid">
-                    <label className="recruiter-form-field recruiter-form-field--wide"><span>Job title *</span><input name="title" value={form.title} onChange={handleChange} maxLength="200" disabled={Boolean(processing)} aria-invalid={Boolean(errors.title)} />{errors.title && <small className="recruiter-field-error">{errors.title}</small>}</label>
-                    <label className="recruiter-form-field recruiter-form-field--wide"><span>Description *</span><textarea name="description" value={form.description} onChange={handleChange} rows="8" disabled={Boolean(processing)} aria-invalid={Boolean(errors.description)} />{errors.description && <small className="recruiter-field-error">{errors.description}</small>}</label>
-                    <label className="recruiter-form-field"><span>Category *</span><select name="categoryId" value={form.categoryId} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.categoryId)}><option value="">Select category</option>{categories.map((category) => <option value={category.categoryId} key={category.categoryId}>{category.name}</option>)}</select>{errors.categoryId && <small className="recruiter-field-error">{errors.categoryId}</small>}</label>
-                    <label className="recruiter-form-field"><span>Employment type *</span><select name="employmentType" value={form.employmentType} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.employmentType)}><option value="">Select employment type</option>{employmentTypes.map((type) => <option value={type} key={type}>{type}</option>)}</select>{errors.employmentType && <small className="recruiter-field-error">{errors.employmentType}</small>}</label>
-                    <label className="recruiter-form-field"><span>Work mode *</span><select name="workMode" value={form.workMode} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.workMode)}><option value="">Select work mode</option>{workModes.map((mode) => <option value={mode} key={mode}>{mode}</option>)}</select>{errors.workMode && <small className="recruiter-field-error">{errors.workMode}</small>}</label>
-                    <label className="recruiter-form-field"><span>Location</span><input name="location" value={form.location} onChange={handleChange} maxLength="255" disabled={Boolean(processing)} />{errors.location && <small className="recruiter-field-error">{errors.location}</small>}</label>
-                    <label className="recruiter-form-field"><span>Minimum salary</span><input name="salaryMin" type="number" min="0" step="0.01" value={form.salaryMin} onChange={handleChange} disabled={Boolean(processing)} />{errors.salaryMin && <small className="recruiter-field-error">{errors.salaryMin}</small>}</label>
-                    <label className="recruiter-form-field"><span>Maximum salary</span><input name="salaryMax" type="number" min="0" step="0.01" value={form.salaryMax} onChange={handleChange} disabled={Boolean(processing)} />{errors.salaryMax && <small className="recruiter-field-error">{errors.salaryMax}</small>}</label>
-                    <label className="recruiter-form-field"><span>Experience level</span><select name="experienceLevel" value={form.experienceLevel} onChange={handleChange} disabled={Boolean(processing)}><option value="">Not specified</option>{experienceLevels.map((level) => <option value={level} key={level}>{level}</option>)}</select></label>
-                    <label className="recruiter-form-field"><span>Application deadline</span><input name="applicationDeadline" type="date" value={form.applicationDeadline} onChange={handleChange} disabled={Boolean(processing)} /></label>
-                    <label className="recruiter-form-field recruiter-form-field--wide"><span>Skills</span><select className="recruiter-skill-select" name="skillIds" multiple value={form.skillIds} onChange={handleChange} disabled={Boolean(processing)}>{skills.map((skill) => <option value={skill.skillId} key={skill.skillId}>{skill.skillName}</option>)}</select><small className="recruiter-form-hint">Hold Ctrl (Windows) or Command (Mac) to select multiple skills.</small></label>
+                {/* Section A: Basic Information */}
+                <div className="recruiter-form-section">
+                    <h3 className="recruiter-form-section-title">A. Basic Information</h3>
+                    <div className="recruiter-form-grid">
+                        <label className="recruiter-form-field recruiter-form-field--wide">
+                            <span>Job title *</span>
+                            <input name="title" value={form.title} onChange={handleChange} maxLength="200" disabled={Boolean(processing)} aria-invalid={Boolean(errors.title)} />
+                            {errors.title && <small className="recruiter-field-error">{errors.title}</small>}
+                        </label>
+                        <label className="recruiter-form-field">
+                            <span>Category *</span>
+                            <select name="categoryId" value={form.categoryId} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.categoryId)}>
+                                <option value="">Select category</option>
+                                {categories.map((category) => <option value={category.categoryId} key={category.categoryId}>{category.name}</option>)}
+                            </select>
+                            {errors.categoryId && <small className="recruiter-field-error">{errors.categoryId}</small>}
+                        </label>
+                        <label className="recruiter-form-field">
+                            <span>Employment type *</span>
+                            <select name="employmentType" value={form.employmentType} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.employmentType)}>
+                                <option value="">Select employment type</option>
+                                {employmentTypes.map((type) => <option value={type} key={type}>{type}</option>)}
+                            </select>
+                            {errors.employmentType && <small className="recruiter-field-error">{errors.employmentType}</small>}
+                        </label>
+                        <label className="recruiter-form-field">
+                            <span>Work mode *</span>
+                            <select name="workMode" value={form.workMode} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.workMode)}>
+                                <option value="">Select work mode</option>
+                                {workModes.map((mode) => <option value={mode} key={mode}>{mode}</option>)}
+                            </select>
+                            {errors.workMode && <small className="recruiter-field-error">{errors.workMode}</small>}
+                        </label>
+                    </div>
                 </div>
-                <div className="recruiter-setup-actions">
-                    <button className="recruiter-secondary-button" type="submit" disabled={Boolean(processing)}>{processing === 'save' ? 'Saving...' : isEdit ? 'Update job' : 'Save as draft'}</button>
-                    <button className="recruiter-submit-button" type="button" onClick={() => save(true)} disabled={Boolean(processing)}>{processing === 'publish' ? 'Saving & publishing...' : 'Save & publish'}</button>
+
+                {/* Section B: Job Details */}
+                <div className="recruiter-form-section mt-6">
+                    <h3 className="recruiter-form-section-title">B. Job Details</h3>
+                    <div className="recruiter-form-grid">
+                        <label className="recruiter-form-field recruiter-form-field--wide">
+                            <span>Description *</span>
+                            <textarea name="description" value={form.description} onChange={handleChange} rows="8" disabled={Boolean(processing)} aria-invalid={Boolean(errors.description)} />
+                            {errors.description && <small className="recruiter-field-error">{errors.description}</small>}
+                        </label>
+                        <label className="recruiter-form-field">
+                            <span>Experience level</span>
+                            <select name="experienceLevel" value={form.experienceLevel} onChange={handleChange} disabled={Boolean(processing)}>
+                                <option value="">Not specified</option>
+                                {experienceLevels.map((level) => <option value={level} key={level}>{level}</option>)}
+                            </select>
+                        </label>
+                        <label className="recruiter-form-field">
+                            <span>Vacancies</span>
+                            <input name="vacancies" type="number" min="1" step="1" value={form.vacancies} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.vacancies)} />
+                            {errors.vacancies && <small className="recruiter-field-error">{errors.vacancies}</small>}
+                        </label>
+                        <label className="recruiter-form-field recruiter-form-field--wide">
+                            <span>Skills</span>
+                            <select className="recruiter-skill-select" name="skillIds" multiple value={form.skillIds} onChange={handleChange} disabled={Boolean(processing)}>
+                                {skills.map((skill) => <option value={skill.skillId} key={skill.skillId}>{skill.skillName}</option>)}
+                            </select>
+                            <small className="recruiter-form-hint">Hold Ctrl (Windows) or Command (Mac) to select multiple skills.</small>
+                        </label>
+                    </div>
+                </div>
+
+                {/* Section C: Salary */}
+                <div className="recruiter-form-section mt-6">
+                    <h3 className="recruiter-form-section-title">C. Salary</h3>
+                    <div className="recruiter-form-grid">
+                        <label className="recruiter-form-field">
+                            <span>Currency</span>
+                            <select name="currency" value={form.currency} onChange={handleChange} disabled={Boolean(processing)} aria-invalid={Boolean(errors.currency)}>
+                                <option value="USD">USD ($)</option>
+                                <option value="EUR">EUR (€)</option>
+                                <option value="GBP">GBP (£)</option>
+                                <option value="LKR">LKR (Rs)</option>
+                            </select>
+                            {errors.currency && <small className="recruiter-field-error">{errors.currency}</small>}
+                        </label>
+                        <label className="recruiter-form-field">
+                            <span>Minimum salary</span>
+                            <input name="salaryMin" type="number" min="0" step="0.01" value={form.salaryMin} onChange={handleChange} disabled={Boolean(processing)} />
+                            {errors.salaryMin && <small className="recruiter-field-error">{errors.salaryMin}</small>}
+                        </label>
+                        <label className="recruiter-form-field">
+                            <span>Maximum salary</span>
+                            <input name="salaryMax" type="number" min="0" step="0.01" value={form.salaryMax} onChange={handleChange} disabled={Boolean(processing)} />
+                            {errors.salaryMax && <small className="recruiter-field-error">{errors.salaryMax}</small>}
+                        </label>
+                    </div>
+                </div>
+
+                {/* Section D: Location */}
+                <div className="recruiter-form-section mt-6">
+                    <h3 className="recruiter-form-section-title">D. Location</h3>
+                    <div className="recruiter-form-grid">
+                        <label className="recruiter-form-field recruiter-form-field--wide">
+                            <span>Location</span>
+                            <input name="location" value={form.location} onChange={handleChange} maxLength="255" disabled={Boolean(processing)} />
+                            {errors.location && <small className="recruiter-field-error">{errors.location}</small>}
+                        </label>
+                    </div>
+                </div>
+
+                {/* Section E: Application */}
+                <div className="recruiter-form-section mt-6">
+                    <h3 className="recruiter-form-section-title">E. Application</h3>
+                    <div className="recruiter-form-grid">
+                        <label className="recruiter-form-field">
+                            <span>Application deadline</span>
+                            <input name="applicationDeadline" type="date" value={form.applicationDeadline} onChange={handleChange} disabled={Boolean(processing)} />
+                        </label>
+                    </div>
+                </div>
+
+                {/* Form Action Buttons */}
+                <div className="recruiter-setup-actions mt-8">
+                    <button className="recruiter-secondary-button" type="button" onClick={() => navigate('/recruiter/jobs')} disabled={Boolean(processing)}>
+                        Cancel
+                    </button>
+                    <button className="recruiter-secondary-button" type="submit" disabled={Boolean(processing)}>
+                        {processing === 'save' ? 'Saving...' : isAlreadyPublished ? 'Save Changes' : 'Save as Draft'}
+                    </button>
+                    {!isAlreadyPublished && (
+                        <button className="recruiter-submit-button" type="button" onClick={() => save(true)} disabled={Boolean(processing)}>
+                            {processing === 'publish' ? 'Publishing...' : 'Publish Job'}
+                        </button>
+                    )}
                 </div>
             </form>
         </section>

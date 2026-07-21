@@ -112,15 +112,6 @@ const JobDetails = () => {
         <section className="recruiter-job-details-page">
             <div className="recruiter-job-details-topbar">
                 <Link to="/recruiter/jobs">← Back to jobs</Link>
-                <div className="recruiter-job-details-actions">
-                    {busy
-                        ? <span className="is-disabled" aria-disabled="true">Edit</span>
-                        : <Link to={`/recruiter/jobs/${job.jobId}/edit`}>Edit</Link>}
-                    <button type="button" onClick={() => runAction('publish')} disabled={busy || job.status === 'Published'}>{processing === 'publish' ? 'Publishing...' : 'Publish'}</button>
-                    <button type="button" onClick={() => runAction('close')} disabled={busy || job.status === 'Closed'}>{processing === 'close' ? 'Closing...' : 'Close'}</button>
-                    <button type="button" onClick={() => runAction('duplicate')} disabled={busy}>{processing === 'duplicate' ? 'Duplicating...' : 'Duplicate'}</button>
-                    <button className="recruiter-job-detail-danger" type="button" onClick={() => runAction('delete')} disabled={busy}>{processing === 'delete' ? 'Deleting...' : 'Delete'}</button>
-                </div>
             </div>
 
             {error && <div className="recruiter-setup-alert recruiter-setup-alert--error" role="alert">{error}</div>}
@@ -129,7 +120,9 @@ const JobDetails = () => {
             <article className="recruiter-job-preview">
                 <header className="recruiter-job-preview-header">
                     <div>
-                        <span className={`recruiter-job-status recruiter-job-status--${String(job.status).toLowerCase()}`}>{job.status}</span>
+                        <span className={`recruiter-job-status recruiter-job-status--${String(job.status).toLowerCase()}`}>
+                            {job.status === 'Published' ? 'Active' : job.status}
+                        </span>
                         <h1>{job.title}</h1>
                         <p>{[job.organizationName, job.location, job.workMode].filter(Boolean).join(' · ')}</p>
                     </div>
@@ -138,8 +131,18 @@ const JobDetails = () => {
 
                 <div className="recruiter-job-preview-body">
                     <main>
-                        <section className="recruiter-job-preview-section"><h2>Job description</h2><div className="recruiter-job-description">{job.description}</div></section>
-                        {job.skills?.length > 0 && <section className="recruiter-job-preview-section"><h2>Skills</h2><div className="recruiter-job-skill-list">{job.skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>}
+                        <section className="recruiter-job-preview-section">
+                            <h2>Job description</h2>
+                            <div className="recruiter-job-description">{job.description}</div>
+                        </section>
+                        {job.skills?.length > 0 && (
+                            <section className="recruiter-job-preview-section">
+                                <h2>Skills</h2>
+                                <div className="recruiter-job-skill-list">
+                                    {job.skills.map((skill) => <span key={skill}>{skill}</span>)}
+                                </div>
+                            </section>
+                        )}
                     </main>
 
                     <aside className="recruiter-job-facts">
@@ -158,6 +161,58 @@ const JobDetails = () => {
                         </dl>
                     </aside>
                 </div>
+
+                {/* Bottom Actions based on job status */}
+                <footer className="recruiter-job-details-bottom-actions">
+                    {job.status === 'Draft' && (
+                        <>
+                            <Link to={`/recruiter/jobs/${job.jobId}/edit`} className="recruiter-secondary-action">
+                                Edit
+                            </Link>
+                            <button
+                                type="button"
+                                className="recruiter-submit-button"
+                                onClick={() => runAction('publish')}
+                                disabled={busy}
+                            >
+                                {processing === 'publish' ? 'Publishing...' : 'Publish'}
+                            </button>
+                            <button
+                                type="button"
+                                className="recruiter-job-detail-danger"
+                                onClick={() => runAction('delete')}
+                                disabled={busy}
+                            >
+                                {processing === 'delete' ? 'Deleting...' : 'Delete'}
+                            </button>
+                        </>
+                    )}
+
+                    {job.status === 'Published' && (
+                        <>
+                            <Link to={`/recruiter/jobs/${job.jobId}/edit`} className="recruiter-secondary-action">
+                                Edit
+                            </Link>
+                            <button
+                                type="button"
+                                className="recruiter-secondary-action"
+                                onClick={() => runAction('close')}
+                                disabled={busy}
+                            >
+                                {processing === 'close' ? 'Closing...' : 'Close'}
+                            </button>
+                            <Link to={`/recruiter/jobs/${job.jobId}/applicants`} className="recruiter-submit-button">
+                                Applications
+                            </Link>
+                        </>
+                    )}
+
+                    {job.status === 'Closed' && (
+                        <Link to={`/recruiter/jobs/${job.jobId}/applicants`} className="recruiter-submit-button">
+                            Applications
+                        </Link>
+                    )}
+                </footer>
             </article>
         </section>
     );

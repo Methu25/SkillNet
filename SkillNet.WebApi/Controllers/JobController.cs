@@ -44,9 +44,16 @@ namespace SkillNet.WebApi.Controllers
         [HttpGet("categories")]
         public async Task<IActionResult> GetCategories()
         {
-            var connStr = _configuration.GetConnectionString("DefaultConnection")!;
-            var categories = await JobCategoryService.GetInstance().GetCategoriesAsync(connStr);
-            return Ok(categories);
+            try
+            {
+                var connStr = _configuration.GetConnectionString("DefaultConnection")!;
+                var categories = await JobCategoryService.GetInstance().GetCategoriesAsync(connStr);
+                return Ok(categories);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message, stackTrace = ex.StackTrace });
+            }
         }
 
         // GET /api/job/skills — shared Skills catalog for Recruiter Job forms

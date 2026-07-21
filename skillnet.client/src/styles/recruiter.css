@@ -2735,3 +2735,334 @@
         justify-content: space-between;
     }
 }
+
+/* -------------------------------------------------------------
+   RECRUITER JOB POSTING WORKFLOW STYLES
+   ------------------------------------------------------------- */
+
+/* Form sections styling */
+.recruiter-form-section {
+    border-bottom: 1px solid var(--recruiter-line);
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+}
+.recruiter-form-section:last-of-type {
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 0;
+}
+.recruiter-form-section-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--recruiter-ink);
+    margin-bottom: 18px;
+}
+.mt-6 {
+    margin-top: 1.5rem;
+}
+.mt-8 {
+    margin-top: 2rem;
+}
+
+/* Toolbar & tabs card styling */
+.recruiter-jobs-toolbar-card {
+    padding: 24px;
+    background: var(--recruiter-white);
+    border: 1px solid var(--recruiter-line);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(21, 29, 42, .04);
+    margin-bottom: 24px;
+}
+
+.recruiter-jobs-tabs {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    border-bottom: 1px solid var(--recruiter-line);
+    padding-bottom: 10px;
+}
+
+.recruiter-jobs-tab-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    color: var(--recruiter-muted);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.recruiter-jobs-tab-btn:hover {
+    color: var(--recruiter-ink);
+    background: var(--recruiter-canvas);
+}
+
+.recruiter-jobs-tab-btn.is-active {
+    color: #fff;
+    background: var(--recruiter-primary);
+    box-shadow: 0 4px 12px rgba(255, 104, 31, 0.2);
+}
+
+/* Professional job cards layout */
+.recruiter-jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+    margin-top: 24px;
+}
+
+.recruiter-job-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--recruiter-white);
+    border: 1px solid var(--recruiter-line);
+    border-radius: 15px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(21, 29, 42, .02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recruiter-job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(21, 29, 42, .06);
+}
+
+.recruiter-job-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.recruiter-job-card-title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--recruiter-ink);
+    margin: 6px 0 2px;
+}
+
+.recruiter-job-card-title a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.recruiter-job-card-title a:hover {
+    color: var(--recruiter-primary);
+}
+
+.recruiter-job-card-category {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--recruiter-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.recruiter-job-card-id {
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: var(--recruiter-canvas);
+    color: var(--recruiter-muted);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.recruiter-job-card-body {
+    flex-grow: 1;
+}
+
+.recruiter-job-card-desc {
+    font-size: 0.82rem;
+    color: var(--recruiter-muted);
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+.recruiter-job-card-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    font-size: 0.78rem;
+    border-top: 1px dashed var(--recruiter-line);
+    padding-top: 16px;
+    margin-bottom: 20px;
+}
+
+.recruiter-job-card-meta-grid div {
+    display: flex;
+    gap: 4px;
+}
+
+.recruiter-job-card-meta-grid strong {
+    color: var(--recruiter-ink);
+    font-weight: 700;
+}
+
+.recruiter-job-card-meta-grid span {
+    color: var(--recruiter-muted);
+}
+
+.recruiter-job-card-footer {
+    border-top: 1px solid var(--recruiter-line);
+    padding-top: 16px;
+}
+
+.recruiter-job-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.recruiter-card-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: var(--recruiter-ink);
+    background: #fff;
+    border: 1px solid #dfe2e7;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recruiter-card-action:hover {
+    color: var(--recruiter-primary);
+    border-color: var(--recruiter-primary);
+    background: rgba(255, 104, 31, 0.02);
+}
+
+.recruiter-card-action--danger {
+    color: #a0412d;
+    border-color: #ffd3c7;
+    background: #fff8f6;
+}
+
+.recruiter-card-action--danger:hover {
+    color: #fff;
+    background: #a0412d;
+    border-color: #a0412d;
+}
+
+/* Dashboard recent jobs grid styling */
+.recruiter-recent-jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 24px;
+}
+
+.recruiter-recent-job-card {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background: var(--recruiter-white);
+    border: 1px solid var(--recruiter-line);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(21, 29, 42, .01);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recruiter-recent-job-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(21, 29, 42, .05);
+}
+
+.recruiter-recent-job-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.recruiter-recent-job-card-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--recruiter-ink);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.recruiter-recent-job-card-desc {
+    font-size: 0.78rem;
+    color: var(--recruiter-muted);
+    line-height: 1.45;
+    margin: 0 0 16px;
+    flex-grow: 1;
+}
+
+.recruiter-recent-job-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.74rem;
+    border-top: 1px dashed var(--recruiter-line);
+    padding-top: 10px;
+}
+
+.recruiter-recent-job-card-loc {
+    color: var(--recruiter-muted);
+}
+
+.recruiter-recent-job-card-date {
+    color: var(--recruiter-muted);
+}
+
+/* Detail page bottom actions styling */
+.recruiter-job-details-bottom-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px solid var(--recruiter-line);
+    justify-content: flex-end;
+}
+
+.recruiter-job-details-bottom-actions button,
+.recruiter-job-details-bottom-actions a {
+    min-height: 40px;
+    padding: 0 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 850;
+    border-radius: 9px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.recruiter-job-detail-danger {
+    background: #fff8f6;
+    color: #a0412d;
+    border: 1px solid #ffd3c7;
+}
+
+.recruiter-job-detail-danger:hover:not(:disabled) {
+    background: #a0412d;
+    color: #fff;
+    border-color: #a0412d;
+}
+
+.recruiter-job-detail-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .recruiter-jobs-grid {
+        grid-template-columns: 1fr;
+    }
+}

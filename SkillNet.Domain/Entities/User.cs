@@ -1,8 +1,12 @@
+using System.Text.Json.Serialization;
+
 namespace SkillNet.Domain.Entities
 {
     public class User
     {
         public int UserID { get; set; }
+
+        [JsonIgnore]
         public int UserId
         {
             get => UserID;

@@ -132,13 +132,23 @@ const RecruiterDashboard = () => {
                         {recentJobs.length === 0 ? (
                             <div className="recruiter-dashboard-empty"><span>JOB</span><h4>No job postings yet</h4><p>Create your first job posting when you are ready to start recruiting.</p><Link className="recruiter-primary-action" to="/recruiter/jobs/create">Create Job</Link></div>
                         ) : (
-                            <div className="recruiter-recent-jobs">
+                            <div className="recruiter-recent-jobs-grid">
                                 {recentJobs.map((job) => (
-                                    <article className="recruiter-recent-job" key={job.jobId}>
-                                        <div className="recruiter-recent-job-main"><strong>{job.title}</strong><span>{job.location || 'Location not specified'}</span></div>
-                                        <div className="recruiter-recent-job-meta"><span className={`recruiter-job-status recruiter-job-status--${String(job.status || 'draft').toLowerCase()}`}>{job.status || 'Draft'}</span><time dateTime={job.createdAt}>{formatDate(job.createdAt)}</time></div>
-                                        <div className="recruiter-recent-job-actions"><Link to={`/recruiter/jobs/${job.jobId}`}>View</Link><Link to={`/recruiter/jobs/${job.jobId}/edit`}>Edit</Link></div>
-                                    </article>
+                                    <Link to={`/recruiter/jobs/${job.jobId}`} className="recruiter-recent-job-card" key={job.jobId}>
+                                        <div className="recruiter-recent-job-card-header">
+                                            <h4 className="recruiter-recent-job-card-title">{job.title}</h4>
+                                            <span className={`recruiter-job-status recruiter-job-status--${String(job.status || 'draft').toLowerCase()}`}>
+                                                {job.status === 'Published' ? 'Active' : job.status || 'Draft'}
+                                            </span>
+                                        </div>
+                                        <p className="recruiter-recent-job-card-desc">
+                                            {job.description ? (job.description.length > 120 ? `${job.description.slice(0, 120)}...` : job.description) : 'No description provided.'}
+                                        </p>
+                                        <div className="recruiter-recent-job-card-footer">
+                                            <span className="recruiter-recent-job-card-loc">{job.location || 'Remote'}</span>
+                                            <time className="recruiter-recent-job-card-date" dateTime={job.createdAt}>{formatDate(job.createdAt)}</time>
+                                        </div>
+                                    </Link>
                                 ))}
                             </div>
                         )}
