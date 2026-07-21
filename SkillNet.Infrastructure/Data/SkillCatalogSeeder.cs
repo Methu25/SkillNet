@@ -23,6 +23,12 @@ namespace SkillNet.Infrastructure.Data
 
         public async Task SeedAsync()
         {
+            await SeedSkillsAsync();
+            await SeedCategoriesAsync();
+        }
+
+        private async Task SeedSkillsAsync()
+        {
             if (await _context.Skills.AnyAsync())
             {
                 return;
@@ -46,6 +52,32 @@ namespace SkillNet.Infrastructure.Data
             await _context.Skills.AddRangeAsync(skills);
             await _context.SaveChangesAsync();
             _logger.LogInformation("Seeded {SkillCount} Candidate skills.", skills.Count);
+        }
+
+        private async Task SeedCategoriesAsync()
+        {
+            if (await _context.JobCategories.AnyAsync())
+            {
+                return;
+            }
+
+            var categories = new List<JobCategory>
+            {
+                new JobCategory { Name = "Information Technology", Description = "Software, hardware, and IT infrastructure roles" },
+                new JobCategory { Name = "Finance & Accounting", Description = "Finance, accounting, and banking roles" },
+                new JobCategory { Name = "Marketing & Sales", Description = "Marketing, advertising, and sales roles" },
+                new JobCategory { Name = "Human Resources", Description = "HR, recruitment, and people operations roles" },
+                new JobCategory { Name = "Engineering", Description = "Civil, mechanical, and electrical engineering roles" },
+                new JobCategory { Name = "Design & Creative", Description = "UI/UX, graphic design, and creative roles" },
+                new JobCategory { Name = "Healthcare", Description = "Medical, nursing, and healthcare administration roles" },
+                new JobCategory { Name = "Education", Description = "Teaching, training, and academic roles" },
+                new JobCategory { Name = "Operations & Logistics", Description = "Supply chain, logistics, and operations roles" },
+                new JobCategory { Name = "Legal & Compliance", Description = "Legal, compliance, and regulatory roles" }
+            };
+
+            await _context.JobCategories.AddRangeAsync(categories);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Seeded {CategoryCount} Job categories.", categories.Count);
         }
     }
 }

@@ -129,9 +129,13 @@ namespace SkillNet.Infrastructure.Data
                 entity.Property(e => e.Logo).HasMaxLength(255);
                 entity.Property(e => e.Address).HasMaxLength(500);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
-                entity.Property(e => e.ApprovalStatus).IsRequired().HasMaxLength(20).HasDefaultValue("Draft");
-                entity.Property(e => e.RejectionReason).HasMaxLength(1000);
-                entity.HasIndex(e => e.ApprovalStatus);
+                entity.Property(e => e.Description).HasColumnType("nvarchar(max)");
+                entity.Property(e => e.CompanySize).HasMaxLength(50);
+                entity.Property(e => e.ContactEmail).HasMaxLength(254);
+                entity.Property(e => e.ContactPhone).HasMaxLength(30);
+                entity.Property(e => e.LinkedInUrl).HasMaxLength(255);
+                entity.Property(e => e.City).HasMaxLength(100);
+                entity.Property(e => e.Country).HasMaxLength(100);
             });
 
             modelBuilder.Entity<RecruiterProfile>(entity =>

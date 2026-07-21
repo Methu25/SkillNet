@@ -24,7 +24,6 @@ import RecruiterApplicants from './pages/RecruiterApplicants';
 
 // Recruiter workspace
 import RecruiterRoute from './components/recruiter/RecruiterRoute';
-import OrganizationApprovalGuard from './components/recruiter/OrganizationApprovalGuard';
 import RecruiterLayout from './components/recruiter/RecruiterLayout';
 import RecruiterDashboard from './pages/recruiter/RecruiterDashboard';
 import RecruiterJobs from './pages/recruiter/RecruiterJobs';
@@ -33,7 +32,6 @@ import JobDetails from './pages/recruiter/JobDetails';
 import EditJob from './pages/recruiter/EditJob';
 import RecruiterCompany from './pages/recruiter/RecruiterCompany';
 import RecruiterSetup from './pages/recruiter/RecruiterSetup';
-import RecruiterPending from './pages/recruiter/RecruiterPending';
 import RecruiterSettings from './pages/recruiter/RecruiterSettings';
 
 // Admin sub-pages (protected, Admin only)
@@ -94,16 +92,13 @@ function App() {
                     >
                         <Route index element={<Navigate to="dashboard" replace />} />
                         <Route path="setup" element={<RecruiterSetup />} />
-                        <Route path="pending" element={<RecruiterPending />} />
                         <Route path="company" element={<RecruiterCompany />} />
-                        <Route element={<OrganizationApprovalGuard />}>
-                            <Route path="dashboard" element={<RecruiterDashboard />} />
-                            <Route path="jobs" element={<RecruiterJobs />} />
-                            <Route path="jobs/create" element={<CreateJob />} />
-                            <Route path="jobs/:id" element={<JobDetails />} />
-                            <Route path="jobs/:id/edit" element={<EditJob />} />
-                            <Route path="settings" element={<RecruiterSettings />} />
-                        </Route>
+                        <Route path="dashboard" element={<RecruiterDashboard />} />
+                        <Route path="jobs" element={<RecruiterJobs />} />
+                        <Route path="jobs/create" element={<CreateJob />} />
+                        <Route path="jobs/:id" element={<JobDetails />} />
+                        <Route path="jobs/:id/edit" element={<EditJob />} />
+                        <Route path="settings" element={<RecruiterSettings />} />
                     </Route>
 
                     {/* Hiring Manager routes */}

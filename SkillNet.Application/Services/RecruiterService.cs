@@ -7,11 +7,24 @@ namespace SkillNet.Application.Services
 {
     public class RecruiterService : IRecruiterService
     {
-        private readonly string _connectionString;
+        private const long MaximumLogoFileSize = 5 * 1024 * 1024;
+        private static readonly IReadOnlyDictionary<string, string> AllowedLogoContentTypes =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["image/jpeg"] = ".jpg",
+                ["image/png"] = ".png",
+                ["image/webp"] = ".webp"
+            };
 
-        public RecruiterService(IConfiguration configuration)
+        private readonly string _connectionString;
+        private readonly IProfileImageStorageService _imageStorageService;
+
+        public RecruiterService(
+            IConfiguration configuration,
+            IProfileImageStorageService imageStorageService)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection") ?? "";
+            _imageStorageService = imageStorageService;
         }
 
         public async Task<RecruiterProfileDto?> GetProfileAsync(int userId)
@@ -125,8 +138,9 @@ namespace SkillNet.Application.Services
         {
             const string query = @"
                 SELECT o.OrganizationId, o.OrganizationName, o.Industry, o.Website,
-                       o.Logo, o.Address, o.CreatedAt, o.ApprovalStatus,
-                       o.SubmittedAt, o.ReviewedAt, o.RejectionReason
+                       o.Logo, o.Address, o.CreatedAt,
+                       o.Description, o.CompanySize, o.FoundedYear, o.ContactEmail,
+                       o.ContactPhone, o.LinkedInUrl, o.City, o.Country
                 FROM RecruiterProfile rp
                 JOIN Organization o ON o.OrganizationId = rp.OrganizationId
                 WHERE rp.UserId = @UserId";
@@ -147,6 +161,8 @@ namespace SkillNet.Application.Services
             if (string.IsNullOrWhiteSpace(request.OrganizationName))
                 throw new ArgumentException("Organization name is required.", nameof(request));
 
+            NormalizeOrganizationRequest(request);
+
             using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
             using var transaction = con.BeginTransaction();
@@ -155,54 +171,71 @@ namespace SkillNet.Application.Services
             {
                 int recruiterProfileId;
                 int? organizationId;
-                string? approvalStatus;
                 const string profileQuery = @"
-                    SELECT rp.RecruiterProfileId, rp.OrganizationId, o.ApprovalStatus
+                    SELECT rp.RecruiterProfileId, rp.OrganizationId
                     FROM RecruiterProfile rp
-                    LEFT JOIN Organization o ON o.OrganizationId = rp.OrganizationId
                     WHERE rp.UserId = @UserId";
 
                 using (var profileCmd = new SqlCommand(profileQuery, con, transaction))
                 {
                     profileCmd.Parameters.AddWithValue("@UserId", userId);
                     using var reader = await profileCmd.ExecuteReaderAsync();
-                    if (!await reader.ReadAsync())
-                        throw new InvalidOperationException("Recruiter profile not yet created.");
+                    if (await reader.ReadAsync())
+                    {
+                        recruiterProfileId = (int)reader["RecruiterProfileId"];
+                        organizationId = reader["OrganizationId"] == DBNull.Value
+                            ? null
+                            : (int)reader["OrganizationId"];
+                    }
+                    else
+                    {
+                        recruiterProfileId = 0;
+                        organizationId = null;
+                    }
+                }
 
-                    recruiterProfileId = (int)reader["RecruiterProfileId"];
-                    organizationId = reader["OrganizationId"] == DBNull.Value
-                        ? null
-                        : (int)reader["OrganizationId"];
-                    approvalStatus = reader["ApprovalStatus"] == DBNull.Value
-                        ? null
-                        : reader["ApprovalStatus"].ToString();
+                if (recruiterProfileId == 0)
+                {
+                    const string createProfileQuery = @"
+                        INSERT INTO RecruiterProfile (UserId, CreatedAt, UpdatedAt)
+                        OUTPUT INSERTED.RecruiterProfileId
+                        VALUES (@UserId, GETDATE(), GETDATE())";
+                    using var createProfileCmd = new SqlCommand(
+                        createProfileQuery, con, transaction);
+                    createProfileCmd.Parameters.AddWithValue("@UserId", userId);
+                    recruiterProfileId = (int)(await createProfileCmd.ExecuteScalarAsync())!;
                 }
 
                 if (organizationId.HasValue)
                 {
-                    if (approvalStatus is "Pending" or "Approved")
-                        throw new InvalidOperationException(
-                            $"An organization with {approvalStatus} status cannot be edited.");
-
                     const string updateQuery = @"
                         UPDATE Organization
                         SET OrganizationName = @OrganizationName, Industry = @Industry,
-                            Website = @Website, Logo = @Logo, Address = @Address
+                            Website = @Website, Logo = @Logo, Address = @Address,
+                            Description = @Description, CompanySize = @CompanySize,
+                            FoundedYear = @FoundedYear, ContactEmail = @ContactEmail,
+                            ContactPhone = @ContactPhone, LinkedInUrl = @LinkedInUrl,
+                            City = @City, Country = @Country
                         WHERE OrganizationId = @OrganizationId";
                     using var updateCmd = new SqlCommand(updateQuery, con, transaction);
                     AddOrganizationParameters(updateCmd, request);
                     updateCmd.Parameters.AddWithValue("@OrganizationId", organizationId.Value);
                     if (await updateCmd.ExecuteNonQueryAsync() == 0)
-                        throw new InvalidOperationException("The recruiter's organization was not found.");
+                        throw new KeyNotFoundException(
+                            "The recruiter's organization was not found.");
                 }
                 else
                 {
                     const string insertQuery = @"
                         INSERT INTO Organization
-                            (OrganizationName, Industry, Website, Logo, Address, CreatedAt, ApprovalStatus)
+                            (OrganizationName, Industry, Website, Logo, Address, CreatedAt,
+                             Description, CompanySize, FoundedYear, ContactEmail,
+                             ContactPhone, LinkedInUrl, City, Country)
                         OUTPUT INSERTED.OrganizationId
                         VALUES
-                            (@OrganizationName, @Industry, @Website, @Logo, @Address, GETDATE(), 'Draft')";
+                            (@OrganizationName, @Industry, @Website, @Logo, @Address, GETDATE(),
+                             @Description, @CompanySize, @FoundedYear, @ContactEmail,
+                             @ContactPhone, @LinkedInUrl, @City, @Country)";
                     using var insertCmd = new SqlCommand(insertQuery, con, transaction);
                     AddOrganizationParameters(insertCmd, request);
                     organizationId = (int)(await insertCmd.ExecuteScalarAsync())!;
@@ -214,7 +247,9 @@ namespace SkillNet.Application.Services
                     using var attachCmd = new SqlCommand(attachQuery, con, transaction);
                     attachCmd.Parameters.AddWithValue("@OrganizationId", organizationId.Value);
                     attachCmd.Parameters.AddWithValue("@RecruiterProfileId", recruiterProfileId);
-                    await attachCmd.ExecuteNonQueryAsync();
+                    if (await attachCmd.ExecuteNonQueryAsync() == 0)
+                        throw new InvalidOperationException(
+                            "The recruiter profile changed while the organization was being saved.");
                 }
 
                 transaction.Commit();
@@ -228,109 +263,86 @@ namespace SkillNet.Application.Services
             return (await GetOrganizationAsync(userId))!;
         }
 
-        public async Task<RecruiterOrganizationDto> SubmitOrganizationAsync(int userId)
+        public async Task<RecruiterOrganizationDto> UploadOrganizationLogoAsync(
+            int userId,
+            Stream content,
+            string fileName,
+            string contentType,
+            long fileSize)
         {
-            const string query = @"
+            var extension = ValidateOrganizationLogo(
+                content, fileName, contentType, fileSize);
+            var ownedOrganization = await GetOwnedOrganizationLogoAsync(userId);
+            var newLogoUrl = await _imageStorageService.SaveAsync(content, extension);
+
+            try
+            {
+                const string updateQuery = @"
+                    UPDATE o
+                    SET Logo = @Logo
+                    FROM Organization o
+                    JOIN RecruiterProfile rp ON rp.OrganizationId = o.OrganizationId
+                    WHERE rp.UserId = @UserId
+                      AND o.OrganizationId = @OrganizationId";
+
+                using var con = new SqlConnection(_connectionString);
+                await con.OpenAsync();
+                using var cmd = new SqlCommand(updateQuery, con);
+                cmd.Parameters.AddWithValue("@Logo", newLogoUrl);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@OrganizationId", ownedOrganization.OrganizationId);
+                if (await cmd.ExecuteNonQueryAsync() == 0)
+                    throw new UnauthorizedAccessException(
+                        "The organization is not owned by the authenticated recruiter.");
+            }
+            catch
+            {
+                await _imageStorageService.DeleteAsync(newLogoUrl);
+                throw;
+            }
+
+            if (!string.IsNullOrWhiteSpace(ownedOrganization.Logo))
+                await _imageStorageService.DeleteAsync(ownedOrganization.Logo);
+
+            return (await GetOrganizationAsync(userId))
+                ?? throw new KeyNotFoundException("Recruiter organization not found.");
+        }
+
+        public async Task<RecruiterOrganizationDto> DeleteOrganizationLogoAsync(int userId)
+        {
+            var ownedOrganization = await GetOwnedOrganizationLogoAsync(userId);
+
+            const string updateQuery = @"
                 UPDATE o
-                SET ApprovalStatus = 'Pending', SubmittedAt = GETDATE(),
-                    ReviewedAt = NULL, RejectionReason = NULL
+                SET Logo = NULL
                 FROM Organization o
                 JOIN RecruiterProfile rp ON rp.OrganizationId = o.OrganizationId
                 WHERE rp.UserId = @UserId
-                  AND o.ApprovalStatus IN ('Draft', 'Rejected')";
+                  AND o.OrganizationId = @OrganizationId";
 
-            using var con = new SqlConnection(_connectionString);
-            await con.OpenAsync();
-            using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@UserId", userId);
-            if (await cmd.ExecuteNonQueryAsync() == 0)
-                throw new InvalidOperationException(
-                    "Only Draft or Rejected organizations can be submitted for approval.");
+            using (var con = new SqlConnection(_connectionString))
+            {
+                await con.OpenAsync();
+                using var cmd = new SqlCommand(updateQuery, con);
+                cmd.Parameters.AddWithValue("@UserId", userId);
+                cmd.Parameters.AddWithValue("@OrganizationId", ownedOrganization.OrganizationId);
+                if (await cmd.ExecuteNonQueryAsync() == 0)
+                    throw new UnauthorizedAccessException(
+                        "The organization is not owned by the authenticated recruiter.");
+            }
 
-            return (await GetOrganizationAsync(userId))!;
-        }
+            if (!string.IsNullOrWhiteSpace(ownedOrganization.Logo))
+                await _imageStorageService.DeleteAsync(ownedOrganization.Logo);
 
-        public async Task<bool> IsOrganizationApprovedAsync(int userId)
-        {
-            const string query = @"
-                SELECT COUNT(1)
-                FROM RecruiterProfile rp
-                JOIN Organization o ON o.OrganizationId = rp.OrganizationId
-                WHERE rp.UserId = @UserId AND o.ApprovalStatus = 'Approved'";
-
-            using var con = new SqlConnection(_connectionString);
-            await con.OpenAsync();
-            using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@UserId", userId);
-            return (int)(await cmd.ExecuteScalarAsync())! > 0;
-        }
-
-        public async Task<IEnumerable<RecruiterOrganizationDto>> GetPendingOrganizationsAsync()
-        {
-            const string query = @"
-                SELECT OrganizationId, OrganizationName, Industry, Website, Logo, Address,
-                       CreatedAt, ApprovalStatus, SubmittedAt, ReviewedAt, RejectionReason
-                FROM Organization
-                WHERE ApprovalStatus = 'Pending'
-                ORDER BY SubmittedAt, OrganizationId";
-
-            var organizations = new List<RecruiterOrganizationDto>();
-            using var con = new SqlConnection(_connectionString);
-            await con.OpenAsync();
-            using var cmd = new SqlCommand(query, con);
-            using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync()) organizations.Add(MapOrganization(reader));
-            return organizations;
-        }
-
-        public async Task<RecruiterOrganizationDto?> ApproveOrganizationAsync(int organizationId)
-        {
-            const string query = @"
-                UPDATE Organization
-                SET ApprovalStatus = 'Approved', ReviewedAt = GETDATE(), RejectionReason = NULL
-                WHERE OrganizationId = @OrganizationId AND ApprovalStatus = 'Pending'";
-
-            if (!await UpdateApprovalAsync(query, organizationId)) return null;
-            return await GetOrganizationByIdAsync(organizationId);
-        }
-
-        public async Task<RecruiterOrganizationDto?> RejectOrganizationAsync(
-            int organizationId,
-            string reason)
-        {
-            if (string.IsNullOrWhiteSpace(reason))
-                throw new ArgumentException("A rejection reason is required.", nameof(reason));
-            if (reason.Trim().Length > 1000)
-                throw new ArgumentException("Rejection reason cannot exceed 1000 characters.", nameof(reason));
-
-            const string query = @"
-                UPDATE Organization
-                SET ApprovalStatus = 'Rejected', ReviewedAt = GETDATE(), RejectionReason = @Reason
-                WHERE OrganizationId = @OrganizationId AND ApprovalStatus = 'Pending'";
-
-            using var con = new SqlConnection(_connectionString);
-            await con.OpenAsync();
-            using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@OrganizationId", organizationId);
-            cmd.Parameters.AddWithValue("@Reason", reason.Trim());
-            if (await cmd.ExecuteNonQueryAsync() == 0) return null;
-            return await GetOrganizationByIdAsync(organizationId);
-        }
-
-        private async Task<bool> UpdateApprovalAsync(string query, int organizationId)
-        {
-            using var con = new SqlConnection(_connectionString);
-            await con.OpenAsync();
-            using var cmd = new SqlCommand(query, con);
-            cmd.Parameters.AddWithValue("@OrganizationId", organizationId);
-            return await cmd.ExecuteNonQueryAsync() > 0;
+            return (await GetOrganizationAsync(userId))
+                ?? throw new KeyNotFoundException("Recruiter organization not found.");
         }
 
         private async Task<RecruiterOrganizationDto?> GetOrganizationByIdAsync(int organizationId)
         {
             const string query = @"
-                SELECT OrganizationId, OrganizationName, Industry, Website, Logo, Address,
-                       CreatedAt, ApprovalStatus, SubmittedAt, ReviewedAt, RejectionReason
+                SELECT OrganizationId, OrganizationName, Industry, Website, Logo, Address, CreatedAt,
+                       Description, CompanySize, FoundedYear, ContactEmail, ContactPhone, LinkedInUrl, City, Country
                 FROM Organization
                 WHERE OrganizationId = @OrganizationId";
 
@@ -342,16 +354,130 @@ namespace SkillNet.Application.Services
             return await reader.ReadAsync() ? MapOrganization(reader) : null;
         }
 
+        private async Task<(int OrganizationId, string? Logo)> GetOwnedOrganizationLogoAsync(
+            int userId)
+        {
+            const string query = @"
+                SELECT o.OrganizationId, o.Logo
+                FROM RecruiterProfile rp
+                JOIN Organization o ON o.OrganizationId = rp.OrganizationId
+                WHERE rp.UserId = @UserId";
+
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@UserId", userId);
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (!await reader.ReadAsync())
+                throw new KeyNotFoundException("Recruiter organization not found.");
+
+            return (
+                (int)reader["OrganizationId"],
+                reader["Logo"] == DBNull.Value ? null : reader["Logo"].ToString());
+        }
+
+        private static string ValidateOrganizationLogo(
+            Stream content,
+            string fileName,
+            string contentType,
+            long fileSize)
+        {
+            if (content == null || content == Stream.Null || !content.CanRead || fileSize <= 0)
+                throw new ArgumentException("A non-empty organization logo is required.");
+
+            if (fileSize > MaximumLogoFileSize)
+                throw new ArgumentOutOfRangeException(
+                    nameof(fileSize),
+                    $"Organization logo size cannot exceed {MaximumLogoFileSize} bytes.");
+
+            if (!AllowedLogoContentTypes.TryGetValue(contentType, out var extension))
+                throw new InvalidDataException(
+                    "Only JPEG, PNG, and WEBP organization logos are supported.");
+
+            var suppliedExtension = Path.GetExtension(fileName);
+            var extensionMatches = extension == ".jpg"
+                ? suppliedExtension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                  suppliedExtension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+                : suppliedExtension.Equals(extension, StringComparison.OrdinalIgnoreCase);
+
+            if (!extensionMatches || !HasValidImageSignature(content, extension))
+                throw new InvalidDataException(
+                    "The organization logo type or content is invalid.");
+
+            return extension;
+        }
+
+        private static bool HasValidImageSignature(Stream content, string extension)
+        {
+            var originalPosition = content.CanSeek ? content.Position : 0;
+            Span<byte> header = stackalloc byte[12];
+            var bytesRead = content.Read(header);
+            if (content.CanSeek) content.Position = originalPosition;
+
+            return extension switch
+            {
+                ".jpg" => bytesRead >= 3 &&
+                    header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF,
+                ".png" => bytesRead >= 8 && header[..8].SequenceEqual(
+                    new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A }),
+                ".webp" => bytesRead >= 12 &&
+                    header[..4].SequenceEqual("RIFF"u8) &&
+                    header[8..12].SequenceEqual("WEBP"u8),
+                _ => false
+            };
+        }
+
         private static void AddOrganizationParameters(
             SqlCommand cmd,
             UpsertRecruiterOrganizationRequest request)
         {
-            cmd.Parameters.AddWithValue("@OrganizationName", request.OrganizationName.Trim());
-            cmd.Parameters.AddWithValue("@Industry", (object?)request.Industry ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@Website", (object?)request.Website ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@Logo", (object?)request.Logo ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("@Address", (object?)request.Address ?? DBNull.Value);
+            cmd.Parameters.Add("@OrganizationName", System.Data.SqlDbType.NVarChar, 200)
+                .Value = request.OrganizationName;
+            cmd.Parameters.Add("@Industry", System.Data.SqlDbType.NVarChar, 100)
+                .Value = (object?)request.Industry ?? DBNull.Value;
+            cmd.Parameters.Add("@Website", System.Data.SqlDbType.NVarChar, 255)
+                .Value = (object?)request.Website ?? DBNull.Value;
+            cmd.Parameters.Add("@Logo", System.Data.SqlDbType.NVarChar, 255)
+                .Value = (object?)request.Logo ?? DBNull.Value;
+            cmd.Parameters.Add("@Address", System.Data.SqlDbType.NVarChar, 500)
+                .Value = (object?)request.Address ?? DBNull.Value;
+            cmd.Parameters.Add("@Description", System.Data.SqlDbType.NVarChar, -1)
+                .Value = (object?)request.Description ?? DBNull.Value;
+            cmd.Parameters.Add("@CompanySize", System.Data.SqlDbType.NVarChar, 50)
+                .Value = (object?)request.CompanySize ?? DBNull.Value;
+            cmd.Parameters.Add("@FoundedYear", System.Data.SqlDbType.Int)
+                .Value = (object?)request.FoundedYear ?? DBNull.Value;
+            cmd.Parameters.Add("@ContactEmail", System.Data.SqlDbType.NVarChar, 254)
+                .Value = (object?)request.ContactEmail ?? DBNull.Value;
+            cmd.Parameters.Add("@ContactPhone", System.Data.SqlDbType.NVarChar, 30)
+                .Value = (object?)request.ContactPhone ?? DBNull.Value;
+            cmd.Parameters.Add("@LinkedInUrl", System.Data.SqlDbType.NVarChar, 255)
+                .Value = (object?)request.LinkedInUrl ?? DBNull.Value;
+            cmd.Parameters.Add("@City", System.Data.SqlDbType.NVarChar, 100)
+                .Value = (object?)request.City ?? DBNull.Value;
+            cmd.Parameters.Add("@Country", System.Data.SqlDbType.NVarChar, 100)
+                .Value = (object?)request.Country ?? DBNull.Value;
         }
+
+        private static void NormalizeOrganizationRequest(
+            UpsertRecruiterOrganizationRequest request)
+        {
+            request.OrganizationName = request.OrganizationName.Trim();
+            request.Industry = NormalizeOptional(request.Industry);
+            request.Website = NormalizeOptional(request.Website);
+            request.Logo = NormalizeOptional(request.Logo);
+            request.Address = NormalizeOptional(request.Address);
+            request.Description = NormalizeOptional(request.Description);
+            request.CompanySize = NormalizeOptional(request.CompanySize);
+            request.ContactEmail = NormalizeOptional(request.ContactEmail);
+            request.ContactPhone = NormalizeOptional(request.ContactPhone);
+            request.LinkedInUrl = NormalizeOptional(request.LinkedInUrl);
+            request.City = NormalizeOptional(request.City);
+            request.Country = NormalizeOptional(request.Country);
+        }
+
+        private static string? NormalizeOptional(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
         private static RecruiterOrganizationDto MapOrganization(SqlDataReader reader)
         {
@@ -364,12 +490,14 @@ namespace SkillNet.Application.Services
                 Logo = reader["Logo"] == DBNull.Value ? null : reader["Logo"].ToString(),
                 Address = reader["Address"] == DBNull.Value ? null : reader["Address"].ToString(),
                 CreatedAt = (DateTime)reader["CreatedAt"],
-                ApprovalStatus = reader["ApprovalStatus"].ToString()!,
-                SubmittedAt = reader["SubmittedAt"] == DBNull.Value ? null : (DateTime)reader["SubmittedAt"],
-                ReviewedAt = reader["ReviewedAt"] == DBNull.Value ? null : (DateTime)reader["ReviewedAt"],
-                RejectionReason = reader["RejectionReason"] == DBNull.Value
-                    ? null
-                    : reader["RejectionReason"].ToString()
+                Description = reader["Description"] == DBNull.Value ? null : reader["Description"].ToString(),
+                CompanySize = reader["CompanySize"] == DBNull.Value ? null : reader["CompanySize"].ToString(),
+                FoundedYear = reader["FoundedYear"] == DBNull.Value ? null : (int)reader["FoundedYear"],
+                ContactEmail = reader["ContactEmail"] == DBNull.Value ? null : reader["ContactEmail"].ToString(),
+                ContactPhone = reader["ContactPhone"] == DBNull.Value ? null : reader["ContactPhone"].ToString(),
+                LinkedInUrl = reader["LinkedInUrl"] == DBNull.Value ? null : reader["LinkedInUrl"].ToString(),
+                City = reader["City"] == DBNull.Value ? null : reader["City"].ToString(),
+                Country = reader["Country"] == DBNull.Value ? null : reader["Country"].ToString()
             };
         }
     }

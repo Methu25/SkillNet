@@ -33,7 +33,9 @@ if (!string.IsNullOrEmpty(connectionString) && connectionString.Contains("(local
 // 1. CORS POLICY (React Frontend)
 // ==========================================
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+
 builder.Services.AddScoped<SkillCatalogSeeder>();
 
 builder.Services.AddCors(options =>
@@ -169,8 +171,29 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();
 
+    // Ensure extended Organization fields exist (idempotent — safe to run every startup)
+    await dbContext.Database.ExecuteSqlRawAsync(@"
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'Description')
+            ALTER TABLE [Organization] ADD [Description] nvarchar(max) NULL;
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'CompanySize')
+            ALTER TABLE [Organization] ADD [CompanySize] nvarchar(50) NULL;
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'FoundedYear')
+            ALTER TABLE [Organization] ADD [FoundedYear] int NULL;
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'ContactEmail')
+            ALTER TABLE [Organization] ADD [ContactEmail] nvarchar(254) NULL;
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'ContactPhone')
+            ALTER TABLE [Organization] ADD [ContactPhone] nvarchar(30) NULL;
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'LinkedInUrl')
+            ALTER TABLE [Organization] ADD [LinkedInUrl] nvarchar(255) NULL;
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'City')
+            ALTER TABLE [Organization] ADD [City] nvarchar(100) NULL;
+        IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'[Organization]') AND name = N'Country')
+            ALTER TABLE [Organization] ADD [Country] nvarchar(100) NULL;
+    ");
+
     await scope.ServiceProvider.GetRequiredService<SkillCatalogSeeder>().SeedAsync();
 }
+
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
