@@ -1,0 +1,41 @@
+namespace SkillNet.Application.DTOs
+{
+    public class InterviewResponse
+    {
+        public int InterviewId { get; set; }
+        public int ApplicationId { get; set; }
+
+        public string? CandidateName { get; set; }
+        public string? CandidateEmail { get; set; }
+        public string? JobTitle { get; set; }
+        public string? CandidateSummary { get; set; }
+        public string? CandidateSkills { get; set; }
+        public int? ExperienceYears { get; set; }
+
+        public string? InterviewType { get; set; }
+        public int InterviewRound { get; set; }
+        public DateTime ScheduledDate { get; set; }
+        public int Duration { get; set; }
+        public string? Location { get; set; }
+        public string? MeetingLink { get; set; }
+        public string? Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string? ApplicationStatus { get; set; }
+        public bool HasEvaluation { get; set; }
+        public List<AssignedInterviewerResponse> AssignedInterviewers { get; set; } = [];
+    }
+
+    public class AssignedInterviewerResponse
+    {
+        public int InterviewerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Position { get; set; }
+    }
+
+    public class EligibleInterviewerResponse
+    {
+        public int InterviewerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Position { get; set; }
+    }
+}

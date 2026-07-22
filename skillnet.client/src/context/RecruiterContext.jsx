@@ -1,0 +1,54 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { ApiError } from '../api/apiClient';
+import { recruiterApi } from '../api/recruiterApi';
+
+/* eslint-disable react-refresh/only-export-components */
+
+const RecruiterContext = createContext(null);
+
+export const RecruiterProvider = ({ children }) => {
+    const [organization, setOrganization] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    const refreshOrganization = useCallback(async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const refreshedOrganization = await recruiterApi.getOrganization();
+            setOrganization(refreshedOrganization);
+            return refreshedOrganization;
+        } catch (requestError) {
+            if (requestError instanceof ApiError && requestError.status === 404) {
+                setOrganization(null);
+                return null;
+            } else {
+                setError(requestError.message || 'Organization profile could not be loaded.');
+                return undefined;
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        refreshOrganization();
+    }, [refreshOrganization]);
+
+    const value = useMemo(() => ({
+        organization,
+        loading,
+        error,
+        refreshOrganization,
+        setOrganization
+    }), [organization, loading, error, refreshOrganization]);
+
+    return <RecruiterContext.Provider value={value}>{children}</RecruiterContext.Provider>;
+};
+
+export const useRecruiter = () => {
+    const context = useContext(RecruiterContext);
+    if (!context) throw new Error('useRecruiter must be used within RecruiterProvider.');
+    return context;
+};

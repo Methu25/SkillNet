@@ -1,0 +1,131 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SkillNet.Application.DTOs;
+using SkillNet.Application.Interfaces;
+
+namespace SkillNet.WebApi.Controllers
+{
+    [Route("api/interviews")]
+    [ApiController]
+    public class InterviewsController : ControllerBase
+    {
+        private readonly IInterviewService _service;
+
+        public InterviewsController(IInterviewService service)
+        {
+            _service = service;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var interviews = await _service.GetAllInterviewsAsync();
+            return Ok(interviews);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var interview = await _service.GetInterviewByIdAsync(id);
+            if (interview == null) return NotFound();
+            return Ok(interview);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> Create(CreateInterviewRequest request)
+        {
+            var createdInterview = await _service.CreateInterviewAsync(request);
+            return CreatedAtAction(nameof(GetById), new { id = createdInterview.InterviewId }, createdInterview);
+        }
+
+        [HttpGet("eligible-interviewers")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetEligibleInterviewers()
+        {
+            return Ok(await _service.GetEligibleInterviewersAsync());
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, UpdateInterviewRequest request)
+        {
+            var updatedInterview = await _service.UpdateInterviewAsync(id, request);
+            if (updatedInterview == null) return NotFound();
+            return Ok(updatedInterview);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _service.DeleteInterviewAsync(id);
+            if (!result) return NotFound();
+            return NoContent();
+        }
+
+        [HttpPut("{id}/schedule")]
+        public async Task<IActionResult> ScheduleInterview(int id, ScheduleInterviewRequest request)
+        {
+            var interview = await _service.ScheduleInterviewAsync(id, request);
+            if (interview == null) return NotFound();
+            return Ok(interview);
+        }
+
+        [HttpPut("{id}/reschedule")]
+        public async Task<IActionResult> RescheduleInterview(int id, ScheduleInterviewRequest request)
+        {
+            var interview = await _service.RescheduleInterviewAsync(id, request);
+            if (interview == null) return NotFound();
+            return Ok(interview);
+        }
+
+        [HttpPut("{id}/cancel")]
+        public async Task<IActionResult> CancelInterview(int id)
+        {
+            var interview = await _service.CancelInterviewAsync(id);
+            if (interview == null) return NotFound();
+            return Ok(interview);
+        }
+
+        [HttpPost("{id}/evaluation")]
+        [Authorize(Roles = "HiringManager")]
+        public async Task<IActionResult> CreateEvaluation(int id, CreateEvaluationRequest request)
+        {
+            var evaluation = await _service.CreateEvaluationAsync(id, request);
+            return CreatedAtAction(nameof(GetEvaluation), new { id }, evaluation);
+        }
+
+        [HttpGet("{id}/evaluation")]
+        [Authorize(Roles = "HiringManager")]
+        public async Task<IActionResult> GetEvaluation(int id)
+        {
+            var evaluation = await _service.GetEvaluationByInterviewIdAsync(id);
+            if (evaluation == null) return NotFound();
+            return Ok(evaluation);
+        }
+
+        [HttpPut("{id}/evaluation")]
+        [Authorize(Roles = "HiringManager")]
+        public async Task<IActionResult> UpdateEvaluation(int id, CreateEvaluationRequest request)
+        {
+            var evaluation = await _service.UpdateEvaluationAsync(id, request);
+            if (evaluation == null) return NotFound();
+            return Ok(evaluation);
+        }
+
+        [HttpPatch("{id}/decision")]
+        [Authorize(Roles = "HiringManager")]
+        public async Task<IActionResult> RecordDecision(int id, InterviewDecisionRequest request)
+        {
+            var decision = await _service.RecordDecisionAsync(id, request);
+            return Ok(new { interviewId = id, applicationStatus = decision });
+        }
+
+        [HttpPost("{id}/assign")]
+        public async Task<IActionResult> AssignInterviewer(int id, AssignInterviewerRequest request)
+        {
+            var result = await _service.AssignInterviewerAsync(id, request);
+            if (!result) return NotFound();
+            return Ok(new { message = "Interviewer assigned successfully" });
+        }
+    }
+}

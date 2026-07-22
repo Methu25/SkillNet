@@ -1,7 +1,17 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+  </Folder>
+  <Folder Name="/Solution Items/Database/">
+    <File Path="InterviewModule_Queries.sql" />
+  </Folder>
   <Project Path="skillnet.client/skillnet.client.esproj">
     <Build />
     <Deploy />
   </Project>
-  <Project Path="SkillNet.Server/SkillNet.Server.csproj" />
+  <Project Path="SkillNet.Domain/SkillNet.Domain.csproj" />
+  <Project Path="SkillNet.Application/SkillNet.Application.csproj" />
+  <Project Path="SkillNet.Infrastructure/SkillNet.Infrastructure.csproj" />
+  <Project Path="SkillNet.WebApi/SkillNet.WebApi.csproj" />
+  <Project Path="SkillNet.Tests/SkillNet.Tests.csproj" />
 </Solution>
