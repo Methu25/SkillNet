@@ -18,7 +18,7 @@ namespace SkillNet.WebApi.Controllers
     {
         private readonly IResumeService _resumeService;
         private readonly IUserService _userService;
-        private readonly long _maximumFileSize;
+        private readonly ISystemConfigurationService _systemConfig;
         private readonly string _pdfContentType;
 
         public ResumeController(
@@ -33,8 +33,6 @@ namespace SkillNet.WebApi.Controllers
             _pdfContentType = configuration["ResumeStorage:AllowedMimeType"] ??
                 "application/pdf";
         }
-
-        private readonly ISystemConfigurationService _systemConfig;
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<ResumeDto>), StatusCodes.Status200OK)]
