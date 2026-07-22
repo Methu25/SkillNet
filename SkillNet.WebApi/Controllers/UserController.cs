@@ -38,9 +38,9 @@ namespace SkillNet.WebApi.Controllers
 
             var names = SplitName(user.Username);
             const string query = @"
-                INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Status, OrganizationId, DepartmentId, FailedLoginAttempts, CreatedAt, UpdatedAt)
+                INSERT INTO Users (Email, PasswordHash, FirstName, LastName, Status, FailedLoginAttempts, CreatedAt, UpdatedAt)
                 OUTPUT INSERTED.UserID
-                VALUES (@Email, @PasswordHash, @FirstName, @LastName, @Status, @OrganizationId, @DepartmentId, 0, GETDATE(), GETDATE())";
+                VALUES (@Email, @PasswordHash, @FirstName, @LastName, @Status, 0, GETDATE(), GETDATE())";
 
             int newUserId = 0;
             using (SqlConnection con = new SqlConnection(_connectionString))
@@ -56,14 +56,25 @@ namespace SkillNet.WebApi.Controllers
                     cmd.Parameters.AddWithValue("@FirstName", names.FirstName);
                     cmd.Parameters.AddWithValue("@LastName", names.LastName);
                     cmd.Parameters.AddWithValue("@Status", user.IsActive ? "Active" : "Inactive");
-                    cmd.Parameters.AddWithValue("@OrganizationId", user.OrganizationId ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@DepartmentId", user.DepartmentId ?? (object)DBNull.Value);
                     newUserId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
 
                     using var roleCmd = new SqlCommand("INSERT INTO UserRole (UserID, RoleID) VALUES (@UserId, @RoleId)", con, transaction);
                     roleCmd.Parameters.AddWithValue("@UserId", newUserId);
                     roleCmd.Parameters.AddWithValue("@RoleId", user.RoleId);
                     await roleCmd.ExecuteNonQueryAsync();
+
+                    if (user.OrganizationId.HasValue)
+                    {
+                        using var orgCmd = new SqlCommand(@"
+                            IF EXISTS (SELECT 1 FROM RecruiterProfile WHERE UserId = @UserId)
+                                UPDATE RecruiterProfile SET OrganizationId = @OrgId, UpdatedAt = GETDATE() WHERE UserId = @UserId;
+                            ELSE
+                                INSERT INTO RecruiterProfile (UserId, OrganizationId, CreatedAt, UpdatedAt) VALUES (@UserId, @OrgId, GETDATE(), GETDATE());", con, transaction);
+                        orgCmd.Parameters.AddWithValue("@UserId", newUserId);
+                        orgCmd.Parameters.AddWithValue("@OrgId", user.OrganizationId.Value);
+                        await orgCmd.ExecuteNonQueryAsync();
+                    }
+
                     transaction.Commit();
                 }
                 catch (SqlException ex) when (ex.Number is 2601 or 2627)
@@ -85,12 +96,11 @@ namespace SkillNet.WebApi.Controllers
                 using (SqlConnection con = new SqlConnection(_connectionString))
                 {
                     const string query = @"
-                        SELECT u.UserID, u.FirstName, u.LastName, u.Email, u.Status, u.OrganizationId, u.DepartmentId, u.CreatedAt,
-                               ISNULL(MIN(ur.RoleID), 0) RoleId, ISNULL(STRING_AGG(r.RoleName, ', '), '') Roles
+                        SELECT u.UserID, u.FirstName, u.LastName, u.Email, u.Status, u.CreatedAt,
+                               (SELECT TOP 1 rp.OrganizationId FROM RecruiterProfile rp WHERE rp.UserId = u.UserID) AS OrganizationId,
+                               ISNULL((SELECT TOP 1 ur.RoleID FROM UserRole ur WHERE ur.UserID = u.UserID), 0) AS RoleId,
+                               ISNULL((SELECT TOP 1 r.RoleName FROM Roles r JOIN UserRole ur ON ur.RoleID = r.RoleID WHERE ur.UserID = u.UserID), '') AS Roles
                         FROM Users u
-                        LEFT JOIN UserRole ur ON ur.UserID=u.UserID
-                        LEFT JOIN Roles r ON r.RoleID=ur.RoleID
-                        GROUP BY u.UserID,u.FirstName,u.LastName,u.Email,u.Status,u.OrganizationId,u.DepartmentId,u.CreatedAt
                         ORDER BY u.CreatedAt DESC";
                     using (SqlCommand cmd = new SqlCommand(query, con))
                     {
@@ -116,7 +126,7 @@ namespace SkillNet.WebApi.Controllers
                                     Roles = reader["Roles"] == DBNull.Value ? "" : reader["Roles"].ToString(),
                                     IsActive = string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase),
                                     OrganizationId = reader["OrganizationId"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["OrganizationId"]),
-                                    DepartmentId = reader["DepartmentId"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["DepartmentId"]),
+                                    DepartmentId = (int?)null,
                                     CreatedAt = reader["CreatedAt"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(reader["CreatedAt"])
                                 });
                             }
@@ -135,7 +145,7 @@ namespace SkillNet.WebApi.Controllers
         public async Task<IActionResult> UpdateUser(int id, [FromBody] User user)
         {
             var names = SplitName(user.Username);
-            const string query = "UPDATE Users SET FirstName=@FirstName, LastName=@LastName, Email=@Email, OrganizationId=@OrganizationId, DepartmentId=@DepartmentId, UpdatedAt=GETDATE() WHERE UserID=@UserId";
+            const string query = "UPDATE Users SET FirstName=@FirstName, LastName=@LastName, Email=@Email, UpdatedAt=GETDATE() WHERE UserID=@UserId";
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
                 await con.OpenAsync();
@@ -146,14 +156,25 @@ namespace SkillNet.WebApi.Controllers
                     cmd.Parameters.AddWithValue("@FirstName", names.FirstName);
                     cmd.Parameters.AddWithValue("@LastName", names.LastName);
                     cmd.Parameters.AddWithValue("@Email", user.Email.Trim());
-                    cmd.Parameters.AddWithValue("@OrganizationId", user.OrganizationId ?? (object)DBNull.Value);
-                    cmd.Parameters.AddWithValue("@DepartmentId", user.DepartmentId ?? (object)DBNull.Value);
                     if (await cmd.ExecuteNonQueryAsync() == 0) return NotFound(new { message = "User not found." });
                 }
                 using var roleCmd = new SqlCommand("DELETE FROM UserRole WHERE UserID=@UserId; INSERT INTO UserRole(UserID,RoleID) VALUES(@UserId,@RoleId);", con, transaction);
                 roleCmd.Parameters.AddWithValue("@UserId", id);
                 roleCmd.Parameters.AddWithValue("@RoleId", user.RoleId);
                 await roleCmd.ExecuteNonQueryAsync();
+
+                if (user.OrganizationId.HasValue)
+                {
+                    using var orgCmd = new SqlCommand(@"
+                        IF EXISTS (SELECT 1 FROM RecruiterProfile WHERE UserId = @UserId)
+                            UPDATE RecruiterProfile SET OrganizationId = @OrgId, UpdatedAt = GETDATE() WHERE UserId = @UserId;
+                        ELSE
+                            INSERT INTO RecruiterProfile (UserId, OrganizationId, CreatedAt, UpdatedAt) VALUES (@UserId, @OrgId, GETDATE(), GETDATE());", con, transaction);
+                    orgCmd.Parameters.AddWithValue("@UserId", id);
+                    orgCmd.Parameters.AddWithValue("@OrgId", user.OrganizationId.Value);
+                    await orgCmd.ExecuteNonQueryAsync();
+                }
+
                 transaction.Commit();
             }
 

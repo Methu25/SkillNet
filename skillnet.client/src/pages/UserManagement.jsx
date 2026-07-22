@@ -10,10 +10,16 @@ export default function UserManagement() {
     const [newUser, setNewUser] = useState({ username: '', email: '', passwordHash: '', roleId: 1, isActive: true, organizationId: '' });
     const [editingId, setEditingId] = useState(null);
 
+    const [error, setError] = useState('');
+
     const fetchUsers = () => {
+        setError('');
         adminApi.getUsers()
-            .then(data => setUsers(data))
-            .catch(() => console.error("Failed to fetch users."));
+            .then(data => setUsers(Array.isArray(data) ? data : []))
+            .catch((err) => {
+                console.error("Failed to fetch users:", err);
+                setError(err.message || "Failed to fetch users. Please verify backend server and authentication.");
+            });
     };
 
     const fetchRoles = () => {
@@ -154,6 +160,13 @@ export default function UserManagement() {
                             )}
                         </div>
                     </form>
+                </div>
+            )}
+
+            {error && (
+                <div className="admin-card" style={{ background: '#fff0ef', border: '1px solid #f1cbc7', color: '#984139', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>{error}</span>
+                    <button className="admin-btn admin-btn-secondary" onClick={fetchUsers}>Retry</button>
                 </div>
             )}
 

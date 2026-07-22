@@ -6,7 +6,13 @@ export const adminApi = {
     getRoles: async () => (await jsonRequest('/api/userrole')).data,
     getOrganizations: async () => (await jsonRequest('/api/organization')).data,
     getDepartments: async () => (await jsonRequest('/api/department')).data,
-    getPendingOrganizations: async () => (await jsonRequest('/api/organization-approval/pending')).data,
+    getPendingOrganizations: async () => {
+        try {
+            return (await jsonRequest('/api/organization-approval/pending')).data;
+        } catch {
+            return [];
+        }
+    },
     approveOrganization: async id => (await jsonRequest(`/api/organization-approval/${id}/approve`, 'PATCH')).data,
     rejectOrganization: async (id, reason) => (await jsonRequest(`/api/organization-approval/${id}/reject`, 'PATCH', { reason })).data,
     getSettings: async () => (await jsonRequest('/api/systemconfiguration')).data,
