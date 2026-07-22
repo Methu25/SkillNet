@@ -129,4 +129,4 @@ dotnet test
 See `testing_results.md` for recent verification results and end-to-end frontend/backend testing walkthroughs.
 
 ---
-*Built with ❤️ by the SkillNet Team*
+*Built by the group 11 for the Software Architecture Module by NSBM Green University *
