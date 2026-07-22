@@ -7,7 +7,7 @@ namespace SkillNet.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Administrator")]
     public class UserRoleController : ControllerBase
     {
         private readonly string _connectionString;

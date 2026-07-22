@@ -8,7 +8,7 @@ namespace SkillNet.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,Administrator")]
     public class UserController : ControllerBase
     {
         private readonly string _connectionString;
@@ -80,40 +80,54 @@ namespace SkillNet.WebApi.Controllers
         [HttpGet]
         public IActionResult GetUsers()
         {
-            using (SqlConnection con = new SqlConnection(_connectionString))
+            try
             {
-                const string query = @"
-                    SELECT u.UserID, u.FirstName, u.LastName, u.Email, u.Status, u.OrganizationId, u.DepartmentId, u.CreatedAt,
-                           MIN(ur.RoleID) RoleId, STRING_AGG(r.RoleName, ', ') Roles
-                    FROM Users u
-                    LEFT JOIN UserRole ur ON ur.UserID=u.UserID
-                    LEFT JOIN Roles r ON r.RoleID=ur.RoleID
-                    GROUP BY u.UserID,u.FirstName,u.LastName,u.Email,u.Status,u.OrganizationId,u.DepartmentId,u.CreatedAt
-                    ORDER BY u.CreatedAt DESC";
-                using (SqlCommand cmd = new SqlCommand(query, con))
+                using (SqlConnection con = new SqlConnection(_connectionString))
                 {
-                    con.Open();
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    const string query = @"
+                        SELECT u.UserID, u.FirstName, u.LastName, u.Email, u.Status, u.OrganizationId, u.DepartmentId, u.CreatedAt,
+                               ISNULL(MIN(ur.RoleID), 0) RoleId, ISNULL(STRING_AGG(r.RoleName, ', '), '') Roles
+                        FROM Users u
+                        LEFT JOIN UserRole ur ON ur.UserID=u.UserID
+                        LEFT JOIN Roles r ON r.RoleID=ur.RoleID
+                        GROUP BY u.UserID,u.FirstName,u.LastName,u.Email,u.Status,u.OrganizationId,u.DepartmentId,u.CreatedAt
+                        ORDER BY u.CreatedAt DESC";
+                    using (SqlCommand cmd = new SqlCommand(query, con))
                     {
-                        var users = new List<object>();
-                        while (reader.Read())
+                        con.Open();
+                        using (SqlDataReader reader = cmd.ExecuteReader())
                         {
-                            users.Add(new
+                            var users = new List<object>();
+                            while (reader.Read())
                             {
-                                UserId = Convert.ToInt32(reader["UserID"]),
-                                Username = $"{reader["FirstName"]} {reader["LastName"]}".Trim(),
-                                Email = reader["Email"].ToString()!,
-                                RoleId = reader["RoleId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["RoleId"]),
-                                Roles = reader["Roles"] == DBNull.Value ? "" : reader["Roles"].ToString(),
-                                IsActive = string.Equals(reader["Status"].ToString(), "Active", StringComparison.OrdinalIgnoreCase),
-                                OrganizationId = reader["OrganizationId"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["OrganizationId"]),
-                                DepartmentId = reader["DepartmentId"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["DepartmentId"]),
-                                CreatedAt = Convert.ToDateTime(reader["CreatedAt"])
-                            });
+                                string firstName = reader["FirstName"] == DBNull.Value ? "" : reader["FirstName"].ToString() ?? "";
+                                string lastName = reader["LastName"] == DBNull.Value ? "" : reader["LastName"].ToString() ?? "";
+                                string email = reader["Email"] == DBNull.Value ? "" : reader["Email"].ToString() ?? "";
+                                string status = reader["Status"] == DBNull.Value ? "Active" : reader["Status"].ToString() ?? "Active";
+                                string username = $"{firstName} {lastName}".Trim();
+                                if (string.IsNullOrWhiteSpace(username)) username = email;
+
+                                users.Add(new
+                                {
+                                    UserId = Convert.ToInt32(reader["UserID"]),
+                                    Username = username,
+                                    Email = email,
+                                    RoleId = reader["RoleId"] == DBNull.Value ? 0 : Convert.ToInt32(reader["RoleId"]),
+                                    Roles = reader["Roles"] == DBNull.Value ? "" : reader["Roles"].ToString(),
+                                    IsActive = string.Equals(status, "Active", StringComparison.OrdinalIgnoreCase),
+                                    OrganizationId = reader["OrganizationId"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["OrganizationId"]),
+                                    DepartmentId = reader["DepartmentId"] == DBNull.Value ? (int?)null : Convert.ToInt32(reader["DepartmentId"]),
+                                    CreatedAt = reader["CreatedAt"] == DBNull.Value ? DateTime.Now : Convert.ToDateTime(reader["CreatedAt"])
+                                });
+                            }
+                            return Ok(users);
                         }
-                        return Ok(users);
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error fetching users: " + ex.Message });
             }
         }
 
