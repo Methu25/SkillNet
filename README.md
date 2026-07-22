@@ -13,20 +13,18 @@ SkillNet is a modern, AI-powered recruitment and job matching platform built wit
 
 ## 🛠️ Technology Stack
 
-**Backend (Clean Architecture):**
-*   **Framework:** ASP.NET Core Web API
-*   **ORM:** Entity Framework Core (SQL Server / LocalDB)
-*   **Authentication:** JWT Bearer Authentication# SkillNet
+# SkillNet
 
 ## About
 
-SkillNet is an AI-powered recruitment and job matching platform. Built on Clean Architecture, it seamlessly connects candidates with recruiters by leveraging advanced skill-matching strategies—including integration with the Gemini API—to evaluate candidate profiles and ensure optimal job alignment.
+SkillNet is an AI-powered recruitment and job matching platform. Built on N-Tier Layered Architecture (Clean Architecture), it seamlessly connects candidates with recruiters by leveraging advanced skill-matching strategies—including integration with the Gemini API—to evaluate candidate profiles and ensure optimal job alignment.
 
 ## Tech Stack
 
 ### Backend
 
-* **Framework:** ASP.NET Core Web API (Domain-Driven Design)
+* **Framework:** ASP.NET Core Web API
+* **Architecture:** N-Tier Layered Architecture (WebApi, Application, Domain, Infrastructure)
 * **Database / ORM:** Entity Framework Core (SQL Server / LocalDB)
 * **Security:** JWT Bearer Authentication
 * **AI Integration:** Gemini API
@@ -36,13 +34,6 @@ SkillNet is an AI-powered recruitment and job matching platform. Built on Clean 
 * **Framework:** React 19
 * **Build Tool:** Vite
 * **Routing:** React Router DOM
-*   **AI Integration:** Gemini API
-*   **Architecture:** Domain-Driven Design (DDD) principles with Application, Domain, Infrastructure, and WebApi layers.
-
-**Frontend:**
-*   **Framework:** React 19
-*   **Build Tool:** Vite
-*   **Routing:** React Router DOM
 
 ## 📂 Project Structure
 
@@ -52,7 +43,7 @@ SkillNet is an AI-powered recruitment and job matching platform. Built on Clean 
 *   `SkillNet.WebApi`: REST API controllers, middleware, and configuration.
 *   `skillnet.client`: React frontend application.
 *   `SkillNet.Tests`: Unit and integration test suites.
-*   `SkillNetDocs`: Detailed PDF documentation for all system modules.
+
 
 ## 🚀 Getting Started
 
@@ -129,4 +120,4 @@ dotnet test
 See `testing_results.md` for recent verification results and end-to-end frontend/backend testing walkthroughs.
 
 ---
-*Built with ❤️ by the SkillNet Team*
+*Built by the group 11 for the Software Architecture Module by NSBM Green University*
