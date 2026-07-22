@@ -13,5 +13,6 @@ namespace SkillNet.Application.Interfaces
         Task<CandidateSkill> AssignSkillToCandidateAsync(CandidateSkill candidateSkill);
         Task RemoveSkillFromCandidateAsync(int candidateId, int skillId);
         Task<bool> SkillExistsAsync(string skillName);
+        Task<System.Linq.ILookup<int, Skill>> GetSkillsByCandidateIdsAsync(IEnumerable<int> candidateIds);
     }
 }

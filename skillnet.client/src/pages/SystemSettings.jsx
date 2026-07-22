@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { apiRequest, jsonRequest } from '../api/apiClient';
 import '../AdminModule.css';
+import { adminApi } from '../api/adminApi';
 
 export default function SystemSettings() {
     const [configs, setConfigs] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        apiRequest('/api/systemconfiguration', { cache: 'no-store' })
-            .then(res => {
-                setConfigs(Array.isArray(res.data) ? res.data : []);
+        adminApi.getSettings()
+            .then(data => {
+                setConfigs(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
             .catch(err => {
@@ -25,8 +26,8 @@ export default function SystemSettings() {
 
     // Function to send data to C# when Save is clicked
     const handleSave = () => {
-        jsonRequest('/api/systemconfiguration', 'PUT', configs)
-            .then(res => alert(res.data?.message || "Changes saved successfully"))
+        adminApi.updateSettings(configs)
+            .then(data => alert(data.message || "Changes saved successfully"))
             .catch(err => alert("Failed to save changes: " + err.message));
     };
 

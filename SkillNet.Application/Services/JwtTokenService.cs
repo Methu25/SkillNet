@@ -17,10 +17,14 @@ namespace SkillNet.Application.Services
     }
 
 
-    public class JwtTokenService(IConfiguration config, IRefreshTokenRepository refreshTokenRepository) : IJwtTokenService
+    public class JwtTokenService(
+        IConfiguration config,
+        IRefreshTokenRepository refreshTokenRepository,
+        ISystemConfigurationService systemConfig) : IJwtTokenService
     {
         private readonly IConfiguration _config = config;
         private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
+        private readonly ISystemConfigurationService _systemConfig = systemConfig;
 
 
         public string GenerateAccessToken(string email, List<string> roles)

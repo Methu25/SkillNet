@@ -18,5 +18,9 @@ namespace SkillNet.Application.Interfaces
         Task<IEnumerable<string>> GetSkillsByJobIdAsync(int jobId);
         Task<IEnumerable<SkillDto>> GetAllSkillsAsync();
         Task<int> GetRecruiterOrganizationIdAsync(int recruiterProfileId);
+        Task<int> InsertJobWithSkillsAsync(JobPost job, List<int> skillIds);
+        Task<bool> UpdateJobWithSkillsAsync(JobPost job, List<int> skillIds);
+        Task<IEnumerable<JobPost>> GetActiveJobsAsync();
+        Task<System.Linq.ILookup<int, SkillDto>> GetActiveJobSkillsAsync();
     }
 }

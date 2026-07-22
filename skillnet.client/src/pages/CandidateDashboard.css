@@ -196,6 +196,80 @@
 .skeleton--card { height: 220px; }
 
 @keyframes candidate-shimmer { to { background-position: -200% 0; } }
+/* Recommended jobs & matching styles */
+.recommended-job-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #EDE5DF;
+}
+.recommended-job-card:last-child {
+    border-bottom: none;
+}
+.recommended-job-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.recommended-job-meta {
+    font-size: 0.76rem;
+    color: var(--candidate-muted);
+}
+.skill-match-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+.skill-match-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 750;
+    color: #b74712;
+    background: #fff0e7;
+    padding: 3px 8px;
+    border-radius: 6px;
+    width: fit-content;
+}
+.skill-match-badge strong {
+    font-size: 0.8rem;
+    margin-right: 3px;
+}
+.matched-skills-preview,
+.missing-skills-preview {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 0.65rem;
+}
+.matched-skills-preview small,
+.missing-skills-preview small {
+    font-weight: 700;
+    color: var(--candidate-ink);
+}
+.match-pill {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 750;
+    font-size: 0.62rem;
+}
+.match-pill--matched {
+    background: #e6f4ea;
+    color: #137333;
+}
+.match-pill--missing {
+    background: #fce8e6;
+    color: #c5221f;
+}
+.match-pill-more {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--candidate-muted);
+}
 
 @media (max-width: 960px) {
     .candidate-grid--summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }

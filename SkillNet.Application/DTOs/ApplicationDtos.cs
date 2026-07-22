@@ -85,6 +85,14 @@ namespace SkillNet.Application.DTOs
         public List<string> ValidNextStatuses { get; set; } = new();
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<RecruiterNoteDto>? RecruiterNotes { get; set; }
+
+        // Match Score Info
+        public int? MatchScore { get; set; }
+        public List<string>? MatchedSkills { get; set; }
+        public List<string>? MissingSkills { get; set; }
+        public string? MatchMethod { get; set; }
+        public int? MatchedRequiredSkillCount { get; set; }
+        public int? TotalRequiredSkills { get; set; }
     }
 
     public class JobApplicationSummaryDto
@@ -98,6 +106,14 @@ namespace SkillNet.Application.DTOs
         public string CurrentStatus { get; set; } = string.Empty;
         public DateTime AppliedDate { get; set; }
         public DateTime LastUpdated { get; set; }
+
+        // Match Score Info
+        public int? MatchScore { get; set; }
+        public List<string>? MatchedSkills { get; set; }
+        public List<string>? MissingSkills { get; set; }
+        public string? MatchMethod { get; set; }
+        public int? MatchedRequiredSkillCount { get; set; }
+        public int? TotalRequiredSkills { get; set; }
     }
 
     public class ApplicationStatusHistoryDto

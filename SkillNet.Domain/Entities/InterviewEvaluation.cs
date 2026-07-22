@@ -16,7 +16,7 @@ namespace SkillNet.Domain.Entities
 
         public int CultureFitScore { get; set; }
 
-        public int OverallScore { get; set; }
+        public decimal OverallScore { get; set; }
 
         public string? Recommendation { get; set; }
 

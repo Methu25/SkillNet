@@ -70,5 +70,24 @@ namespace SkillNet.Infrastructure.Repositories
             return await _context.Skills
                 .AnyAsync(s => s.SkillName == skillName);
         }
+
+        public async Task<System.Linq.ILookup<int, Skill>> GetSkillsByCandidateIdsAsync(IEnumerable<int> candidateIds)
+        {
+            var ids = candidateIds?.ToList() ?? new List<int>();
+            if (ids.Count == 0)
+            {
+                var emptyList = new List<KeyValuePair<int, Skill>>();
+                return emptyList.ToLookup(x => x.Key, x => x.Value);
+            }
+
+            var list = await _context.CandidateSkills
+                .AsNoTracking()
+                .Where(cs => ids.Contains(cs.CandidateId))
+                .Include(cs => cs.Skill)
+                .Select(cs => new { cs.CandidateId, cs.Skill })
+                .ToListAsync();
+
+            return list.ToLookup(x => x.CandidateId, x => x.Skill);
+        }
     }
 }

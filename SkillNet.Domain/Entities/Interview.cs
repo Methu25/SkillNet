@@ -51,5 +51,11 @@ namespace SkillNet.Domain.Entities
 
         [NotMapped]
         public string? Role { get; set; }
+
+        [NotMapped]
+        public string? ApplicationStatus { get; set; }
+
+        [NotMapped]
+        public bool HasEvaluation { get; set; }
     }
 }

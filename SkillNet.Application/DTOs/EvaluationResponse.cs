@@ -9,7 +9,7 @@ namespace SkillNet.Application.DTOs
         public int CommunicationScore { get; set; }
         public int ProblemSolvingScore { get; set; }
         public int CultureFitScore { get; set; }
-        public int OverallScore { get; set; }
+        public decimal OverallScore { get; set; }
         public string Recommendation { get; set; } = string.Empty;
         public string Comments { get; set; } = string.Empty;
         public DateTime SubmittedAt { get; set; }

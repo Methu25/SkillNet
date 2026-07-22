@@ -20,5 +20,22 @@ namespace SkillNet.Application.DTOs
         public string? MeetingLink { get; set; }
         public string? Status { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? ApplicationStatus { get; set; }
+        public bool HasEvaluation { get; set; }
+        public List<AssignedInterviewerResponse> AssignedInterviewers { get; set; } = [];
+    }
+
+    public class AssignedInterviewerResponse
+    {
+        public int InterviewerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Position { get; set; }
+    }
+
+    public class EligibleInterviewerResponse
+    {
+        public int InterviewerId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Position { get; set; }
     }
 }

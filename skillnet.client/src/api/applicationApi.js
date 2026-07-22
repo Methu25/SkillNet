@@ -28,6 +28,11 @@ export const applicationApi = {
             status,
             comment: comment?.trim() || null
         })).data,
+    updateStatus: async (applicationId, status, comment = null) =>
+        (await jsonRequest(`/api/application/recruiter/${applicationId}/status`, 'PATCH', {
+            status,
+            comment: comment?.trim() || null
+        })).data,
     addRecruiterNote: async (applicationId, comment) =>
         (await jsonRequest(`/api/application/recruiter/${applicationId}/notes`, 'POST', {
             comment: comment.trim()

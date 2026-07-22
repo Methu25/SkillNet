@@ -267,6 +267,226 @@ namespace SkillNet.Infrastructure.Repositories
             return result != null && result != DBNull.Value ? (int)result : 0;
         }
 
+        public async Task<int> InsertJobWithSkillsAsync(JobPost job, List<int> skillIds)
+        {
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var transaction = con.BeginTransaction();
+            try
+            {
+                // 1. Insert JobPost
+                const string query = @"
+                    INSERT INTO JobPost (RecruiterId, OrganizationId, CategoryId, Title, Description,
+                        EmploymentType, WorkMode, Location, SalaryMin, SalaryMax, ExperienceLevel,
+                        Status, ApplicationDeadline, CreatedAt, UpdatedAt)
+                    OUTPUT INSERTED.JobId
+                    VALUES (@RecruiterId, @OrganizationId, @CategoryId, @Title, @Description,
+                        @EmploymentType, @WorkMode, @Location, @SalaryMin, @SalaryMax, @ExperienceLevel,
+                        @Status, @ApplicationDeadline, @CreatedAt, @UpdatedAt)";
+                
+                int jobId;
+                using (var cmd = new SqlCommand(query, con, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@RecruiterId", job.RecruiterId);
+                    cmd.Parameters.AddWithValue("@OrganizationId", job.OrganizationId ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CategoryId", job.CategoryId);
+                    cmd.Parameters.AddWithValue("@Title", job.Title);
+                    cmd.Parameters.AddWithValue("@Description", job.Description);
+                    cmd.Parameters.AddWithValue("@EmploymentType", job.EmploymentType);
+                    cmd.Parameters.AddWithValue("@WorkMode", job.WorkMode);
+                    cmd.Parameters.AddWithValue("@Location", job.Location ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@SalaryMin", job.SalaryMin ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@SalaryMax", job.SalaryMax ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ExperienceLevel", job.ExperienceLevel ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Status", job.Status);
+                    cmd.Parameters.AddWithValue("@ApplicationDeadline", job.ApplicationDeadline ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@CreatedAt", job.CreatedAt);
+                    cmd.Parameters.AddWithValue("@UpdatedAt", job.UpdatedAt);
+
+                    jobId = (int)(await cmd.ExecuteScalarAsync())!;
+                }
+
+                // 2. Insert JobSkills
+                if (skillIds != null && skillIds.Any())
+                {
+                    var distinctSkillIds = skillIds.Distinct().ToList();
+                    
+                    // Verify all skillIds exist in database
+                    var parameters = new List<SqlParameter>();
+                    var paramNames = new List<string>();
+                    for (int i = 0; i < distinctSkillIds.Count; i++)
+                    {
+                        var paramName = $"@SkillId{i}";
+                        paramNames.Add(paramName);
+                        parameters.Add(new SqlParameter(paramName, distinctSkillIds[i]));
+                    }
+                    var formattedCheckQuery = string.Format("SELECT COUNT(1) FROM Skills WHERE SkillId IN ({0})", string.Join(",", paramNames));
+                    
+                    using (var checkCmd = new SqlCommand(formattedCheckQuery, con, transaction))
+                    {
+                        checkCmd.Parameters.AddRange(parameters.ToArray());
+                        var existCount = (int)(await checkCmd.ExecuteScalarAsync() ?? 0);
+                        if (existCount != distinctSkillIds.Count)
+                        {
+                            throw new ArgumentException("One or more provided Skill IDs do not exist.");
+                        }
+                    }
+
+                    foreach (var skillId in distinctSkillIds)
+                    {
+                        const string skillQuery = "INSERT INTO JobSkill (JobId, SkillId) VALUES (@JobId, @SkillId)";
+                        using var skillCmd = new SqlCommand(skillQuery, con, transaction);
+                        skillCmd.Parameters.AddWithValue("@JobId", jobId);
+                        skillCmd.Parameters.AddWithValue("@SkillId", skillId);
+                        await skillCmd.ExecuteNonQueryAsync();
+                    }
+                }
+
+                transaction.Commit();
+                return jobId;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateJobWithSkillsAsync(JobPost job, List<int> skillIds)
+        {
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var transaction = con.BeginTransaction();
+            try
+            {
+                // 1. Update JobPost
+                const string query = @"
+                    UPDATE JobPost SET CategoryId=@CategoryId, Title=@Title, Description=@Description,
+                        EmploymentType=@EmploymentType, WorkMode=@WorkMode, Location=@Location,
+                        SalaryMin=@SalaryMin, SalaryMax=@SalaryMax, ExperienceLevel=@ExperienceLevel,
+                        ApplicationDeadline=@ApplicationDeadline, UpdatedAt=@UpdatedAt
+                    WHERE JobId=@JobId AND RecruiterId=@RecruiterId";
+                
+                using (var cmd = new SqlCommand(query, con, transaction))
+                {
+                    cmd.Parameters.AddWithValue("@JobId", job.JobId);
+                    cmd.Parameters.AddWithValue("@RecruiterId", job.RecruiterId);
+                    cmd.Parameters.AddWithValue("@CategoryId", job.CategoryId);
+                    cmd.Parameters.AddWithValue("@Title", job.Title);
+                    cmd.Parameters.AddWithValue("@Description", job.Description);
+                    cmd.Parameters.AddWithValue("@EmploymentType", job.EmploymentType);
+                    cmd.Parameters.AddWithValue("@WorkMode", job.WorkMode);
+                    cmd.Parameters.AddWithValue("@Location", job.Location ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@SalaryMin", job.SalaryMin ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@SalaryMax", job.SalaryMax ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ExperienceLevel", job.ExperienceLevel ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@ApplicationDeadline", job.ApplicationDeadline ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@UpdatedAt", DateTime.Now);
+
+                    var rowsAffected = await cmd.ExecuteNonQueryAsync();
+                    if (rowsAffected == 0)
+                    {
+                        transaction.Rollback();
+                        return false;
+                    }
+                }
+
+                // 2. Update JobSkills
+                if (skillIds != null)
+                {
+                    const string deleteQuery = "DELETE FROM JobSkill WHERE JobId=@JobId";
+                    using (var delCmd = new SqlCommand(deleteQuery, con, transaction))
+                    {
+                        delCmd.Parameters.AddWithValue("@JobId", job.JobId);
+                        await delCmd.ExecuteNonQueryAsync();
+                    }
+
+                    if (skillIds.Any())
+                    {
+                        var distinctSkillIds = skillIds.Distinct().ToList();
+                        
+                        var parameters = new List<SqlParameter>();
+                        var paramNames = new List<string>();
+                        for (int i = 0; i < distinctSkillIds.Count; i++)
+                        {
+                            var paramName = $"@SkillId{i}";
+                            paramNames.Add(paramName);
+                            parameters.Add(new SqlParameter(paramName, distinctSkillIds[i]));
+                        }
+                        var formattedCheckQuery = string.Format("SELECT COUNT(1) FROM Skills WHERE SkillId IN ({0})", string.Join(",", paramNames));
+                        
+                        using (var checkCmd = new SqlCommand(formattedCheckQuery, con, transaction))
+                        {
+                            checkCmd.Parameters.AddRange(parameters.ToArray());
+                            var existCount = (int)(await checkCmd.ExecuteScalarAsync() ?? 0);
+                            if (existCount != distinctSkillIds.Count)
+                            {
+                                throw new ArgumentException("One or more provided Skill IDs do not exist.");
+                            }
+                        }
+
+                        foreach (var skillId in distinctSkillIds)
+                        {
+                            const string skillQuery = "INSERT INTO JobSkill (JobId, SkillId) VALUES (@JobId, @SkillId)";
+                            using var skillCmd = new SqlCommand(skillQuery, con, transaction);
+                            skillCmd.Parameters.AddWithValue("@JobId", job.JobId);
+                            skillCmd.Parameters.AddWithValue("@SkillId", skillId);
+                            await skillCmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+
+                transaction.Commit();
+                return true;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<JobPost>> GetActiveJobsAsync()
+        {
+            var jobs = new List<JobPost>();
+            const string query = "SELECT * FROM JobPost WHERE Status = 'Published' ORDER BY CreatedAt DESC";
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(query, con);
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                jobs.Add(MapJobPost(reader));
+            }
+            return jobs;
+        }
+
+        public async Task<System.Linq.ILookup<int, SkillDto>> GetActiveJobSkillsAsync()
+        {
+            var list = new List<KeyValuePair<int, SkillDto>>();
+            const string query = @"
+                SELECT js.JobId, s.SkillId, s.SkillName 
+                FROM JobSkill js 
+                JOIN Skills s ON js.SkillId = s.SkillId 
+                WHERE js.JobId IN (SELECT JobId FROM JobPost WHERE Status = 'Published')";
+            
+            using var con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+            using var cmd = new SqlCommand(query, con);
+            using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var jobId = (int)reader["JobId"];
+                var skill = new SkillDto
+                {
+                    SkillId = (int)reader["SkillId"],
+                    SkillName = reader["SkillName"].ToString()!
+                };
+                list.Add(new KeyValuePair<int, SkillDto>(jobId, skill));
+            }
+            return list.ToLookup(x => x.Key, x => x.Value);
+        }
+
         private static JobPost MapJobPost(SqlDataReader r) => new()
         {
             JobId = (int)r["JobId"],

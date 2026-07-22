@@ -13,4 +13,5 @@
   <Project Path="SkillNet.Application/SkillNet.Application.csproj" />
   <Project Path="SkillNet.Infrastructure/SkillNet.Infrastructure.csproj" />
   <Project Path="SkillNet.WebApi/SkillNet.WebApi.csproj" />
+  <Project Path="SkillNet.Tests/SkillNet.Tests.csproj" />
 </Solution>

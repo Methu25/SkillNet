@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { apiRequest, jsonRequest } from '../api/apiClient';
+import React, { useState, useEffect } from 'react';
+import { jsonRequest } from '../api/apiClient';
 import '../AdminModule.css';
+import { adminApi } from '../api/adminApi';
 
 export default function UserManagement() {
     const [users, setUsers] = useState([]);
@@ -10,20 +11,20 @@ export default function UserManagement() {
     const [editingId, setEditingId] = useState(null);
 
     const fetchUsers = () => {
-        apiRequest('/api/user', { cache: 'no-store' })
-            .then(res => setUsers(res.data))
+        adminApi.getUsers()
+            .then(data => setUsers(data))
             .catch(() => console.error("Failed to fetch users."));
     };
 
     const fetchRoles = () => {
-        apiRequest('/api/userrole', { cache: 'no-store' })
-            .then(res => setRoles(res.data))
+        adminApi.getRoles()
+            .then(data => setRoles(data))
             .catch(() => console.error("Failed to fetch roles."));
     };
 
     const fetchOrganizations = () => {
-        apiRequest('/api/organization', { cache: 'no-store' })
-            .then(res => setOrganizations(res.data))
+        adminApi.getOrganizations()
+            .then(data => setOrganizations(Array.isArray(data) ? data : []))
             .catch(() => console.error("Failed to fetch organizations."));
     };
 
@@ -44,8 +45,9 @@ export default function UserManagement() {
         };
 
         jsonRequest(url, method, payload)
-            .then(res => {
-                alert(res.data.message || "Saved successfully");
+            .then(({ data }) => data)
+            .then(data => {
+                alert(data?.message || "Saved successfully");
                 setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '' });
                 setEditingId(null);
                 fetchUsers();
@@ -54,9 +56,10 @@ export default function UserManagement() {
     };
 
     const handleToggleStatus = (id) => {
-        apiRequest(`/api/user/${id}/toggle-status`, { method: 'PUT' })
-            .then(res => {
-                alert(res.data.message || "Status toggled");
+        jsonRequest(`/api/user/${id}/toggle-status`, 'PUT')
+            .then(({ data }) => data)
+            .then(data => {
+                alert(data?.message || "Status toggled");
                 fetchUsers();
             })
             .catch(err => alert("Failed to toggle status: " + err.message));
@@ -67,17 +70,19 @@ export default function UserManagement() {
         if (!newPassword) return;
 
         jsonRequest(`/api/user/${id}/reset-password`, 'POST', { newPassword })
-            .then(res => {
-                alert(res.data.message || "Password reset successful");
+            .then(({ data }) => data)
+            .then(data => {
+                alert(data?.message || "Password reset successful");
             })
             .catch(err => alert("Failed to reset password: " + err.message));
     };
 
     const handleDelete = (id) => {
         if (!window.confirm("Are you sure you want to completely delete this user? This cannot be undone. Consider disabling them instead.")) return;
-        apiRequest(`/api/user/${id}`, { method: 'DELETE' })
-            .then(res => {
-                alert(res.data?.message || "User deleted");
+        jsonRequest(`/api/user/${id}`, 'DELETE')
+            .then(({ data }) => data)
+            .then(data => {
+                alert(data?.message || "User deleted");
                 fetchUsers();
             })
             .catch(err => alert("Failed to delete user: " + err.message));
@@ -102,52 +107,52 @@ export default function UserManagement() {
             {editingId && (
                 <div className="admin-card">
                     <h3 className="admin-card-title">Edit User</h3>
-                <form onSubmit={handleSaveUser} className="admin-form">
-                    <div className="admin-form-grid">
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Username</label>
-                            <input className="admin-input" type="text" placeholder="e.g. jdoe" required value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} style={{ width: '100%' }} />
-                        </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Email Address</label>
-                            <input className="admin-input" type="email" placeholder="john@example.com" required value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} style={{ width: '100%' }} />
-                        </div>
-                        {!editingId && (
+                    <form onSubmit={handleSaveUser} className="admin-form">
+                        <div className="admin-form-grid">
                             <div>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Password</label>
-                                <input className="admin-input" type="password" placeholder="Secure password" required value={newUser.passwordHash} onChange={e => setNewUser({ ...newUser, passwordHash: e.target.value })} style={{ width: '100%' }} />
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Username</label>
+                                <input className="admin-input" type="text" placeholder="e.g. jdoe" required value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} style={{ width: '100%' }} />
                             </div>
-                        )}
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Role</label>
-                            <select className="admin-select" required value={newUser.roleId} onChange={e => setNewUser({ ...newUser, roleId: parseInt(e.target.value) })} style={{ width: '100%' }}>
-                                <option value="" disabled>Select Role</option>
-                                {roles.map(r => (
-                                    <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
-                                ))}
-                            </select>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Email Address</label>
+                                <input className="admin-input" type="email" placeholder="john@example.com" required value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} style={{ width: '100%' }} />
+                            </div>
+                            {!editingId && (
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Password</label>
+                                    <input className="admin-input" type="password" placeholder="Secure password" required value={newUser.passwordHash} onChange={e => setNewUser({ ...newUser, passwordHash: e.target.value })} style={{ width: '100%' }} />
+                                </div>
+                            )}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Role</label>
+                                <select className="admin-select" required value={newUser.roleId} onChange={e => setNewUser({ ...newUser, roleId: parseInt(e.target.value) })} style={{ width: '100%' }}>
+                                    <option value="" disabled>Select Role</option>
+                                    {roles.map(r => (
+                                        <option key={r.roleId} value={r.roleId}>{r.roleName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Organization</label>
+                                <select className="admin-select" value={newUser.organizationId} onChange={e => setNewUser({ ...newUser, organizationId: e.target.value })} style={{ width: '100%' }}>
+                                    <option value="">No Organization</option>
+                                    {organizations.map(o => (
+                                        <option key={o.organizationId} value={o.organizationId}>{o.organizationName}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Organization</label>
-                            <select className="admin-select" value={newUser.organizationId} onChange={e => setNewUser({ ...newUser, organizationId: e.target.value })} style={{ width: '100%' }}>
-                                <option value="">No Organization</option>
-                                {organizations.map(o => (
-                                    <option key={o.organizationId} value={o.organizationId}>{o.organizationName}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
 
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                        <button type="submit" className="admin-btn admin-btn-primary">
-                            {editingId ? 'Update User' : 'Save User'}
-                        </button>
-                        {editingId && (
-                            <button type="button" className="admin-btn admin-btn-secondary" onClick={() => { setEditingId(null); setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '' }) }}>
-                                Cancel
+                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                            <button type="submit" className="admin-btn admin-btn-primary">
+                                {editingId ? 'Update User' : 'Save User'}
                             </button>
-                        )}
-                    </div>
+                            {editingId && (
+                                <button type="button" className="admin-btn admin-btn-secondary" onClick={() => { setEditingId(null); setNewUser({ username: '', email: '', passwordHash: '', roleId: roles.length > 0 ? roles[0].roleId : 1, isActive: true, organizationId: '' }) }}>
+                                    Cancel
+                                </button>
+                            )}
+                        </div>
                     </form>
                 </div>
             )}
@@ -161,7 +166,7 @@ export default function UserManagement() {
                         <tr>
                             <th>User</th>
                             <th>Contact</th>
-                            <th>Role & Organization</th>
+                            <th>Role</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -172,14 +177,14 @@ export default function UserManagement() {
                                 <td>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                         <div className="admin-avatar">
-                                            {user.username.charAt(0).toUpperCase()}
+                                            {(user.username || user.email || 'U').charAt(0).toUpperCase()}
                                         </div>
                                         <span style={{ fontWeight: 600 }}>{user.username}</span>
                                     </div>
                                 </td>
                                 <td>{user.email}</td>
                                 <td>
-                                    <div style={{ fontWeight: 500 }}>{roles.find(r => r.roleId === user.roleId)?.roleName || user.roleId}</div>
+                                    <div style={{ fontWeight: 500 }}>{user.roles || roles.find(r => r.roleId === user.roleId)?.roleName || 'No role'}</div>
                                     <div style={{ fontSize: '0.85em', opacity: 0.7, marginTop: '4px' }}>
                                         {user.organizationId ? (organizations.find(o => o.organizationId === user.organizationId)?.organizationName || 'Org') : ''}
                                     </div>

@@ -4,9 +4,11 @@ using Microsoft.OpenApi;
 using System.Text;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Security.Claims;
 
 using SkillNet.Application.Services;
 using SkillNet.Application.Interfaces;
+using SkillNet.Application.Policies;
 using SkillNet.Infrastructure.Repositories;
 using SkillNet.Infrastructure.Data;
 using SkillNet.Infrastructure.Storage;
@@ -70,7 +72,9 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtIssuer,
         ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        NameClaimType = ClaimTypes.Name,
+        RoleClaimType = ClaimTypes.Role
     };
 });
 
@@ -93,6 +97,7 @@ builder.Services.AddScoped<IRefreshTokenRepository, SqlRefreshTokenRepository>()
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICurrentUserContext, SkillNet.Infrastructure.Services.CurrentUserContext>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 
@@ -126,6 +131,18 @@ builder.Services.AddScoped<IResumeService, ResumeService>();
 builder.Services.AddScoped<IResumeStorageService, LocalResumeStorageService>();
 builder.Services.AddScoped<ISkillService, SkillService>();
 builder.Services.AddScoped<ICandidateDashboardService, CandidateDashboardService>();
+builder.Services.AddScoped<ICandidateJobMatchingStrategy, RequiredSkillCoverageStrategy>();
+builder.Services.AddScoped<RequiredSkillCoverageFallbackProvider>();
+builder.Services.AddScoped<GeminiMatchAnalysisProvider>();
+builder.Services.AddScoped<IMatchAnalysisProviderFactory, MatchAnalysisProviderFactory>();
+builder.Services.AddScoped<MatchAnalysisService>();
+builder.Services.AddHttpClient("Gemini", (services, client) =>
+{
+    var configuration = services.GetRequiredService<IConfiguration>();
+    client.BaseAddress = new Uri(configuration["Gemini:BaseUrl"] ?? "https://generativelanguage.googleapis.com");
+    client.Timeout = TimeSpan.FromSeconds(configuration.GetValue<int?>("Gemini:TimeoutSeconds") ?? 20);
+});
+builder.Services.AddScoped<IApplicationStatusTransitionPolicy, ApplicationStatusTransitionPolicy>();
 builder.Services.AddScoped<ICandidateNotificationService, CandidateNotificationService>();
 builder.Services.AddScoped<IProfileCompletionStrategy, BasicProfileCompletionStrategy>();
 builder.Services.AddTransient<ICandidateProfileBuilder, CandidateProfileBuilder>();
@@ -166,7 +183,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+await using (var scope = app.Services.CreateAsyncScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();
@@ -210,6 +227,9 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowReactApp");
 app.UseMiddleware<CandidateExceptionMiddleware>();
+app.UseMiddleware<ApplicationExceptionMiddleware>();
+app.UseMiddleware<InterviewExceptionMiddleware>();
+app.UseMiddleware<MatchAnalysisExceptionMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

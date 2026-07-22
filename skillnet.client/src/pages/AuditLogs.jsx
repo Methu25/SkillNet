@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../api/apiClient';
 import '../AdminModule.css';
+import { adminApi } from '../api/adminApi';
 
 export default function AuditLogs() {
     const [logs, setLogs] = useState([]);
@@ -23,9 +24,9 @@ export default function AuditLogs() {
         if (startDate) params.append('startDate', startDate);
         if (endDate) params.append('endDate', endDate);
 
-        apiRequest(`/api/auditlog?${params.toString()}`)
-            .then(res => {
-                setLogs(Array.isArray(res.data) ? res.data : []);
+        adminApi.getAuditLogs(params.toString())
+            .then(data => {
+                setLogs(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
             .catch(err => {
@@ -86,8 +87,8 @@ export default function AuditLogs() {
                             <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', opacity: 0.7 }}>No logs found matching criteria.</td></tr>
                         ) : (
                             logs.map((log) => (
-                                <tr key={log.logId || log.LogId}>
-                                    <td style={{ opacity: 0.7 }}>{log.logId || log.LogId}</td>
+                                <tr key={log.auditLogId || log.AuditLogId}>
+                                    <td style={{ opacity: 0.7 }}>{log.auditLogId || log.AuditLogId}</td>
                                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(log.timestamp || log.Timestamp).toLocaleString()}</td>
                                     <td>{log.userId || log.UserId || 'System'}</td>
                                     <td style={{ fontWeight: 'bold', color: 'var(--text-h)' }}>{log.action || log.Action}</td>
