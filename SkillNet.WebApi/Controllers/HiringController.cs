@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillNet.Application.Interfaces;
 
@@ -5,6 +6,7 @@ namespace SkillNet.WebApi.Controllers
 {
     [Route("api/hiring")]
     [ApiController]
+    [Authorize(Roles = "HiringManager")]
     public class HiringController : ControllerBase
     {
         private readonly IInterviewService _service;
@@ -17,8 +19,15 @@ namespace SkillNet.WebApi.Controllers
         [HttpGet("interviews")]
         public async Task<IActionResult> GetAllInterviews()
         {
-            var interviews = await _service.GetAllInterviewsAsync();
+            var interviews = await _service.GetAssignedInterviewsAsync();
             return Ok(interviews);
+        }
+
+        [HttpGet("interviews/{id:int}")]
+        public async Task<IActionResult> GetInterview(int id)
+        {
+            var interview = await _service.GetAssignedInterviewAsync(id);
+            return interview == null ? NotFound() : Ok(interview);
         }
 
         [HttpGet("upcoming")]
@@ -31,8 +40,7 @@ namespace SkillNet.WebApi.Controllers
         [HttpGet("dashboard")]
         public async Task<IActionResult> GetHiringDashboard()
         {
-            var dashboard = await _service.GetHiringDashboardAsync();
-            return Ok(dashboard);
+            return Ok(await _service.GetAssignedInterviewsAsync());
         }
     }
 }

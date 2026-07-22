@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { recruiterApi } from '../../api/recruiterApi';
 
@@ -39,6 +39,11 @@ const validate = (form) => {
     if ((form.salaryMin !== '' || form.salaryMax !== '') && !form.currency) {
         errors.currency = 'Currency is required when salary is specified.';
     }
+    
+    // Skill validation: at least one skill must be selected
+    if (!form.skillIds || form.skillIds.length === 0) {
+        errors.skillIds = 'Select at least one required skill.';
+    }
 
     return errors;
 };
@@ -70,6 +75,11 @@ const RecruiterJobForm = ({ jobId = null }) => {
     const [processing, setProcessing] = useState('');
     const [savedJobId, setSavedJobId] = useState(jobId);
     const [reloadKey, setReloadKey] = useState(0);
+
+    // Skills Selector Custom State
+    const [skillSearch, setSkillSearch] = useState('');
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         let active = true;
@@ -108,6 +118,16 @@ const RecruiterJobForm = ({ jobId = null }) => {
         return () => { active = false; };
     }, [isEdit, jobId, reloadKey]);
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleChange = ({ target }) => {
         const value = target.multiple ? [...target.selectedOptions].map((option) => option.value) : target.value;
         setForm((current) => ({ ...current, [target.name]: value }));
@@ -115,6 +135,29 @@ const RecruiterJobForm = ({ jobId = null }) => {
         setApiError('');
         setSuccess('');
     };
+
+    const handleAddSkill = (skillId) => {
+        if (!form.skillIds.includes(skillId)) {
+            const updatedSkillIds = [...form.skillIds, skillId];
+            setForm((current) => ({ ...current, skillIds: updatedSkillIds }));
+            setErrors((current) => ({ ...current, skillIds: undefined }));
+        }
+        setSkillSearch('');
+        setDropdownOpen(false);
+        setApiError('');
+    };
+
+    const handleRemoveSkill = (skillId) => {
+        const updatedSkillIds = form.skillIds.filter((id) => id !== skillId);
+        setForm((current) => ({ ...current, skillIds: updatedSkillIds }));
+        setApiError('');
+    };
+
+    const filteredSkills = skills.filter((skill) => {
+        const isNotSelected = !form.skillIds.includes(String(skill.skillId));
+        const matchesSearch = skill.skillName.toLowerCase().includes(skillSearch.toLowerCase());
+        return isNotSelected && matchesSearch;
+    });
 
     const save = async (publishAfterSave) => {
         if (processing) return;
@@ -201,6 +244,71 @@ const RecruiterJobForm = ({ jobId = null }) => {
                             </select>
                             {errors.workMode && <small className="recruiter-field-error">{errors.workMode}</small>}
                         </label>
+
+                        {/* Dynamic Searchable Multi-Select Skill Selector */}
+                        <div className="recruiter-form-field recruiter-form-field--wide" ref={dropdownRef}>
+                            <span>Skills *</span>
+                            <div className="recruiter-skills-selector-wrapper" aria-invalid={Boolean(errors.skillIds)}>
+                                <div className="recruiter-selected-skills-list">
+                                    {form.skillIds.map((skillId) => {
+                                        const skill = skills.find(s => String(s.skillId) === String(skillId));
+                                        return skill ? (
+                                            <span className="recruiter-skill-pill" key={skillId}>
+                                                {skill.skillName}
+                                                <button
+                                                    type="button"
+                                                    className="recruiter-skill-pill-remove"
+                                                    onClick={() => handleRemoveSkill(skillId)}
+                                                    disabled={Boolean(processing)}
+                                                    aria-label={`Remove skill ${skill.skillName}`}
+                                                >
+                                                    &times;
+                                                </button>
+                                            </span>
+                                        ) : null;
+                                    })}
+                                </div>
+                                
+                                <div className="recruiter-skills-dropdown-wrapper">
+                                    <input
+                                        id="skill-search-input"
+                                        type="text"
+                                        className="recruiter-skill-search-input"
+                                        placeholder="Search and select required skills..."
+                                        value={skillSearch}
+                                        onChange={(e) => {
+                                            setSkillSearch(e.target.value);
+                                            setDropdownOpen(true);
+                                        }}
+                                        onFocus={() => setDropdownOpen(true)}
+                                        disabled={Boolean(processing)}
+                                    />
+                                    
+                                    {dropdownOpen && (
+                                        <ul className="recruiter-skills-dropdown-list" role="listbox">
+                                            {filteredSkills.length === 0 ? (
+                                                <li className="recruiter-skills-dropdown-empty">
+                                                    {skills.length === 0 ? "No skills available in catalog." : "No unselected matching skills."}
+                                                </li>
+                                            ) : (
+                                                filteredSkills.map((skill) => (
+                                                    <li
+                                                        key={skill.skillId}
+                                                        role="option"
+                                                        aria-selected={form.skillIds.includes(String(skill.skillId))}
+                                                        className="recruiter-skills-dropdown-item"
+                                                        onClick={() => handleAddSkill(String(skill.skillId))}
+                                                    >
+                                                        {skill.skillName}
+                                                    </li>
+                                                ))
+                                            )}
+                                        </ul>
+                                    )}
+                                </div>
+                            </div>
+                            {errors.skillIds && <small className="recruiter-field-error">{errors.skillIds}</small>}
+                        </div>
                     </div>
                 </div>
 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.SqlClient;
 using SkillNet.Domain.Entities;
 
@@ -6,7 +7,7 @@ namespace SkillNet.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize(Roles = "Admin")] // Temporarily disabled for frontend testing
+    [Authorize(Roles = "Admin,Administrator")]
     public class AuditLogController : ControllerBase
     {
         private readonly string _connectionString;

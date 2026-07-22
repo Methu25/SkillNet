@@ -168,15 +168,57 @@ const CandidateDashboard = () => {
                                     ))}</div>}
                             </DashboardCard>
 
-                            <DashboardCard title="Latest jobs">
-                                {(dashboard.recommendedJobs || []).length === 0
-                                    ? <div className="empty-state"><span>◇</span><p>No job recommendations yet.</p></div>
-                                    : <div className="dashboard-list">{dashboard.recommendedJobs.map(job => (
-                                        <article key={job.jobId}>
-                                            <div><strong>{job.title}</strong><span>{job.organizationName || job.location || 'SkillNet opportunity'}</span></div>
-                                            <button className="candidate-button candidate-button--secondary" onClick={() => navigate(`/candidate/jobs/${job.jobId}`)}>View details</button>
-                                        </article>
-                                    ))}</div>}
+                            <DashboardCard title="Recommended jobs">
+                                {dashboard.skills.length === 0 ? (
+                                    <div className="empty-state">
+                                        <span>◇</span>
+                                        <p>Add skills to improve your job recommendations.</p>
+                                        <button className="candidate-button" style={{ marginTop: '10px' }} onClick={() => navigate('/candidate/skills')}>Manage Skills</button>
+                                    </div>
+                                ) : (dashboard.recommendedJobs || []).length === 0 ? (
+                                    <div className="empty-state"><span>◇</span><p>No job recommendations matching your skills yet.</p></div>
+                                ) : (
+                                    <div className="dashboard-list">
+                                        {dashboard.recommendedJobs.map(job => (
+                                            <article key={job.jobId} className="recommended-job-card">
+                                                <div className="recommended-job-info">
+                                                    <strong>{job.title}</strong>
+                                                    <span className="recommended-job-meta">{job.organizationName || job.location || 'SkillNet opportunity'}</span>
+                                                    
+                                                    {job.matchScore !== null && job.matchScore !== undefined && (
+                                                        <div className="skill-match-container">
+                                                            <div className="skill-match-badge">
+                                                                <span className="sr-only">Skill Match Score: </span>
+                                                                <strong>{job.matchScore}%</strong> Skill Match
+                                                            </div>
+                                                            
+                                                            {job.matchedSkills && job.matchedSkills.length > 0 && (
+                                                                <div className="matched-skills-preview">
+                                                                    <small>Matched: </small>
+                                                                    {job.matchedSkills.slice(0, 3).map((s, idx) => (
+                                                                        <span className="match-pill match-pill--matched" key={idx}>{s}</span>
+                                                                    ))}
+                                                                    {job.matchedSkills.length > 3 && <span className="match-pill-more">+{job.matchedSkills.length - 3}</span>}
+                                                                </div>
+                                                            )}
+
+                                                            {job.missingSkills && job.missingSkills.length > 0 && (
+                                                                <div className="missing-skills-preview">
+                                                                    <small>Missing: </small>
+                                                                    {job.missingSkills.slice(0, 3).map((s, idx) => (
+                                                                        <span className="match-pill match-pill--missing" key={idx}>{s}</span>
+                                                                    ))}
+                                                                    {job.missingSkills.length > 3 && <span className="match-pill-more">+{job.missingSkills.length - 3}</span>}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <button className="candidate-button candidate-button--secondary" onClick={() => navigate(`/candidate/jobs/${job.jobId}`)}>View details</button>
+                                            </article>
+                                        ))}
+                                    </div>
+                                )}
                             </DashboardCard>
                         </div>
 

@@ -140,12 +140,27 @@ namespace SkillNet.Application.Services
         private readonly IJobRepository _jobRepository;
         private readonly IRecruiterService _recruiterService;
         private readonly IConfiguration _configuration;
+        private readonly ICurrentUserContext _currentUserContext;
+        private readonly ICandidateService _candidateService;
+        private readonly IUserService _userService;
+        private readonly ICandidateJobMatchingStrategy _matchingStrategy;
 
-        public JobService(IJobRepository jobRepository, IRecruiterService recruiterService, IConfiguration configuration)
+        public JobService(
+            IJobRepository jobRepository, 
+            IRecruiterService recruiterService, 
+            IConfiguration configuration,
+            ICurrentUserContext currentUserContext,
+            ICandidateService candidateService,
+            IUserService userService,
+            ICandidateJobMatchingStrategy matchingStrategy)
         {
             _jobRepository = jobRepository;
             _recruiterService = recruiterService;
             _configuration = configuration;
+            _currentUserContext = currentUserContext;
+            _candidateService = candidateService;
+            _userService = userService;
+            _matchingStrategy = matchingStrategy;
         }
 
         /// <summary>
@@ -172,10 +187,8 @@ namespace SkillNet.Application.Services
                 .SetApplicationDeadline(request.ApplicationDeadline)
                 .Build();
 
-            var jobId = await _jobRepository.InsertJobAsync(job);
-
-            if (request.SkillIds.Any())
-                await _jobRepository.InsertJobSkillsAsync(jobId, request.SkillIds);
+            // Insert job and skills atomically
+            var jobId = await _jobRepository.InsertJobWithSkillsAsync(job, request.SkillIds ?? new List<int>());
 
             return await BuildJobResponseAsync(jobId);
         }
@@ -207,8 +220,53 @@ namespace SkillNet.Application.Services
 
             var jobs = await _jobRepository.SearchJobsAsync(request);
             var responses = new List<JobResponse>();
+
+            // Check if current user is a Candidate to apply skill matching scores
+            List<SkillInfo> candSkills = new();
+            var currentUserId = _currentUserContext.UserId;
+            if (currentUserId.HasValue && _currentUserContext.IsInRole("Candidate"))
+            {
+                var candidate = await _candidateService.GetCandidateProfileAsync(currentUserId.Value);
+                if (candidate != null)
+                {
+                    candSkills = candidate.Skills.Select(s => new SkillInfo { SkillId = s.SkillId, SkillName = s.SkillName }).ToList();
+                }
+            }
+
             foreach (var job in jobs)
-                responses.Add(await BuildJobResponseAsync(job.JobId));
+            {
+                var response = await BuildJobResponseAsync(job.JobId);
+                if (candSkills.Any())
+                {
+                    var jobSkills = await _jobRepository.GetSkillIdsByJobIdAsync(job.JobId);
+                    var jobSkillsDetails = await _jobRepository.GetSkillsByJobIdAsync(job.JobId);
+                    
+                    var jobSkillsList = new List<SkillInfo>();
+                    var ids = jobSkills.ToList();
+                    var names = jobSkillsDetails.ToList();
+                    for (int i = 0; i < ids.Count; i++)
+                    {
+                        jobSkillsList.Add(new SkillInfo 
+                        { 
+                            SkillId = ids[i], 
+                            SkillName = i < names.Count ? names[i] : string.Empty 
+                        });
+                    }
+
+                    var matchingInput = new MatchingInput
+                    {
+                        CandidateSkills = candSkills,
+                        JobRequiredSkills = jobSkillsList
+                    };
+
+                    var matchResult = _matchingStrategy.Match(matchingInput);
+                    response.MatchScore = matchResult.MatchScore;
+                    response.MatchedSkills = matchResult.MatchedSkills;
+                    response.MissingSkills = matchResult.MissingSkills;
+                    response.MatchMethod = matchResult.MatchMethod;
+                }
+                responses.Add(response);
+            }
             return responses;
         }
 
@@ -242,14 +300,7 @@ namespace SkillNet.Application.Services
             existing.ExperienceLevel = request.ExperienceLevel ?? existing.ExperienceLevel;
             existing.ApplicationDeadline = request.ApplicationDeadline ?? existing.ApplicationDeadline;
 
-            await _jobRepository.UpdateJobAsync(existing);
-
-            if (request.SkillIds != null)
-            {
-                await _jobRepository.DeleteJobSkillsAsync(jobId);
-                if (request.SkillIds.Any())
-                    await _jobRepository.InsertJobSkillsAsync(jobId, request.SkillIds);
-            }
+            await _jobRepository.UpdateJobWithSkillsAsync(existing, request.SkillIds ?? new List<int>());
 
             return await BuildJobResponseAsync(jobId);
         }

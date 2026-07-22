@@ -6,7 +6,6 @@ namespace SkillNet.Domain.Entities
     {
         [System.Text.Json.Serialization.JsonIgnore]
         public int UserID { get; set; }
-
         [JsonIgnore]
         public int UserId
         {

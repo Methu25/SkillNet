@@ -72,8 +72,15 @@ namespace SkillNet.WebApi.Controllers
             var userId = GetCurrentUserId();
             if (userId == 0) return Unauthorized();
 
-            var job = await _jobService.CreateJobAsync(userId, request);
-            return CreatedAtAction(nameof(GetJob), new { id = job.JobId }, job);
+            try
+            {
+                var job = await _jobService.CreateJobAsync(userId, request);
+                return CreatedAtAction(nameof(GetJob), new { id = job.JobId }, job);
+            }
+            catch (System.ArgumentException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
 
         // PUT /api/job/{id}
@@ -84,9 +91,16 @@ namespace SkillNet.WebApi.Controllers
             var userId = GetCurrentUserId();
             if (userId == 0) return Unauthorized();
 
-            var job = await _jobService.UpdateJobAsync(id, userId, request);
-            if (job == null) return NotFound(new { message = "Job not found or access denied." });
-            return Ok(job);
+            try
+            {
+                var job = await _jobService.UpdateJobAsync(id, userId, request);
+                if (job == null) return NotFound(new { message = "Job not found or access denied." });
+                return Ok(job);
+            }
+            catch (System.ArgumentException ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
 
         // DELETE /api/job/{id}

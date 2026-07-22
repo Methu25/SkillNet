@@ -112,6 +112,20 @@ const JobDetails = () => {
         <section className="recruiter-job-details-page">
             <div className="recruiter-job-details-topbar">
                 <Link to="/recruiter/jobs">← Back to jobs</Link>
+                <div className="recruiter-job-details-actions">
+                    {job.status !== 'Draft' && (
+                        <Link to={`/recruiter/jobs/${job.jobId}/applicants`} style={{ borderColor: '#ff681f', color: '#ff681f', fontWeight: 800 }}>
+                            View Applicants
+                        </Link>
+                    )}
+                    {busy
+                        ? <span className="is-disabled" aria-disabled="true">Edit</span>
+                        : <Link to={`/recruiter/jobs/${job.jobId}/edit`}>Edit</Link>}
+                    <button type="button" onClick={() => runAction('publish')} disabled={busy || job.status === 'Published'}>{processing === 'publish' ? 'Publishing...' : 'Publish'}</button>
+                    <button type="button" onClick={() => runAction('close')} disabled={busy || job.status === 'Closed'}>{processing === 'close' ? 'Closing...' : 'Close'}</button>
+                    <button type="button" onClick={() => runAction('duplicate')} disabled={busy}>{processing === 'duplicate' ? 'Duplicating...' : 'Duplicate'}</button>
+                    <button className="recruiter-job-detail-danger" type="button" onClick={() => runAction('delete')} disabled={busy}>{processing === 'delete' ? 'Deleting...' : 'Delete'}</button>
+                </div>
             </div>
 
             {error && <div className="recruiter-setup-alert recruiter-setup-alert--error" role="alert">{error}</div>}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiRequest } from '../api/apiClient';
 import '../AdminModule.css';
+import { adminApi } from '../api/adminApi';
 
 export default function Dashboard() {
     const [stats, setStats] = useState({
@@ -18,9 +19,9 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        apiRequest('/api/dashboard/statistics')
-            .then(res => {
-                setStats(res.data);
+        adminApi.getDashboard()
+            .then(data => {
+                setStats(data);
                 setLoading(false);
             })
             .catch(err => {

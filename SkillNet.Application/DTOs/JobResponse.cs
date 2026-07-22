@@ -20,5 +20,11 @@ namespace SkillNet.Application.DTOs
         public string RecruiterName { get; set; } = string.Empty;
         public string? OrganizationName { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        // Match Score Info (Optional/Candidate view)
+        public int? MatchScore { get; set; }
+        public List<string>? MatchedSkills { get; set; }
+        public List<string>? MissingSkills { get; set; }
+        public string? MatchMethod { get; set; }
     }
 }

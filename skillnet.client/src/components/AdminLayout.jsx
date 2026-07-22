@@ -1,34 +1,35 @@
 import React from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
+import { useAuth } from '../context/AuthContext';
 import '../AdminModule.css';
 
-export default function AdminLayout() {
+export default function AdminLayout({ currentTab: propTab }) {
     const { logout } = useAuth();
     const location = useLocation();
-    
-    // Determine the current tab name from the URL for the header title
+    const navigate = useNavigate();
+
     const pathParts = location.pathname.split('/').filter(Boolean);
-    const currentTab = pathParts.length > 1 ? pathParts[1] : 'dashboard';
+    const currentTab = propTab || (pathParts.length > 1 ? pathParts[1] : 'dashboard');
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login', { replace: true });
+    };
+
     return (
         <div className="admin-layout">
             <AdminSidebar />
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {/* Top Navbar */}
                 <header className="admin-header">
                     <h3 style={{ margin: 0, textTransform: 'capitalize', color: 'var(--text-h)' }}>{currentTab} Management</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ fontWeight: 'bold', color: 'var(--text)' }}>👤 Administrator</div>
-                        <button 
-                            className="admin-btn admin-btn-ghost admin-btn-ghost-danger" 
-                            onClick={() => logout()}
-                        >
+                        <button type="button" className="admin-btn admin-btn-ghost admin-btn-ghost-danger" onClick={handleLogout}>
                             Log Out
                         </button>
                     </div>
                 </header>
-                {/* Page Content */}
                 <main style={{ padding: '2rem', flex: 1, overflowY: 'auto' }}>
                     <Outlet />
                 </main>

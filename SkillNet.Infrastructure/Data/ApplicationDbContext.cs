@@ -10,6 +10,9 @@ namespace SkillNet.Infrastructure.Data
         // Authentication / Existing Reference Entities
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Organization> Organizations { get; set; } = null!;
+        public DbSet<Department> Departments { get; set; } = null!;
+        public DbSet<SystemConfiguration> SystemConfigurations { get; set; } = null!;
+        public DbSet<AuditLog> AuditLogs { get; set; } = null!;
 
         // Candidate Module Entities
         public DbSet<Candidate> Candidates { get; set; } = null!;
@@ -136,6 +139,40 @@ namespace SkillNet.Infrastructure.Data
                 entity.Property(e => e.LinkedInUrl).HasMaxLength(255);
                 entity.Property(e => e.City).HasMaxLength(100);
                 entity.Property(e => e.Country).HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<Department>(entity =>
+            {
+                entity.ToTable("Department");
+                entity.HasKey(e => e.DepartmentId);
+                entity.Property(e => e.DepartmentName).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Description).HasMaxLength(1000);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETDATE()");
+                entity.HasIndex(e => new { e.OrganizationId, e.DepartmentName }).IsUnique();
+                entity.HasOne<Organization>()
+                    .WithMany()
+                    .HasForeignKey(e => e.OrganizationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<SystemConfiguration>(entity =>
+            {
+                entity.ToTable("SystemConfiguration");
+                entity.HasKey(e => e.Key);
+                entity.Property(e => e.Key).HasMaxLength(100);
+                entity.Property(e => e.Value).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.Description).HasMaxLength(500);
+            });
+
+            modelBuilder.Entity<AuditLog>(entity =>
+            {
+                entity.ToTable("AuditLog");
+                entity.HasKey(e => e.AuditLogId);
+                entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Entity).HasMaxLength(100);
+                entity.Property(e => e.IPAddress).HasMaxLength(64);
+                entity.HasIndex(e => e.Timestamp);
+                entity.HasIndex(e => e.UserId);
             });
 
             modelBuilder.Entity<RecruiterProfile>(entity =>
@@ -379,6 +416,8 @@ namespace SkillNet.Infrastructure.Data
                 entity.Ignore(e => e.CandidateSkills);
                 entity.Ignore(e => e.ExperienceYears);
                 entity.Ignore(e => e.Role);
+                entity.Ignore(e => e.ApplicationStatus);
+                entity.Ignore(e => e.HasEvaluation);
             });
 
             // Interviewer Configuration
@@ -422,6 +461,9 @@ namespace SkillNet.Infrastructure.Data
 
                 entity.Property(e => e.Recommendation)
                     .HasMaxLength(50);
+
+                entity.Property(e => e.OverallScore)
+                    .HasColumnType("decimal(4,2)");
 
                 entity.Property(e => e.Comments)
                     .HasColumnType("nvarchar(max)");

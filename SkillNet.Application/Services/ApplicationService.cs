@@ -1,5 +1,6 @@
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
+using SkillNet.Application.Policies;
 using SkillNet.Domain.Entities;
 
 namespace SkillNet.Application.Services
@@ -30,17 +31,26 @@ namespace SkillNet.Application.Services
         private readonly IJobRepository _jobRepository;
         private readonly IResumeRepository _resumeRepository;
         private readonly ISystemConfigurationService _systemConfig;
+        private readonly ISkillRepository _skillRepository;
+        private readonly ICandidateJobMatchingStrategy _matchingStrategy;
+        private readonly IApplicationStatusTransitionPolicy _transitionPolicy;
 
         public ApplicationService(
             IApplicationRepository applicationRepository,
             IJobRepository jobRepository,
             IResumeRepository resumeRepository,
-            ISystemConfigurationService systemConfig)
+            ISystemConfigurationService systemConfig,
+            ISkillRepository skillRepository,
+            ICandidateJobMatchingStrategy matchingStrategy,
+            IApplicationStatusTransitionPolicy transitionPolicy)
         {
             _applicationRepository = applicationRepository;
             _jobRepository = jobRepository;
             _resumeRepository = resumeRepository;
             _systemConfig = systemConfig;
+            _skillRepository = skillRepository;
+            _matchingStrategy = matchingStrategy;
+            _transitionPolicy = transitionPolicy;
         }
 
         public async Task<JobApplicationDto> ApplyForJobAsync(
@@ -101,7 +111,7 @@ namespace SkillNet.Application.Services
                 JobId = job.JobId,
                 ResumeId = resume.ResumeId,
                 AppliedDate = now,
-                CurrentStatus = AppliedStatus,
+                CurrentStatus = ApplicationStatusConstants.Applied,
                 CoverLetter = NormalizeOptionalValue(dto.CoverLetter),
                 LastUpdated = now
             };
@@ -111,7 +121,7 @@ namespace SkillNet.Application.Services
             {
                 ApplicationId = createdApplication.ApplicationId,
                 OldStatus = null,
-                NewStatus = AppliedStatus,
+                NewStatus = ApplicationStatusConstants.Applied,
                 ChangedBy = candidateId,
                 ChangedAt = now
             });
@@ -167,7 +177,7 @@ namespace SkillNet.Application.Services
 
             var previousStatus = application.CurrentStatus;
             var changedAt = DateTime.UtcNow;
-            application.CurrentStatus = WithdrawnStatus;
+            application.CurrentStatus = ApplicationStatusConstants.Withdrawn;
             application.LastUpdated = changedAt;
 
             if (!await _applicationRepository.WithdrawApplicationAsync(application))
@@ -179,7 +189,7 @@ namespace SkillNet.Application.Services
             {
                 ApplicationId = application.ApplicationId,
                 OldStatus = previousStatus,
-                NewStatus = WithdrawnStatus,
+                NewStatus = ApplicationStatusConstants.Withdrawn,
                 ChangedBy = candidateId,
                 ChangedAt = changedAt,
                 Comment = NormalizeOptionalValue(dto.Reason)
@@ -238,12 +248,60 @@ namespace SkillNet.Application.Services
                         StringComparison.OrdinalIgnoreCase));
             }
 
-            query = query
-                .OrderByDescending(application => application.AppliedDate)
-                .Skip((request.PageNumber - 1) * request.PageSize)
-                .Take(request.PageSize);
+            // Load required job skills once
+            var jobSkills = await _jobRepository.GetSkillIdsByJobIdAsync(jobId);
+            var jobSkillsDetails = await _jobRepository.GetSkillsByJobIdAsync(jobId);
+            var jobRequiredSkills = new List<SkillInfo>();
+            var ids = jobSkills.ToList();
+            var names = jobSkillsDetails.ToList();
+            for (int i = 0; i < ids.Count; i++)
+            {
+                jobRequiredSkills.Add(new SkillInfo 
+                { 
+                    SkillId = ids[i], 
+                    SkillName = i < names.Count ? names[i] : string.Empty 
+                });
+            }
 
-            return query.Select(MapToSummaryDto).ToList();
+            // Bulk load all applicant candidate skills to prevent N+1 query loops
+            var candidateIds = query.Select(a => a.CandidateId).Distinct().ToList();
+            var candSkillsLookup = await _skillRepository.GetSkillsByCandidateIdsAsync(candidateIds);
+
+            var mappedList = new List<JobApplicationSummaryDto>();
+            foreach (var app in query)
+            {
+                var candSkills = candSkillsLookup[app.CandidateId]
+                    .Select(s => new SkillInfo { SkillId = s.SkillId, SkillName = s.SkillName })
+                    .ToList();
+
+                var matchingInput = new MatchingInput
+                {
+                    CandidateSkills = candSkills,
+                    JobRequiredSkills = jobRequiredSkills
+                };
+
+                var matchResult = _matchingStrategy.Match(matchingInput);
+
+                var summaryDto = MapToSummaryDto(app);
+                summaryDto.MatchScore = matchResult.MatchScore;
+                summaryDto.MatchedSkills = matchResult.MatchedSkills;
+                summaryDto.MissingSkills = matchResult.MissingSkills;
+                summaryDto.MatchMethod = matchResult.MatchMethod;
+                summaryDto.MatchedRequiredSkillCount = matchResult.MatchedRequiredSkillCount;
+                summaryDto.TotalRequiredSkills = matchResult.TotalRequiredSkills;
+
+                mappedList.Add(summaryDto);
+            }
+
+            // Sort: MatchScore descending, AppliedDate descending
+            var sortedList = mappedList
+                .OrderByDescending(x => x.MatchScore ?? 0)
+                .ThenByDescending(x => x.AppliedDate)
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            return sortedList;
         }
 
         public async Task<JobApplicationDto?> GetRecruiterApplicationByIdAsync(
@@ -254,9 +312,47 @@ namespace SkillNet.Application.Services
             ValidatePositiveId(applicationId, nameof(applicationId));
 
             var application = await _applicationRepository.GetApplicationByIdAsync(applicationId);
-            return application != null && IsOwnedByRecruiter(application, recruiterId)
-                ? MapToJobApplicationDto(application, includeRecruiterNotes: true)
-                : null;
+            if (application == null || !IsOwnedByRecruiter(application, recruiterId))
+            {
+                return null;
+            }
+
+            var dto = MapToJobApplicationDto(application, includeRecruiterNotes: true);
+
+            // Load required job skills
+            var jobSkills = await _jobRepository.GetSkillIdsByJobIdAsync(application.JobId);
+            var jobSkillsDetails = await _jobRepository.GetSkillsByJobIdAsync(application.JobId);
+            var jobRequiredSkills = new List<SkillInfo>();
+            var ids = jobSkills.ToList();
+            var names = jobSkillsDetails.ToList();
+            for (int i = 0; i < ids.Count; i++)
+            {
+                jobRequiredSkills.Add(new SkillInfo 
+                { 
+                    SkillId = ids[i], 
+                    SkillName = i < names.Count ? names[i] : string.Empty 
+                });
+            }
+
+            // Load candidate skills
+            var candSkillsEntity = await _skillRepository.GetSkillsByCandidateIdAsync(application.CandidateId);
+            var candSkills = candSkillsEntity.Select(s => new SkillInfo { SkillId = s.SkillId, SkillName = s.SkillName }).ToList();
+
+            var matchingInput = new MatchingInput
+            {
+                CandidateSkills = candSkills,
+                JobRequiredSkills = jobRequiredSkills
+            };
+
+            var matchResult = _matchingStrategy.Match(matchingInput);
+            dto.MatchScore = matchResult.MatchScore;
+            dto.MatchedSkills = matchResult.MatchedSkills;
+            dto.MissingSkills = matchResult.MissingSkills;
+            dto.MatchMethod = matchResult.MatchMethod;
+            dto.MatchedRequiredSkillCount = matchResult.MatchedRequiredSkillCount;
+            dto.TotalRequiredSkills = matchResult.TotalRequiredSkills;
+
+            return dto;
         }
 
         public async Task<JobApplicationDto?> UpdateApplicationStatusAsync(
@@ -273,27 +369,47 @@ namespace SkillNet.Application.Services
                 throw new ArgumentException("Application status is required.", nameof(dto));
             }
 
+            // Ownership check — returns null (404) when not found or not owned by this Recruiter.
             var application = await _applicationRepository.GetApplicationByIdAsync(applicationId);
             if (application == null || !IsOwnedByRecruiter(application, recruiterId))
             {
                 return null;
             }
 
+            var newStatus = dto.Status.Trim();
+
+            // Validate the requested status is a recognised canonical value.
+            if (!_transitionPolicy.IsKnownStatus(newStatus))
+            {
+                throw new ArgumentException(
+                    $"'{newStatus}' is not a recognised application status.", nameof(dto));
+            }
+
+            // Recruiters cannot set Withdrawn — that is a candidate-only action.
+            if (string.Equals(newStatus, ApplicationStatusConstants.Withdrawn, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Only the candidate can withdraw an application.");
+            }
+
+            // Terminal statuses accept no further changes.
             if (TerminalStatuses.Contains(application.CurrentStatus))
             {
                 throw new InvalidOperationException(
                     $"An application with status '{application.CurrentStatus}' cannot be changed.");
             }
 
-            var newStatus = dto.Status.Trim();
-            if (string.Equals(newStatus, WithdrawnStatus, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException("Only the candidate can withdraw an application.");
-            }
-
+            // Idempotent: same status requested — return existing application without writing.
             if (string.Equals(application.CurrentStatus, newStatus, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidOperationException("The application already has the requested status.");
+                var existingApplication = await _applicationRepository.GetApplicationByIdAsync(applicationId);
+                return MapToJobApplicationDto(existingApplication ?? application);
+            }
+
+            // Enforce legal transition graph.
+            if (!_transitionPolicy.CanRecruiterTransition(application.CurrentStatus, newStatus))
+            {
+                throw new InvalidOperationException(
+                    $"Transitioning from '{application.CurrentStatus}' to '{newStatus}' is not permitted.");
             }
 
             var validNextStatuses = GetValidNextStatuses(application.CurrentStatus);

@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.SqlClient;
 
 namespace SkillNet.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize(Roles = "Admin")] // Temporarily disabled for frontend testing
+    [Authorize(Roles = "Admin,Administrator")]
     public class DashboardController : ControllerBase
     {
         private readonly string _connectionString;
@@ -37,9 +38,9 @@ namespace SkillNet.WebApi.Controllers
                 using (SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM Users", con))
                     totalUsers = (int)cmd.ExecuteScalar();
 
-                string rolesQuery = @"SELECT r.RoleName, COUNT(ur.UserId) as Count 
-                                      FROM UserRole ur 
-                                      JOIN Roles r ON ur.RoleId = r.RoleId 
+                string rolesQuery = @"SELECT r.RoleName, COUNT(DISTINCT ur.UserId) AS Count
+                                      FROM UserRole ur
+                                      JOIN Roles r ON ur.RoleId = r.RoleId
                                       GROUP BY r.RoleName";
                 using (SqlCommand cmd = new SqlCommand(rolesQuery, con))
                 using (SqlDataReader reader = cmd.ExecuteReader())

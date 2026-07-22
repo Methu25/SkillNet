@@ -6,6 +6,8 @@ import { resumeApi } from '../api/resumeApi';
 import CandidateNavigation from '../components/candidate/CandidateNavigation';
 import DashboardCard from '../components/candidate/DashboardCard';
 import ApplyJobDialog from '../components/candidate/jobs/ApplyJobDialog';
+import MatchAnalysisPanel from '../components/MatchAnalysisPanel';
+import { matchAnalysisApi } from '../api/matchAnalysisApi';
 import './CandidateDashboard.css';
 import './CandidateJobs.css';
 
@@ -150,11 +152,107 @@ const CandidateJobs = () => {
     );
 };
 
-const JobCard = ({ job, onOpen }) => <article className="job-card"><div className="job-card__top"><span className="job-card__logo">{job.title.charAt(0).toUpperCase()}</span><span className="job-card__status">{job.status}</span></div><h2>{job.title}</h2><p className="job-card__organization">{job.organizationName || 'SkillNet opportunity'}</p><div className="job-card__tags">{job.employmentType && <span>{job.employmentType}</span>}{job.workMode && <span>{job.workMode}</span>}{job.location && <span>{job.location}</span>}</div><p className="job-card__salary">{formatSalary(job.salaryMin, job.salaryMax)}</p><footer><span>Deadline: {formatDate(job.applicationDeadline)}</span><button className="candidate-button candidate-button--secondary" onClick={onOpen}>View Details</button></footer></article>;
+const JobCard = ({ job, onOpen }) => (
+    <article className="job-card">
+        <div className="job-card__top">
+            <span className="job-card__logo">{job.title.charAt(0).toUpperCase()}</span>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                {job.matchScore !== null && job.matchScore !== undefined && (
+                    <span className="skill-match-badge">
+                        <strong>{job.matchScore}%</strong> Match
+                    </span>
+                )}
+                <span className="job-card__status">{job.status}</span>
+            </div>
+        </div>
+        <h2>{job.title}</h2>
+        <p className="job-card__organization">{job.organizationName || 'SkillNet opportunity'}</p>
+        <div className="job-card__tags">
+            {job.employmentType && <span>{job.employmentType}</span>}
+            {job.workMode && <span>{job.workMode}</span>}
+            {job.location && <span>{job.location}</span>}
+        </div>
+        <p className="job-card__salary">{formatSalary(job.salaryMin, job.salaryMax)}</p>
+        <footer>
+            <span>Deadline: {formatDate(job.applicationDeadline)}</span>
+            <button className="candidate-button candidate-button--secondary" onClick={onOpen}>View Details</button>
+        </footer>
+    </article>
+);
 
 const JobDetails = ({ job, unavailable, onApply }) => {
     const applicable = isApplicable(job);
-    return <div className="job-detail__content"><span className="candidate-eyebrow">{job.categoryName || 'Opportunity'}</span><div className="job-detail__heading"><div><h1>{job.title}</h1><p>{job.organizationName || job.recruiterName || 'SkillNet opportunity'}</p></div><span>{job.status}</span></div><div className="job-detail__tags">{job.employmentType && <span>{job.employmentType}</span>}{job.workMode && <span>{job.workMode}</span>}{job.location && <span>{job.location}</span>}{job.experienceLevel && <span>{job.experienceLevel}</span>}</div><dl className="job-detail__facts"><div><dt>Salary</dt><dd>{formatSalary(job.salaryMin, job.salaryMax)}</dd></div><div><dt>Application deadline</dt><dd>{formatDate(job.applicationDeadline)}</dd></div><div><dt>Posted</dt><dd>{formatDate(job.createdAt)}</dd></div></dl><section><h2>About the role</h2><p className="job-description">{job.description}</p></section>{job.skills?.length > 0 && <section><h2>Skills</h2><div className="job-detail__skills">{job.skills.map(skill => <span key={skill}>{skill}</span>)}</div></section>}<footer>{unavailable ? <span className="job-application-closed">You have already applied for this job.</span> : applicable ? <button className="candidate-button candidate-button--primary candidate-button--large" onClick={onApply}>Apply Now</button> : <span className="job-application-closed">Applications are not currently open for this job.</span>}</footer></div>;
+    return (
+        <div className="job-detail__content">
+            <span className="candidate-eyebrow">{job.categoryName || 'Opportunity'}</span>
+            
+            <div className="job-detail__heading">
+                <div>
+                    <h1>{job.title}</h1>
+                    <p>{job.organizationName || job.recruiterName || 'SkillNet opportunity'}</p>
+                </div>
+                <span>{job.status}</span>
+            </div>
+            
+            <div className="job-detail__tags">
+                {job.employmentType && <span>{job.employmentType}</span>}
+                {job.workMode && <span>{job.workMode}</span>}
+                {job.location && <span>{job.location}</span>}
+                {job.experienceLevel && <span>{job.experienceLevel}</span>}
+            </div>
+
+            {job.matchScore !== null && job.matchScore !== undefined && (
+                <div style={{ marginTop: '16px', borderTop: '1px solid #EDE5DF', paddingTop: '16px' }}>
+                    <h3 style={{ fontSize: '0.85rem', margin: '0 0 8px 0' }}>Required Skills Matched: {job.matchScore}%</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {job.matchedSkills && job.matchedSkills.length > 0 && (
+                            <div className="matched-skills-preview">
+                                <small>Matched: </small>
+                                {job.matchedSkills.map(s => <span className="match-pill match-pill--matched" key={s}>{s}</span>)}
+                            </div>
+                        )}
+                        {job.missingSkills && job.missingSkills.length > 0 && (
+                            <div className="missing-skills-preview">
+                                <small>Missing: </small>
+                                {job.missingSkills.map(s => <span className="match-pill match-pill--missing" key={s}>{s}</span>)}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+            
+            <dl className="job-detail__facts" style={{ marginTop: '20px' }}>
+                <div><dt>Salary</dt><dd>{formatSalary(job.salaryMin, job.salaryMax)}</dd></div>
+                <div><dt>Application deadline</dt><dd>{formatDate(job.applicationDeadline)}</dd></div>
+                <div><dt>Posted</dt><dd>{formatDate(job.createdAt)}</dd></div>
+            </dl>
+            
+            <section>
+                <h2>About the role</h2>
+                <p className="job-description">{job.description}</p>
+            </section>
+            
+            {job.skills?.length > 0 && (
+                <section>
+                    <h2>Skills</h2>
+                    <div className="job-detail__skills">
+                        {job.skills.map(skill => <span key={skill}>{skill}</span>)}
+                    </div>
+                </section>
+            )}
+            <MatchAnalysisPanel loadAnalysis={() => matchAnalysisApi.forCandidate(job.jobId)} />
+            
+            <footer>
+                {unavailable ? (
+                    <span className="job-application-closed">You have already applied for this job.</span>
+                ) : applicable ? (
+                    <button className="candidate-button candidate-button--primary candidate-button--large" onClick={onApply}>Apply Now</button>
+                ) : (
+                    <span className="job-application-closed">Applications are not currently open for this job.</span>
+                )}
+            </footer>
+        </div>
+    );
 };
 
 export default CandidateJobs;

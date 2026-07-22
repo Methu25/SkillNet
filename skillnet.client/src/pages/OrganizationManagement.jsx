@@ -1,28 +1,60 @@
 import React, { useState, useEffect } from 'react';
-import { apiRequest, jsonRequest } from '../api/apiClient';
+import { jsonRequest } from '../api/apiClient';
 import '../AdminModule.css';
+import { adminApi } from '../api/adminApi';
 
 export default function OrganizationManagement() {
     const [organizations, setOrganizations] = useState([]);
+    const [departments, setDepartments] = useState([]);
+    const [pendingOrganizations, setPendingOrganizations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [reviewingId, setReviewingId] = useState(null);
 
     const [newOrg, setNewOrg] = useState({ organizationName: '', industry: '' });
     const [editingOrgId, setEditingOrgId] = useState(null);
 
-    const fetchData = () => {
-        apiRequest('/api/organization', { cache: 'no-store' })
-            .then(res => {
-                const orgData = res.data;
-                setOrganizations(Array.isArray(orgData) ? orgData : []);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setLoading(false);
-            });
+    const [newDept, setNewDept] = useState({ organizationId: '', departmentName: '' });
+    const [editingDeptId, setEditingDeptId] = useState(null);
+
+    const fetchData = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const [orgData, deptData, pendingData] = await Promise.all([
+                adminApi.getOrganizations(),
+                adminApi.getDepartments(),
+                adminApi.getPendingOrganizations()
+            ]);
+            setOrganizations(Array.isArray(orgData) ? orgData : []);
+            setDepartments(Array.isArray(deptData) ? deptData : []);
+            setPendingOrganizations(Array.isArray(pendingData) ? pendingData : []);
+        } catch (requestError) {
+            setError(requestError.message || 'Unable to load organization management data.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => { fetchData(); }, []);
+
+    const reviewOrganization = async (organization, approve) => {
+        let reason = '';
+        if (!approve) {
+            reason = window.prompt(`Why is ${organization.organizationName} being rejected?`)?.trim() || '';
+            if (!reason) return;
+        }
+        setReviewingId(organization.organizationId);
+        try {
+            if (approve) await adminApi.approveOrganization(organization.organizationId);
+            else await adminApi.rejectOrganization(organization.organizationId, reason);
+            await fetchData();
+        } catch (requestError) {
+            setError(requestError.message || 'The organization review could not be saved.');
+        } finally {
+            setReviewingId(null);
+        }
+    };
 
     const handleSaveOrg = (e) => {
         e.preventDefault();
@@ -30,8 +62,8 @@ export default function OrganizationManagement() {
         const url = editingOrgId ? `/api/organization/${editingOrgId}` : '/api/organization';
 
         jsonRequest(url, method, newOrg)
-            .then(res => {
-                alert(res.data?.message || "Saved successfully");
+            .then(({ data }) => {
+                alert(data?.message || "Saved successfully");
                 setNewOrg({ organizationName: '', industry: '' });
                 setEditingOrgId(null);
                 fetchData();
@@ -40,9 +72,32 @@ export default function OrganizationManagement() {
 
     const handleDeleteOrg = (id) => {
         if (!window.confirm("Delete this organization?")) return;
-        apiRequest(`/api/organization/${id}`, { method: 'DELETE' })
-            .then(res => {
-                alert(res.data?.message || "Deleted successfully");
+        jsonRequest(`/api/organization/${id}`, 'DELETE')
+            .then(({ data }) => {
+                alert(data?.message || "Deleted successfully");
+                fetchData();
+            }).catch(err => alert(err.message));
+    };
+
+    const handleSaveDept = (e) => {
+        e.preventDefault();
+        const method = editingDeptId ? 'PUT' : 'POST';
+        const url = editingDeptId ? `/api/department/${editingDeptId}` : '/api/department';
+
+        jsonRequest(url, method, { organizationId: parseInt(newDept.organizationId), departmentName: newDept.departmentName })
+            .then(({ data }) => {
+                alert(data?.message || "Saved successfully");
+                setNewDept({ organizationId: '', departmentName: '' });
+                setEditingDeptId(null);
+                fetchData();
+            }).catch(err => alert(err.message));
+    };
+
+    const handleDeleteDept = (id) => {
+        if (!window.confirm("Delete this department?")) return;
+        jsonRequest(`/api/department/${id}`, 'DELETE')
+            .then(({ data }) => {
+                alert(data?.message || "Deleted successfully");
                 fetchData();
             }).catch(err => alert(err.message));
     };
@@ -51,7 +106,21 @@ export default function OrganizationManagement() {
 
     return (
         <div className="admin-module-container">
-            <h2 className="admin-page-title">Organization Management</h2>
+            <h2 className="admin-page-title">Organizations & Departments</h2>
+            {error && <div className="admin-card" role="alert" style={{ color: '#ff8a8a' }}>{error} <button className="admin-btn admin-btn-secondary" onClick={fetchData}>Retry</button></div>}
+
+            <div className="admin-card">
+                <h3 className="admin-card-title">Pending recruiter approvals ({pendingOrganizations.length})</h3>
+                {pendingOrganizations.length === 0 ? <p>No organizations are waiting for review.</p> : pendingOrganizations.map(org => (
+                    <div key={org.organizationId} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', padding: '1rem 0', borderBottom: '1px solid var(--border)' }}>
+                        <div><strong>{org.organizationName}</strong><div>{org.industry || 'Industry not provided'}</div><small>Submitted {org.submittedAt ? new Date(org.submittedAt).toLocaleString() : 'recently'}</small></div>
+                        <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+                            <button className="admin-btn admin-btn-primary" disabled={reviewingId === org.organizationId} onClick={() => reviewOrganization(org, true)}>Approve</button>
+                            <button className="admin-btn admin-btn-secondary" disabled={reviewingId === org.organizationId} onClick={() => reviewOrganization(org, false)}>Reject</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                 <div className="admin-card" style={{ flex: '1 1 300px', marginBottom: 0 }}>

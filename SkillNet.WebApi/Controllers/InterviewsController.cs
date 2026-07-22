@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
@@ -31,10 +32,18 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Recruiter")]
         public async Task<IActionResult> Create(CreateInterviewRequest request)
         {
             var createdInterview = await _service.CreateInterviewAsync(request);
             return CreatedAtAction(nameof(GetById), new { id = createdInterview.InterviewId }, createdInterview);
+        }
+
+        [HttpGet("eligible-interviewers")]
+        [Authorize(Roles = "Recruiter")]
+        public async Task<IActionResult> GetEligibleInterviewers()
+        {
+            return Ok(await _service.GetEligibleInterviewersAsync());
         }
 
         [HttpPut("{id}")]
@@ -78,13 +87,15 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPost("{id}/evaluation")]
+        [Authorize(Roles = "HiringManager")]
         public async Task<IActionResult> CreateEvaluation(int id, CreateEvaluationRequest request)
         {
             var evaluation = await _service.CreateEvaluationAsync(id, request);
-            return Ok(evaluation);
+            return CreatedAtAction(nameof(GetEvaluation), new { id }, evaluation);
         }
 
         [HttpGet("{id}/evaluation")]
+        [Authorize(Roles = "HiringManager")]
         public async Task<IActionResult> GetEvaluation(int id)
         {
             var evaluation = await _service.GetEvaluationByInterviewIdAsync(id);
@@ -93,11 +104,20 @@ namespace SkillNet.WebApi.Controllers
         }
 
         [HttpPut("{id}/evaluation")]
+        [Authorize(Roles = "HiringManager")]
         public async Task<IActionResult> UpdateEvaluation(int id, CreateEvaluationRequest request)
         {
             var evaluation = await _service.UpdateEvaluationAsync(id, request);
             if (evaluation == null) return NotFound();
             return Ok(evaluation);
+        }
+
+        [HttpPatch("{id}/decision")]
+        [Authorize(Roles = "HiringManager")]
+        public async Task<IActionResult> RecordDecision(int id, InterviewDecisionRequest request)
+        {
+            var decision = await _service.RecordDecisionAsync(id, request);
+            return Ok(new { interviewId = id, applicationStatus = decision });
         }
 
         [HttpPost("{id}/assign")]

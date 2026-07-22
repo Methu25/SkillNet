@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using SkillNet.Application.DTOs;
 using SkillNet.Application.Interfaces;
 
@@ -10,15 +14,24 @@ namespace SkillNet.Application.Services
         private readonly ICandidateService _candidateService;
         private readonly IResumeService _resumeService;
         private readonly IJobService _jobService;
+        private readonly IJobRepository _jobRepository;
+        private readonly ICandidateJobMatchingStrategy _matchingStrategy;
+        private readonly IConfiguration _configuration;
 
         public CandidateDashboardService(
             ICandidateService candidateService,
             IResumeService resumeService,
-            IJobService jobService)
+            IJobService jobService,
+            IJobRepository jobRepository,
+            ICandidateJobMatchingStrategy matchingStrategy,
+            IConfiguration configuration)
         {
             _candidateService = candidateService;
             _resumeService = resumeService;
             _jobService = jobService;
+            _jobRepository = jobRepository;
+            _matchingStrategy = matchingStrategy;
+            _configuration = configuration;
         }
 
         public async Task<CandidateDashboardDto> GetDashboardAsync(int candidateId)
@@ -29,18 +42,65 @@ namespace SkillNet.Application.Services
                 return CreateFirstTimeDashboard();
             }
 
-            // These services share the request-scoped DbContext. Run their queries
-            // sequentially because EF Core does not support concurrent operations on it.
+            // Fetch resumes sequentially because EF Core DbContext does not support concurrency
             var resumes = (await _resumeService.GetCandidateResumesAsync(candidateId)).ToList();
-            var jobs = await _jobService.SearchJobsAsync(new JobSearchRequest
-            {
-                SortBy = "newest",
-                Page = 1,
-                PageSize = JobSuggestionCount
-            });
-
             var skills = candidate.Skills.ToList();
             var activeResume = resumes.FirstOrDefault(resume => resume.IsActive);
+
+            // Fetch active jobs and required skills efficiently to avoid N+1 queries
+            var activeJobs = (await _jobRepository.GetActiveJobsAsync()).ToList();
+            var jobSkillsLookup = await _jobRepository.GetActiveJobSkillsAsync();
+
+            var candSkills = skills.Select(s => new SkillInfo { SkillId = s.SkillId, SkillName = s.SkillName }).ToList();
+            var matchedJobs = new List<JobResponse>();
+            var connStr = _configuration.GetConnectionString("DefaultConnection")!;
+            var categories = await JobCategoryService.GetInstance().GetCategoriesAsync(connStr);
+
+            foreach (var job in activeJobs)
+            {
+                var jobReqSkills = jobSkillsLookup[job.JobId].ToList();
+                var matchingInput = new MatchingInput
+                {
+                    CandidateSkills = candSkills,
+                    JobRequiredSkills = jobReqSkills.Select(s => new SkillInfo { SkillId = s.SkillId, SkillName = s.SkillName }).ToList()
+                };
+
+                var matchResult = _matchingStrategy.Match(matchingInput);
+                var category = categories.FirstOrDefault(c => c.CategoryId == job.CategoryId);
+
+                matchedJobs.Add(new JobResponse
+                {
+                    JobId = job.JobId,
+                    Title = job.Title,
+                    Description = job.Description,
+                    CategoryId = job.CategoryId,
+                    CategoryName = category?.Name ?? "",
+                    EmploymentType = job.EmploymentType,
+                    WorkMode = job.WorkMode,
+                    Location = job.Location,
+                    SalaryMin = job.SalaryMin,
+                    SalaryMax = job.SalaryMax,
+                    ExperienceLevel = job.ExperienceLevel,
+                    Status = job.Status,
+                    ApplicationDeadline = job.ApplicationDeadline,
+                    Skills = jobReqSkills.Select(s => s.SkillName).ToList(),
+                    RecruiterId = job.RecruiterId,
+                    CreatedAt = job.CreatedAt,
+
+                    // Match Details
+                    MatchScore = matchResult.MatchScore,
+                    MatchedSkills = matchResult.MatchedSkills,
+                    MissingSkills = matchResult.MissingSkills,
+                    MatchMethod = matchResult.MatchMethod
+                });
+            }
+
+            // Sort by MatchScore descending, then CreatedAt/PublishedAt descending
+            var recommendedJobs = matchedJobs
+                .OrderByDescending(j => j.MatchScore ?? 0)
+                .ThenByDescending(j => j.CreatedAt)
+                .Take(JobSuggestionCount)
+                .ToList();
 
             return new CandidateDashboardDto
             {
@@ -56,7 +116,7 @@ namespace SkillNet.Application.Services
                     .FirstOrDefault(),
                 TotalSkills = skills.Count,
                 Skills = skills,
-                RecommendedJobs = jobs.ToList()
+                RecommendedJobs = recommendedJobs
             };
         }
 

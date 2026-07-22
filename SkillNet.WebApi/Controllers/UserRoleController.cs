@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Data.SqlClient;
 using SkillNet.Domain.Entities;
 
@@ -6,6 +7,7 @@ namespace SkillNet.WebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Admin,Administrator")]
     public class UserRoleController : ControllerBase
     {
         private readonly string _connectionString;
@@ -23,7 +25,7 @@ namespace SkillNet.WebApi.Controllers
 
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = "SELECT RoleID as RoleId, RoleName, NULL as Description, GETDATE() as CreatedAt FROM Roles";
+                string query = "SELECT RoleID as RoleId, RoleName, NULL as Description, GETDATE() as CreatedAt FROM Roles ORDER BY RoleName";
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     con.Open();
@@ -51,8 +53,7 @@ namespace SkillNet.WebApi.Controllers
         {
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
-                string query = @"INSERT INTO Roles (RoleName) 
-                                 VALUES (@Name)";
+                string query = "INSERT INTO Roles (RoleName) VALUES (@Name)";
                 using (SqlCommand cmd = new SqlCommand(query, con))
                 {
                     cmd.Parameters.AddWithValue("@Name", role.RoleName);
