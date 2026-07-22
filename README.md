@@ -120,4 +120,4 @@ dotnet test
 See `testing_results.md` for recent verification results and end-to-end frontend/backend testing walkthroughs.
 
 ---
-*Built by the group 11 for the Software Architecture Module by NSBM Green University*
+*Built by the group 26 for the Software Architecture Module by NSBM Green University*
