@@ -19,7 +19,7 @@
 
   font: 15px/145% var(--sans);
   letter-spacing: 0.15px;
-  color-scheme: light dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -31,21 +31,6 @@
     font-size: 16px;
   }
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f9fafb;
-    --bg: #0f172a;
-    --border: #1e293b;
-    --code-bg: #1e293b;
-    --accent: #ff7a4d;
-    --accent-bg: rgba(255, 92, 40, 0.15);
-    --accent-border: rgba(255, 92, 40, 0.5);
-    --social-bg: rgba(30, 41, 59, 0.5);
-    --shadow:
-      0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
-  }
 
   #social .button-icon {
     filter: invert(1) brightness(2);

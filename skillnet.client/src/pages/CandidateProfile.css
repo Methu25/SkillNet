@@ -1,22 +1,22 @@
 .profile-page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
-.profile-page-heading h1 { margin: 5px 0; font-size: clamp(1.8rem, 4vw, 2.65rem); letter-spacing: -.035em; }
+.profile-page-heading h1 { margin: 5px 0; font-size: clamp(1.8rem, 4vw, 2.65rem); letter-spacing: -.035em; color: var(--candidate-ink, #20242c); }
 .profile-page-heading p { margin: 0; color: var(--candidate-muted); }
 .candidate-profile-layout { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); align-items: start; gap: 22px; }
 .candidate-profile-sidebar { display: grid; gap: 20px; }
 .candidate-profile-sidebar .completion-card { margin: 0; }
 .profile-identity-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
-.profile-identity-card h2 { margin-top: 16px; font-size: 1.3rem; }
+.profile-identity-card h2 { margin-top: 16px; font-size: 1.3rem; color: var(--candidate-ink, #20242c); }
 .profile-identity-card .profile-title { margin: 6px 0 18px; color: var(--candidate-orange-dark); font-size: .9rem; font-weight: 700; }
 .profile-identity-card dl { display: grid; width: 100%; gap: 8px; margin: 0 0 18px; text-align: left; }
 .profile-identity-card dl div { padding: 11px 12px; background: #faf8f6; border-radius: 11px; }
 .profile-identity-card dt { color: var(--candidate-muted); font-size: .68rem; }
-.profile-identity-card dd { margin: 3px 0 0; font-size: .82rem; font-weight: 700; }
+.profile-identity-card dd { margin: 3px 0 0; font-size: .82rem; font-weight: 700; color: var(--candidate-ink, #20242c); }
 .profile-identity-card button { width: 100%; }
 .profile-identity-card button:disabled { cursor: not-allowed; opacity: .58; }
 .profile-editor-card { padding: 30px; }
 .profile-form-section { padding-bottom: 28px; margin-bottom: 28px; border-bottom: 1px solid #eee9e4; }
 .profile-form-section header { margin-bottom: 17px; }
-.profile-form-section header h2 { margin-bottom: 5px; }
+.profile-form-section header h2 { margin-bottom: 5px; color: var(--candidate-ink, #20242c); }
 .profile-form-section header p { margin: 0; color: var(--candidate-muted); font-size: .82rem; }
 .profile-form-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
 .profile-field { display: grid; align-content: start; gap: 7px; color: #4c515a; font-size: .8rem; font-weight: 700; }
