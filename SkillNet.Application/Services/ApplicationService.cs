@@ -510,6 +510,11 @@ namespace SkillNet.Application.Services
             JobApplication application,
             bool includeRecruiterNotes = false)
         {
+            var activeInterview = application.Interviews?
+                .Where(i => i.Status == "Scheduled" || i.Status == "Rescheduled" || i.Status == "Interviewing" || i.Status == "EvaluationSubmitted")
+                .OrderByDescending(i => i.ScheduledDate)
+                .FirstOrDefault() ?? application.Interviews?.OrderByDescending(i => i.ScheduledDate).FirstOrDefault();
+
             return new JobApplicationDto
             {
                 ApplicationId = application.ApplicationId,
@@ -540,7 +545,18 @@ namespace SkillNet.Application.Services
                         .OrderByDescending(note => note.CreatedAt)
                         .Select(MapToRecruiterNoteDto)
                         .ToList()
-                    : null
+                    : null,
+                ScheduledInterview = activeInterview == null ? null : new ScheduledInterviewDto
+                {
+                    InterviewId = activeInterview.InterviewId,
+                    InterviewType = activeInterview.InterviewType,
+                    InterviewRound = activeInterview.InterviewRound,
+                    ScheduledDate = activeInterview.ScheduledDate,
+                    Duration = activeInterview.Duration,
+                    Location = activeInterview.Location,
+                    MeetingLink = activeInterview.MeetingLink,
+                    Status = activeInterview.Status
+                }
             };
         }
 

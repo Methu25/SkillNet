@@ -86,6 +86,9 @@ namespace SkillNet.Application.DTOs
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<RecruiterNoteDto>? RecruiterNotes { get; set; }
 
+        // Scheduled Interview Info
+        public ScheduledInterviewDto? ScheduledInterview { get; set; }
+
         // Match Score Info
         public int? MatchScore { get; set; }
         public List<string>? MatchedSkills { get; set; }
@@ -93,6 +96,18 @@ namespace SkillNet.Application.DTOs
         public string? MatchMethod { get; set; }
         public int? MatchedRequiredSkillCount { get; set; }
         public int? TotalRequiredSkills { get; set; }
+    }
+
+    public class ScheduledInterviewDto
+    {
+        public int InterviewId { get; set; }
+        public string? InterviewType { get; set; }
+        public int InterviewRound { get; set; }
+        public DateTime ScheduledDate { get; set; }
+        public int Duration { get; set; }
+        public string? Location { get; set; }
+        public string? MeetingLink { get; set; }
+        public string? Status { get; set; }
     }
 
     public class JobApplicationSummaryDto
