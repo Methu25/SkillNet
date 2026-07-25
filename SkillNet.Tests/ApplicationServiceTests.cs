@@ -380,7 +380,7 @@ namespace SkillNet.Tests
             public Dictionary<int, List<Skill>> CandidateSkills { get; } = new();
 
             public Task<IEnumerable<Skill>> GetSkillsByCandidateIdAsync(int candidateId) => Task.FromResult<IEnumerable<Skill>>(CandidateSkills.TryGetValue(candidateId, out var val) ? val : new List<Skill>());
-            
+
             public Task<ILookup<int, Skill>> GetSkillsByCandidateIdsAsync(IEnumerable<int> candidateIds)
             {
                 var list = new List<KeyValuePair<int, Skill>>();

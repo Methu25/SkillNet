@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { jsonRequest } from '../api/apiClient';
 import '../AdminModule.css';
 import { adminApi } from '../api/adminApi';
 
 export default function OrganizationManagement() {
     const [organizations, setOrganizations] = useState([]);
-    const [departments, setDepartments] = useState([]);
     const [pendingOrganizations, setPendingOrganizations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -14,29 +13,27 @@ export default function OrganizationManagement() {
     const [newOrg, setNewOrg] = useState({ organizationName: '', industry: '' });
     const [editingOrgId, setEditingOrgId] = useState(null);
 
-    const [newDept, setNewDept] = useState({ organizationId: '', departmentName: '' });
-    const [editingDeptId, setEditingDeptId] = useState(null);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            const [orgData, deptData, pendingData] = await Promise.all([
+            const [orgData, pendingData] = await Promise.all([
                 adminApi.getOrganizations(),
-                adminApi.getDepartments(),
                 adminApi.getPendingOrganizations()
             ]);
             setOrganizations(Array.isArray(orgData) ? orgData : []);
-            setDepartments(Array.isArray(deptData) ? deptData : []);
             setPendingOrganizations(Array.isArray(pendingData) ? pendingData : []);
         } catch (requestError) {
             setError(requestError.message || 'Unable to load organization management data.');
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        fetchData(); 
+    }, [fetchData]);
 
     const reviewOrganization = async (organization, approve) => {
         let reason = '';
@@ -73,29 +70,6 @@ export default function OrganizationManagement() {
     const handleDeleteOrg = (id) => {
         if (!window.confirm("Delete this organization?")) return;
         jsonRequest(`/api/organization/${id}`, 'DELETE')
-            .then(({ data }) => {
-                alert(data?.message || "Deleted successfully");
-                fetchData();
-            }).catch(err => alert(err.message));
-    };
-
-    const handleSaveDept = (e) => {
-        e.preventDefault();
-        const method = editingDeptId ? 'PUT' : 'POST';
-        const url = editingDeptId ? `/api/department/${editingDeptId}` : '/api/department';
-
-        jsonRequest(url, method, { organizationId: parseInt(newDept.organizationId), departmentName: newDept.departmentName })
-            .then(({ data }) => {
-                alert(data?.message || "Saved successfully");
-                setNewDept({ organizationId: '', departmentName: '' });
-                setEditingDeptId(null);
-                fetchData();
-            }).catch(err => alert(err.message));
-    };
-
-    const handleDeleteDept = (id) => {
-        if (!window.confirm("Delete this department?")) return;
-        jsonRequest(`/api/department/${id}`, 'DELETE')
             .then(({ data }) => {
                 alert(data?.message || "Deleted successfully");
                 fetchData();

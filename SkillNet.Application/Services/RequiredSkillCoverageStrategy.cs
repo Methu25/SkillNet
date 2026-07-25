@@ -77,7 +77,7 @@ namespace SkillNet.Application.Services
 
             // Score = matched required skills / total required skills * 100
             double score = ((double)matchedCount / result.TotalRequiredSkills) * 100.0;
-            
+
             // Round to nearest whole percentage (e.g. 66.6% -> 67%)
             result.MatchScore = (int)Math.Round(score, MidpointRounding.AwayFromZero);
 

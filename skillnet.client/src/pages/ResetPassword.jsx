@@ -1,25 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 const ResetPassword = () => {
     const navigate = useNavigate();
-    const query = new URLSearchParams(useLocation().search);
+    const location = useLocation();
 
-    const [email, setEmail] = useState('');
-    const [token, setToken] = useState('');
+    const [email, setEmail] = useState(() => new URLSearchParams(location.search).get('email') || '');
+    const [token, setToken] = useState(() => new URLSearchParams(location.search).get('token') || '');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        // Pre-fill if values exist in URL params
-        const paramEmail = query.get('email');
-        const paramToken = query.get('token');
-        if (paramEmail) setEmail(paramEmail);
-        if (paramToken) setToken(paramToken);
-    }, []);
 
     const checkPasswordPolicy = (pwd) => {
         return {
@@ -68,7 +60,7 @@ const ResetPassword = () => {
             } else {
                 setError(data.message || 'Reset failed.');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred. Please try again.');
         } finally {
             setLoading(false);

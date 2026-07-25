@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { jsonRequest } from '../api/apiClient';
 import '../AdminModule.css';
 import { adminApi } from '../api/adminApi';
@@ -12,7 +12,7 @@ export default function UserManagement() {
 
     const [error, setError] = useState('');
 
-    const fetchUsers = () => {
+    const fetchUsers = useCallback(() => {
         setError('');
         adminApi.getUsers()
             .then(data => setUsers(Array.isArray(data) ? data : []))
@@ -20,25 +20,26 @@ export default function UserManagement() {
                 console.error("Failed to fetch users:", err);
                 setError(err.message || "Failed to fetch users. Please verify backend server and authentication.");
             });
-    };
+    }, []);
 
-    const fetchRoles = () => {
+    const fetchRoles = useCallback(() => {
         adminApi.getRoles()
             .then(data => setRoles(data))
             .catch(() => console.error("Failed to fetch roles."));
-    };
+    }, []);
 
-    const fetchOrganizations = () => {
+    const fetchOrganizations = useCallback(() => {
         adminApi.getOrganizations()
             .then(data => setOrganizations(Array.isArray(data) ? data : []))
             .catch(() => console.error("Failed to fetch organizations."));
-    };
+    }, []);
 
     useEffect(() => { 
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchUsers(); 
         fetchRoles();
         fetchOrganizations();
-    }, []);
+    }, [fetchUsers, fetchRoles, fetchOrganizations]);
 
     const handleSaveUser = (e) => {
         e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -6,41 +6,28 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const initializeAuth = async () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                try {
-                    const response = await fetch('/api/auth/me', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (response.ok) {
-                        const userData = await response.json();
-                        setUser(userData);
-                    } else if (response.status === 401) {
-                        // Attempt token refresh
-                        const refreshSuccess = await performTokenRefresh();
-                        if (!refreshSuccess) {
-                            logout();
-                        }
-                    } else {
-                        logout();
-                    }
-                } catch (error) {
-                    console.error("Auth initialization failed:", error);
-                    logout();
-                }
+    const logout = useCallback(async () => {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ refreshToken })
+                });
+            } catch (e) {
+                console.error("Failed to revoke token during logout:", e);
             }
-            setLoading(false);
-        };
+        }
 
-        initializeAuth();
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        setUser(null);
     }, []);
 
-    const performTokenRefresh = async () => {
+    const performTokenRefresh = useCallback(async () => {
         const refreshToken = localStorage.getItem('refreshToken');
         if (!refreshToken) return false;
 
@@ -75,7 +62,41 @@ export const AuthProvider = ({ children }) => {
             console.error("Refresh token failed:", error);
         }
         return false;
-    };
+    }, []);
+
+    useEffect(() => {
+        const initializeAuth = async () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const response = await fetch('/api/auth/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const userData = await response.json();
+                        setUser(userData);
+                    } else if (response.status === 401) {
+                        // Attempt token refresh
+                        const refreshSuccess = await performTokenRefresh();
+                        if (!refreshSuccess) {
+                            await logout();
+                        }
+                    } else {
+                        await logout();
+                    }
+                } catch (error) {
+                    console.error("Auth initialization failed:", error);
+                    await logout();
+                }
+            }
+            setLoading(false);
+        };
+
+        initializeAuth();
+    }, [logout, performTokenRefresh]);
 
     const login = async (email, password) => {
         const response = await fetch('/api/auth/login', {
@@ -110,27 +131,6 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = async () => {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-            try {
-                await fetch('/api/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ refreshToken })
-                });
-            } catch (e) {
-                console.error("Failed to revoke token during logout:", e);
-            }
-        }
-
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        setUser(null);
-    };
-
     const register = async (userData) => {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
@@ -155,4 +155,5 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);

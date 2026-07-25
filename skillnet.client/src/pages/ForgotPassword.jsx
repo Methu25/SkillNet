@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const ForgotPassword = () => {
@@ -33,7 +33,7 @@ const ForgotPassword = () => {
             } else {
                 setError(data.message || 'Request failed.');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred. Please try again.');
         } finally {
             setLoading(false);

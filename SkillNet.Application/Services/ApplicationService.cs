@@ -256,10 +256,10 @@ namespace SkillNet.Application.Services
             var names = jobSkillsDetails.ToList();
             for (int i = 0; i < ids.Count; i++)
             {
-                jobRequiredSkills.Add(new SkillInfo 
-                { 
-                    SkillId = ids[i], 
-                    SkillName = i < names.Count ? names[i] : string.Empty 
+                jobRequiredSkills.Add(new SkillInfo
+                {
+                    SkillId = ids[i],
+                    SkillName = i < names.Count ? names[i] : string.Empty
                 });
             }
 
@@ -327,10 +327,10 @@ namespace SkillNet.Application.Services
             var names = jobSkillsDetails.ToList();
             for (int i = 0; i < ids.Count; i++)
             {
-                jobRequiredSkills.Add(new SkillInfo 
-                { 
-                    SkillId = ids[i], 
-                    SkillName = i < names.Count ? names[i] : string.Empty 
+                jobRequiredSkills.Add(new SkillInfo
+                {
+                    SkillId = ids[i],
+                    SkillName = i < names.Count ? names[i] : string.Empty
                 });
             }
 

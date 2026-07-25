@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../api/apiClient';
+import { useState, useEffect, useCallback } from 'react';
 import '../AdminModule.css';
 import { adminApi } from '../api/adminApi';
 
@@ -14,7 +13,7 @@ export default function AuditLogs() {
     const [endDate, setEndDate] = useState('');
 
     // Function to fetch logs based on active filters
-    const fetchLogs = () => {
+    const fetchLogs = useCallback(() => {
         setLoading(true);
 
         // Build the query string dynamically
@@ -33,12 +32,13 @@ export default function AuditLogs() {
                 console.error("Error fetching logs:", err);
                 setLoading(false);
             });
-    };
+    }, [userId, action, startDate, endDate]);
 
     // Fetch all logs when the component first loads
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchLogs();
-    }, []);
+    }, [fetchLogs]);
 
     return (
         <div className="admin-module-container">
