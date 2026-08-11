@@ -13,7 +13,7 @@ SkillNet is a recruitment and candidate-job matching platform designed to connec
 
 SkillNet was developed as a group project for the Software Architecture module at NSBM Green University (Group 26).
 
-### E.J. Yohan Methusael (GitHub: @Methu25)
+### E.J. Yohan Methusael ([@Methu25](https://github.com/Methu25))
 **Security, AI Integration & Application Flow**
 
 * **Authentication & Security Architecture:**
@@ -31,11 +31,11 @@ SkillNet was developed as a group project for the Software Architecture module a
 ---
 
 ### Team Collaborators
-* **M.T.R. Mathota** (@coder-chetto) - Applicant flow creator, Candidate module (Frontend & Backend), Notification service & Email integration, Resume PDF & Profile Image upload services.
-* **Yashara Gamage** (@YasharaGamage) - Project setup, Job & Recruiter modules, database structure.
-* **Hansaja Mudalige** (@HansajaMudalige) - Admin module UI and system settings.
-* **Dinuri Chamindi** (@Dinuri2004) - Hiring manager module and interview scheduling.
-* **P.T.A. Jayasena** (@ptajayasena) - Recruiter application management.
+* **M.T.R. Mathota** ([@coder-chetto](https://github.com/coder-chetto)) - Applicant flow creator, Candidate module (Frontend & Backend), Notification service & Email integration, Resume PDF & Profile Image upload services.
+* **Yashara Gamage** ([@YasharaGamage](https://github.com/YasharaGamage)) - Project setup, Job & Recruiter modules, database structure.
+* **Hansaja Mudalige** ([@HansajaMudalige](https://github.com/HansajaMudalige)) - Admin module UI and system settings.
+* **Dinuri Chamindi** ([@Dinuri2004](https://github.com/Dinuri2004)) - Hiring manager module and interview scheduling.
+* **P.T.A. Jayasena** ([@ptajayasena](https://github.com/ptajayasena)) - Recruiter application management.
 
 ---
 
