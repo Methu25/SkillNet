@@ -96,7 +96,7 @@ namespace SkillNet.Infrastructure.Repositories
             cmd.Parameters.AddWithValue("@FirstName", user.FirstName);
             cmd.Parameters.AddWithValue("@LastName", user.LastName);
             cmd.Parameters.AddWithValue("@Phone", (object?)user.Phone ?? DBNull.Value);
-            
+
             var result = await cmd.ExecuteScalarAsync();
             if (result != null)
             {

@@ -113,7 +113,7 @@ namespace SkillNet.Application.Services
                 _userService.IncrementFailedAttempts(request.Email);
 
                 var updatedUser = _userService.GetUserByEmail(request.Email)!;
-                
+
                 int maxAttempts = _configService.GetIntSetting("MaxLoginAttempts", 5);
                 int lockoutMinutes = _configService.GetIntSetting("LockoutDuration", 15);
 

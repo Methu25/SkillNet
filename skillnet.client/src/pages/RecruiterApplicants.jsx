@@ -117,11 +117,13 @@ const RecruiterApplicants = () => {
     }, [applicationId, jobId, validApplicationId, validJobId]);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         loadApplicants();
     }, [loadApplicants]);
 
     useEffect(() => {
         if (applicationId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             loadApplicationDetail();
         }
     }, [applicationId, loadApplicationDetail]);

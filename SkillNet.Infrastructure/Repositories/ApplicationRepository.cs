@@ -161,6 +161,7 @@ namespace SkillNet.Infrastructure.Repositories
                 .Include(application => application.StatusHistory)
                 .Include(application => application.RecruiterNotes)
                     .ThenInclude(note => note.Recruiter)
+                .Include(application => application.Interviews)
                 .AsSplitQuery();
         }
 

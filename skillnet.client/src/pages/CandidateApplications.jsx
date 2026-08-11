@@ -190,6 +190,46 @@ const ApplicationDetails = ({ application, onWithdraw }) => {
                 {application.source && <div><dt>Source</dt><dd>{application.source}</dd></div>}
             </dl>
 
+            {application.scheduledInterview && (
+                <section className="application-detail__section candidate-interview-card">
+                    <h2>Scheduled interview</h2>
+                    <div className="candidate-interview-card__box">
+                        <div className="candidate-interview-card__badge">
+                            <span>📅 {application.scheduledInterview.interviewType || 'Interview'}</span>
+                            <span className="candidate-interview-round">Round {application.scheduledInterview.interviewRound || 1}</span>
+                        </div>
+                        <dl className="candidate-interview-card__grid">
+                            <div>
+                                <dt>Date & time</dt>
+                                <dd>{formatDate(application.scheduledInterview.scheduledDate, true)}</dd>
+                            </div>
+                            <div>
+                                <dt>Duration</dt>
+                                <dd>{application.scheduledInterview.duration} minutes</dd>
+                            </div>
+                            {application.scheduledInterview.location && (
+                                <div>
+                                    <dt>Location</dt>
+                                    <dd>{application.scheduledInterview.location}</dd>
+                                </div>
+                            )}
+                        </dl>
+                        {application.scheduledInterview.meetingLink && (
+                            <div className="candidate-interview-card__action">
+                                <a
+                                    href={application.scheduledInterview.meetingLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="candidate-button candidate-button--primary candidate-meeting-link-btn"
+                                >
+                                    <span>🔗</span> Join Online Interview
+                                </a>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            )}
+
             <section className="application-detail__section">
                 <h2>Resume used</h2>
                 <div className="application-resume">

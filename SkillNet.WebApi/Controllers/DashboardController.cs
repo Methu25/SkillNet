@@ -62,10 +62,10 @@ namespace SkillNet.WebApi.Controllers
 
                 using (SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM JobPost WHERE Status NOT IN ('Closed', 'Draft')", con))
                     activeJobs = (int)cmd.ExecuteScalar();
-                
+
                 using (SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM JobApplications WHERE CAST(AppliedDate AS DATE) = CAST(GETDATE() AS DATE)", con))
                     appsToday = (int)cmd.ExecuteScalar();
-                
+
                 using (SqlCommand cmd = new SqlCommand("SELECT COUNT(*) FROM Interview WHERE CAST(ScheduledDate AS DATE) = CAST(GETDATE() AS DATE)", con))
                     interviewsToday = (int)cmd.ExecuteScalar();
 

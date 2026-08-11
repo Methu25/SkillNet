@@ -68,6 +68,77 @@
 .application-dialog__error { margin-top: 13px; padding: 10px 12px; color: #984139; background: #fff0ef; border-radius: 9px; font-size: .8rem; }
 .application-dialog__actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; }
 
+.candidate-interview-card__box {
+    padding: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #fff7f2 100%);
+    border: 1.5px solid #ffd8c2;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(255, 104, 31, .08);
+}
+.candidate-interview-card__badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    font-weight: 800;
+    font-size: 0.92rem;
+    color: var(--candidate-orange-dark, #b7440e);
+}
+.candidate-interview-round {
+    padding: 3px 10px;
+    background: #ffe3d3;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 750;
+    color: #a33b09;
+}
+.candidate-interview-card__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 32px;
+    margin: 0 0 18px;
+}
+.candidate-interview-card__grid div {
+    display: grid;
+    gap: 3px;
+}
+.candidate-interview-card__grid dt {
+    color: var(--candidate-muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.candidate-interview-card__grid dd {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 750;
+    color: var(--candidate-ink, #20242c);
+}
+.candidate-interview-card__action {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed #f2cbb6;
+}
+.candidate-meeting-link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 20px;
+    font-weight: 800;
+    text-decoration: none;
+    background: linear-gradient(145deg, #ff681f, #d44d0d);
+    color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(255, 104, 31, .25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.candidate-meeting-link-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 24px rgba(255, 104, 31, .35);
+}
+
 @media (max-width: 720px) {
     .applications-page-heading { align-items: flex-start; flex-direction: column; }
     .application-row { grid-template-columns: 44px minmax(0, 1fr); gap: 13px; }

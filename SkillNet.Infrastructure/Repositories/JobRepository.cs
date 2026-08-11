@@ -283,7 +283,7 @@ namespace SkillNet.Infrastructure.Repositories
                     VALUES (@RecruiterId, @OrganizationId, @CategoryId, @Title, @Description,
                         @EmploymentType, @WorkMode, @Location, @SalaryMin, @SalaryMax, @ExperienceLevel,
                         @Status, @ApplicationDeadline, @CreatedAt, @UpdatedAt)";
-                
+
                 int jobId;
                 using (var cmd = new SqlCommand(query, con, transaction))
                 {
@@ -310,7 +310,7 @@ namespace SkillNet.Infrastructure.Repositories
                 if (skillIds != null && skillIds.Any())
                 {
                     var distinctSkillIds = skillIds.Distinct().ToList();
-                    
+
                     // Verify all skillIds exist in database
                     var parameters = new List<SqlParameter>();
                     var paramNames = new List<string>();
@@ -321,7 +321,7 @@ namespace SkillNet.Infrastructure.Repositories
                         parameters.Add(new SqlParameter(paramName, distinctSkillIds[i]));
                     }
                     var formattedCheckQuery = string.Format("SELECT COUNT(1) FROM Skills WHERE SkillId IN ({0})", string.Join(",", paramNames));
-                    
+
                     using (var checkCmd = new SqlCommand(formattedCheckQuery, con, transaction))
                     {
                         checkCmd.Parameters.AddRange(parameters.ToArray());
@@ -366,7 +366,7 @@ namespace SkillNet.Infrastructure.Repositories
                         SalaryMin=@SalaryMin, SalaryMax=@SalaryMax, ExperienceLevel=@ExperienceLevel,
                         ApplicationDeadline=@ApplicationDeadline, UpdatedAt=@UpdatedAt
                     WHERE JobId=@JobId AND RecruiterId=@RecruiterId";
-                
+
                 using (var cmd = new SqlCommand(query, con, transaction))
                 {
                     cmd.Parameters.AddWithValue("@JobId", job.JobId);
@@ -404,7 +404,7 @@ namespace SkillNet.Infrastructure.Repositories
                     if (skillIds.Any())
                     {
                         var distinctSkillIds = skillIds.Distinct().ToList();
-                        
+
                         var parameters = new List<SqlParameter>();
                         var paramNames = new List<string>();
                         for (int i = 0; i < distinctSkillIds.Count; i++)
@@ -414,7 +414,7 @@ namespace SkillNet.Infrastructure.Repositories
                             parameters.Add(new SqlParameter(paramName, distinctSkillIds[i]));
                         }
                         var formattedCheckQuery = string.Format("SELECT COUNT(1) FROM Skills WHERE SkillId IN ({0})", string.Join(",", paramNames));
-                        
+
                         using (var checkCmd = new SqlCommand(formattedCheckQuery, con, transaction))
                         {
                             checkCmd.Parameters.AddRange(parameters.ToArray());
@@ -469,7 +469,7 @@ namespace SkillNet.Infrastructure.Repositories
                 FROM JobSkill js 
                 JOIN Skills s ON js.SkillId = s.SkillId 
                 WHERE js.JobId IN (SELECT JobId FROM JobPost WHERE Status = 'Published')";
-            
+
             using var con = new SqlConnection(_connectionString);
             await con.OpenAsync();
             using var cmd = new SqlCommand(query, con);

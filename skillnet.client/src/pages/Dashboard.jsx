@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { apiRequest } from '../api/apiClient';
+import { useState, useEffect } from 'react';
 import '../AdminModule.css';
 import { adminApi } from '../api/adminApi';
 

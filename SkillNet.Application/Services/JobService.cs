@@ -146,8 +146,8 @@ namespace SkillNet.Application.Services
         private readonly ICandidateJobMatchingStrategy _matchingStrategy;
 
         public JobService(
-            IJobRepository jobRepository, 
-            IRecruiterService recruiterService, 
+            IJobRepository jobRepository,
+            IRecruiterService recruiterService,
             IConfiguration configuration,
             ICurrentUserContext currentUserContext,
             ICandidateService candidateService,
@@ -240,16 +240,16 @@ namespace SkillNet.Application.Services
                 {
                     var jobSkills = await _jobRepository.GetSkillIdsByJobIdAsync(job.JobId);
                     var jobSkillsDetails = await _jobRepository.GetSkillsByJobIdAsync(job.JobId);
-                    
+
                     var jobSkillsList = new List<SkillInfo>();
                     var ids = jobSkills.ToList();
                     var names = jobSkillsDetails.ToList();
                     for (int i = 0; i < ids.Count; i++)
                     {
-                        jobSkillsList.Add(new SkillInfo 
-                        { 
-                            SkillId = ids[i], 
-                            SkillName = i < names.Count ? names[i] : string.Empty 
+                        jobSkillsList.Add(new SkillInfo
+                        {
+                            SkillId = ids[i],
+                            SkillName = i < names.Count ? names[i] : string.Empty
                         });
                     }
 
